@@ -3,7 +3,8 @@ add_rules("mode.debug", "mode.release")
 set_languages("c++23")
 target("class")
     set_kind("binary")
-    add_files("src/main.cpp", "src/npdsp_concepts.ixx", "src/signal_wrappers.ixx", "src/derivators.ixx")
+    add_files("src/main.cpp", "src/npdsp_concepts.ixx", "src/signal_wrappers.ixx", "src/derivators.ixx"
+            , "src/integrators.ixx")
 
 
 --
