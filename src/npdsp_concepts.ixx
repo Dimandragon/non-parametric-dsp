@@ -37,7 +37,6 @@ namespace NP_DSP{
                 = requires (T signal, typename T::IdxType idx, std::size_t dim_number)
         {
             requires T::is_signal == true;
-            requires T::dims_count == 1;
             requires std::convertible_to<typename T::IdxType, size_t>;
 
             typename T::IdxType;
@@ -45,7 +44,7 @@ namespace NP_DSP{
 
             { signal.getRefByIdx(idx) } -> std::convertible_to<typename T::DataType &>;
             { signal.getByIdx(idx) } -> std::convertible_to<typename T::DataType>;
-            { signal.getDimSize(dim_number) } -> std::convertible_to<size_t>;
+            { signal.getSize() } -> std::convertible_to<size_t>;
         };
 
 
@@ -302,11 +301,7 @@ namespace NP_DSP{
         template<typename T>
         concept OrtogonalComponentSolver = is_ortogonal_component_solver<T>;
     }
-} 
- 
-
-
+}
 
 
 //static_assert(is_signal<vec_wrapper<int>, int, int>);
-

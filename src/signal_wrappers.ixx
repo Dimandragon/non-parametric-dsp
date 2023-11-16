@@ -19,7 +19,6 @@ namespace NP_DSP
             using DataType = T;
             using IdxType = size_t;
             constexpr static bool is_signal = true;
-            constexpr static size_t dims_count = 1;
 
             std::vector<T> & vec;
             inline T& getRefByIdx(size_t idx){
@@ -30,13 +29,11 @@ namespace NP_DSP
                 return vec[idx];
             }
 
-            size_t getDimSize(size_t dim_number){
-
+            size_t getSize(){
                 return vec.size();
             }
         };
 
         static_assert(is_signal<SimpleVecWrapper<int>>);
     }
-
 }
