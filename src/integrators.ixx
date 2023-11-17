@@ -23,7 +23,7 @@ namespace NP_DSP{
 
                 void compute(DataType data, IntegralType & out)
                 {
-                    IntegralT integral = static_cast<IntegralType>(0.0);
+                    typename IntegralType::DataType integral = static_cast<IntegralType>(0.0);
 
                     if constexpr (polygon_type == PolygonType::ByPoint) {
                         for (size_t i = 0; i < data.getSize(); i++){
