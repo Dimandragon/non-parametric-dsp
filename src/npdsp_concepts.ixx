@@ -12,13 +12,15 @@ namespace NP_DSP{
     {
         export
         template <typename T>
-        constexpr bool is_signal
-                = requires (T signal, typename T::IdxType idx, std::size_t dim_number)
+        constexpr bool is_signal =
+                requires (T signal, typename T::IdxType idx, std::size_t dim_number)
         {
             requires T::is_signal == true;
             requires T::dims_count == std::tuple_size_v<typename T::IdxType>;
             typename T::IdxType;
             typename T::DataType;
+
+            { T::is_writable } -> std::same_as<bool>;
 
             { signal.getRefByIdx(idx) } -> std::convertible_to<typename T::DataType &>;
             { signal.getByIdx(idx) } -> std::convertible_to<typename T::DataType>;

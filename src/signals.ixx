@@ -7,7 +7,7 @@ import <cstddef>;
 
 import npdsp_concepts;
 
-export module signal_wrappers;
+export module signals;
 
 
 namespace NP_DSP
@@ -19,6 +19,7 @@ namespace NP_DSP
             using DataType = T;
             using IdxType = size_t;
             constexpr static bool is_signal = true;
+            constexpr static bool is_writable = true;
 
             std::vector<T> & vec;
             inline T& getRefByIdx(size_t idx){

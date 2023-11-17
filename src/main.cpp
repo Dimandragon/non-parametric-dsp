@@ -1,6 +1,6 @@
 #include <iostream>
 
-import signal_wrappers;
+import signals;
 import npdsp_concepts;
 import derivators;
 
