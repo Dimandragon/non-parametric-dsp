@@ -4,6 +4,8 @@ import <vector>;
 import <tuple>;
 import <cassert>;
 import <cstddef>;
+import <utility>;
+import <type_traits>;
 
 import npdsp_concepts;
 
@@ -12,6 +14,10 @@ export module signals;
 
 namespace NP_DSP
 {
+    namespace GENERAL{
+        struct Nil{};
+    }
+
     namespace ONE_D{
         export
         template<typename T>
