@@ -15,6 +15,7 @@ export module signals;
 namespace NP_DSP
 {
     namespace GENERAL{
+        export
         struct Nil{};
     }
 
@@ -23,20 +24,20 @@ namespace NP_DSP
         template<typename T>
         struct SimpleVecWrapper{
             using DataType = T;
-            using IdxType = size_t;
+            using IdxType = std::size_t;
             constexpr static bool is_signal = true;
             constexpr static bool is_writable = true;
 
             std::vector<T> & vec;
-            inline T& getRefByIdx(size_t idx){
+            inline T& getRefByIdx(std::size_t idx){
                 return vec[idx];
             }
 
-            inline T getByIdx(size_t idx){
+            inline T getByIdx(std::size_t idx){
                 return vec[idx];
             }
 
-            size_t getSize(){
+            std::size_t getSize(){
                 return vec.size();
             }
         };
@@ -44,10 +45,10 @@ namespace NP_DSP
         static_assert(is_signal<SimpleVecWrapper<int>>);
 
         export
-        template<typename T, typename DataValExpr, typename DataRefExpr, typename SizeExpr, bool is_writeble_b>
+        template<typename T, typename IdxT, typename DataValExpr, typename DataRefExpr, typename SizeExpr, bool is_writeble_b>
         struct ExpressionWrapper{
             using DataType = T;
-            using IdxType = size_t;
+            using IdxType = IdxT;
             using DataValueExpression = DataValExpr;
             using DataReferenceExpression = DataRefExpr;
             using SizeExpression = SizeExpr;
@@ -65,7 +66,7 @@ namespace NP_DSP
                 size_expression = size_expr;
             }
 
-            inline T& getRefByIdx(size_t idx){
+            inline T& getRefByIdx(std::size_t idx){
                 if constexpr (! std::is_same_v<DataReferenceExpression, GENERAL::Nil>){
                     return ref_expression(idx);
                 }
@@ -74,7 +75,7 @@ namespace NP_DSP
                 }
             }
 
-            inline T getByIdx(size_t idx){
+            inline T getByIdx(std::size_t idx){
                 if constexpr (! std::is_same_v<DataReferenceExpression, GENERAL::Nil>){
                     return val_expression(idx);
                 }
@@ -83,7 +84,7 @@ namespace NP_DSP
                 }
             }
 
-            size_t getSize(){
+            std::size_t getSize(){
                 if constexpr (! std::is_same_v<DataReferenceExpression, GENERAL::Nil>){
                     return size_expression();
                 }
