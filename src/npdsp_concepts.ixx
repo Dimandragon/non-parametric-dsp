@@ -32,6 +32,16 @@ namespace NP_DSP{
         export
         template <typename T>
         concept Signal = is_signal<T>;
+
+        export
+        template <typename T>
+        constexpr bool is_signal_wrapper = requires{
+            requires is_signal<T> || std::is_same_v<GENERAL::Nil, T>;
+        };
+
+        export
+        template <typename T>
+        concept SignalWrapper = is_signal_wrapper<T>;
     }
 
     namespace ONE_D{
@@ -61,6 +71,10 @@ namespace NP_DSP{
         constexpr bool is_signal_wrapper = requires{
             requires is_signal<T> || std::is_same_v<GENERAL::Nil, T>;
         };
+
+        export
+        template <typename T>
+        concept SignalWrapper = is_signal_wrapper<T>;
     }
 
     namespace GENERAL{
