@@ -11,6 +11,9 @@ namespace NP_DSP{
     namespace GENERAL
     {
         export
+        struct Nil{};
+
+        export
         template <typename T>
         constexpr bool is_signal =
                 requires (T signal, typename T::IdxType idx, std::size_t dim_number)
@@ -39,7 +42,6 @@ namespace NP_DSP{
         {
             requires T::is_signal == true;
             requires (T::is_writable == true || T::is_writable == false);
-            requires std::convertible_to<typename T::IdxType, size_t>;
 
             typename T::IdxType;
             typename T::DataType;
@@ -53,6 +55,12 @@ namespace NP_DSP{
         export
         template <typename T>
         concept Signal = is_signal<T>;
+
+        export
+        template <typename T>
+        constexpr bool is_signal_wrapper = requires{
+            requires is_signal<T> || std::is_same_v<GENERAL::Nil, T>;
+        };
     }
 
     namespace GENERAL{
@@ -69,6 +77,7 @@ namespace NP_DSP{
             requires is_signal<typename T::DataType>;
             requires ! ONE_D::is_signal<typename T::DataType>;
             requires ONE_D::is_signal<typename T::OutType>;
+            requires (T::OutType::is_writable == true);
 
             rotator.compute(data, out, rotor);
         };
@@ -87,6 +96,7 @@ namespace NP_DSP{
             requires (T::is_mode_extracor == true);
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::ModeType>;
+            requires (T::ModeType::is_writable == true);
 
             mode_extractor.compute(data, out);
         };
@@ -105,6 +115,7 @@ namespace NP_DSP{
             requires T::is_mode_graber == true;
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::ModeType>;
+            requires (T::DataType::is_writable == true);
 
             mode_graber.compute(data, mode);
         };
@@ -124,6 +135,7 @@ namespace NP_DSP{
             requires T::is_inst_freq_computer == true;
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::InstFreqType>;
+            requires (T::OutType::is_writable == true);
 
             inst_freq_computer.compute(data, inst_freq);
         };
@@ -134,10 +146,12 @@ namespace NP_DSP{
         {
             typename T::DataType;
             typename T::OutType;
+            typename T::InstFreqType;
 
             requires T::is_filter == true;
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::OutType>;
+            requires is_signal<typename T::InstFreqType>;
 
             filter.compute(data, out);
         };

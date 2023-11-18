@@ -14,11 +14,6 @@ export module signals;
 
 namespace NP_DSP
 {
-    namespace GENERAL{
-        export
-        struct Nil{};
-    }
-
     namespace ONE_D{
         export
         template<typename T>
