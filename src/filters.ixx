@@ -43,6 +43,9 @@ namespace NP_DSP{
                             decltype(val_expression), GENERAL::Nil, decltype(size_expr), false>
                                                (val_expression, GENERAL::Nil{}, size_expr), out);
                 }
+                else{
+                    std::unreachable();                
+                }
             }
         };
 
