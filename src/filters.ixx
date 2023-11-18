@@ -12,16 +12,20 @@ namespace NP_DSP{
         export enum class InstFreqKind{Average, Double};
 
         export
-        template<Signal DataT, Signal OutT, Signal InstFreqT, InstFreqT inst_freq, Integrator IntegralT, IntegralT integrator, InstFreqKind inst_freq_k>
+        template<Signal DataT, Signal OutT, Signal InstFreqT, InstFreqT inst_freq,
+                Integrator IntegratorT, IntegratorT integrator, InstFreqKind inst_freq_k>
         struct NonOptPeriodBasedFilter{
             using DataType = DataT;
             using OutType = OutT;
             using InstFreqType = InstFreqT;
+            using AdditionalDataType = GENERAL::Nil;
 
             constexpr static InstFreqKind inst_freq_kind = inst_freq_k;
             constexpr static bool is_filter = true;
 
-            void compute(DataType data, OutType & out){
+            void compute(DataType data, OutType & out, GENERAL::Nil & additional_data){
+                auto nil = GENERAL::Nil{};
+
                 auto size_expr = [=](){
                     return data.getSize();
                 };
@@ -33,7 +37,7 @@ namespace NP_DSP{
                     };
                     integrator.compute(ExpressionWrapper<typename DataType::DataType,typename DataType::IdxType,
                             decltype(val_expression), GENERAL::Nil, decltype(size_expr), false>
-                                               (val_expression, GENERAL::Nil{}, size_expr), out);
+                                               (val_expression, GENERAL::Nil{}, size_expr), out, nil);
                 }
                 else if constexpr (inst_freq_kind == InstFreqKind::Double){
                     auto val_expression = [=](DataType::IdxType idx){
@@ -42,7 +46,7 @@ namespace NP_DSP{
                     };
                     integrator.compute(ExpressionWrapper<typename DataType::DataType,typename DataType::IdxType,
                             decltype(val_expression), GENERAL::Nil, decltype(size_expr), false>
-                                               (val_expression, GENERAL::Nil{}, size_expr), out);
+                                               (val_expression, GENERAL::Nil{}, size_expr), out, nil);
                 }
                 else{
                     std::unreachable();

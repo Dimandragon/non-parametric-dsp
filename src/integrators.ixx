@@ -20,8 +20,9 @@ namespace NP_DSP{
 
                 using DataType = DataT;
                 using IntegralType = IntegralT;
+                using AdditionalDataType = GENERAL::Nil;
 
-                void compute(DataType data, IntegralType & out)
+                void compute(DataType data, IntegralType & out, GENERAL::Nil & additional_data)
                 {
                     typename IntegralType::DataType integral = static_cast<IntegralType>(0.0);
 

@@ -80,11 +80,13 @@ namespace NP_DSP{
     namespace GENERAL{
         export
         template <typename T>
-        constexpr bool is_rotator = requires (T rotator, typename T::DataType data, typename T::OutType & out, typename T::RotorType rotor)
+        constexpr bool is_rotator =
+                requires (T rotator, T::DataType data, T::OutType & out, T::RotorType rotor, T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::OutType;
             typename T::RotorType;
+            typename T::AdditionalDataType;
 
             requires  (std::tuple_size<typename T::RotorType>::value == (std::tuple_size<typename T::DataType::IdxType>::value - 1));
             requires (T::is_rotator == true);
@@ -92,8 +94,9 @@ namespace NP_DSP{
             requires ! ONE_D::is_signal<typename T::DataType>;
             requires ONE_D::is_signal<typename T::OutType>;
             requires (T::OutType::is_writable == true);
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
-            rotator.compute(data, out, rotor);
+            rotator.compute(data, out, rotor, additional_data);
         };
 
         export
@@ -102,7 +105,8 @@ namespace NP_DSP{
 
         export
         template <typename T>
-        constexpr bool is_mode_extracor = requires (T mode_extractor, typename T::DataType data, typename T::ModeType & out)
+        constexpr bool is_mode_extracor =
+                requires (T mode_extractor, T::DataType data, T::ModeType & out, T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::ModeType;
@@ -110,9 +114,10 @@ namespace NP_DSP{
             requires (T::is_mode_extracor == true);
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::ModeType>;
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
             requires (T::ModeType::is_writable == true);
 
-            mode_extractor.compute(data, out);
+            mode_extractor.compute(data, out, additional_data);
         };
 
         export
@@ -121,7 +126,7 @@ namespace NP_DSP{
 
         export
         template <typename T>
-        constexpr bool is_mode_graber = requires(T mode_graber, typename T::DataType & data, typename T::ModeType mode)
+        constexpr bool is_mode_graber = requires(T mode_graber, T::DataType & data, T::ModeType mode, T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::ModeType;
@@ -130,8 +135,9 @@ namespace NP_DSP{
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::ModeType>;
             requires (T::DataType::is_writable == true);
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
-            mode_graber.compute(data, mode);
+            mode_graber.compute(data, mode, additional_data);
         };
 
         export
@@ -141,7 +147,7 @@ namespace NP_DSP{
         export
         template<typename T>
         constexpr bool is_inst_freq_computer =
-                requires (T inst_freq_computer, typename T::DataType data, typename T::OutType & inst_freq)
+                requires (T inst_freq_computer, T::DataType data, T::OutType & inst_freq, T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::OutType;
@@ -150,13 +156,14 @@ namespace NP_DSP{
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::InstFreqType>;
             requires (T::OutType::is_writable == true);
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
-            inst_freq_computer.compute(data, inst_freq);
+            inst_freq_computer.compute(data, inst_freq, additional_data);
         };
 
         export
         template<typename T>
-        constexpr bool is_filter = requires (T filter, typename T::DataType data, typename T::OutType & out)
+        constexpr bool is_filter = requires (T filter, typename T::DataType data, typename T::OutType & out, T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::OutType;
@@ -166,8 +173,9 @@ namespace NP_DSP{
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::OutType>;
             requires is_signal<typename T::InstFreqType>;
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
-            filter.compute(data, out);
+            filter.compute(data, out, additional_data);
         };
 
         export
@@ -177,8 +185,8 @@ namespace NP_DSP{
         export
         template<typename T>
         constexpr bool is_ortogonal_component_solver =
-                requires(T solver, typename T::DataType data, typename T::InstFreqType & inst_freq,
-                         typename T::InstAmplType & inst_ampl, typename T::DataType & ort_component, bool is_inst_freq_ready)
+                requires(T solver, T::DataType data, T::InstFreqType & inst_freq, T::InstAmplType & inst_ampl,
+                        T::DataType & ort_component, bool is_inst_freq_ready, T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::InstFreqType;
@@ -188,8 +196,9 @@ namespace NP_DSP{
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::InstFreqType>;
             requires is_signal<typename T::InstAmplType>;
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
-            solver.compute(data, inst_freq, inst_ampl, ort_component, is_inst_freq_ready);
+            solver.compute(data, inst_freq, inst_ampl, ort_component, is_inst_freq_ready, additional_data);
         };
 
         export
@@ -201,7 +210,8 @@ namespace NP_DSP{
     {
         export
         template <typename T>
-        constexpr bool is_derivator = requires(T derivator, typename T::DataType data, typename T::DerivativeType & out)
+        constexpr bool is_derivator = requires(T derivator, T::DataType data, T::DerivativeType & out,
+                T::AdditionalDataType & additional_data)
         {
             requires T::is_derivator == true;
             typename T::DataType;
@@ -209,8 +219,9 @@ namespace NP_DSP{
 
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::DerivativeType>;
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
-            derivator.compute(data, out);
+            derivator.compute(data, out, additional_data);
         };
 
         export
@@ -219,7 +230,8 @@ namespace NP_DSP{
 
         export
         template <typename T>
-        constexpr bool is_integrator = requires(T integrator, typename T::DataType data, typename T::IntegralType & out)
+        constexpr bool is_integrator = requires(T integrator, T::DataType data, T::IntegralType & out,
+                T::AdditionalDataType & additional_data)
         {
             requires T::is_integrator == true;
             typename T::DataType;
@@ -228,8 +240,9 @@ namespace NP_DSP{
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::IntegralType>;
             requires (std::tuple_size_v<typename T::IntegralType::IdxType> == std::tuple_size_v<typename T::DataType::IdxType>);
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
-            integrator.compute(data, out);
+            integrator.compute(data, out, additional_data);
         };
 
         export
@@ -238,7 +251,8 @@ namespace NP_DSP{
 
         export
         template <typename T>
-        constexpr bool is_mode_extracor = requires (T mode_extractor, typename T::DataType data, typename T::ModeType & out)
+        constexpr bool is_mode_extracor = requires (T mode_extractor, T::DataType data, T::ModeType & out,
+                T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::ModeType;
@@ -246,8 +260,9 @@ namespace NP_DSP{
             requires (T::is_mode_extracor == true);
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::ModeType>;
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
-            mode_extractor.compute(data, out);
+            mode_extractor.compute(data, out, additional_data);
         };
 
         export
@@ -256,7 +271,8 @@ namespace NP_DSP{
 
         export
         template <typename T>
-        constexpr bool is_mode_graber = requires(T mode_graber, typename T::DataType & data, typename T::ModeType mode)
+        constexpr bool is_mode_graber = requires(T mode_graber, T::DataType & data, T::ModeType mode,
+                T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::ModeType;
@@ -264,8 +280,9 @@ namespace NP_DSP{
             requires T::is_mode_graber == true;
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::ModeType>;
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
-            mode_graber.compute(data, mode);
+            mode_graber.compute(data, mode, additional_data);
         };
 
         export
@@ -275,7 +292,8 @@ namespace NP_DSP{
         export
         template<typename T>
         constexpr bool is_inst_freq_computer =
-                requires (T inst_freq_computer, typename T::DataType data, typename T::OutType & inst_freq)
+                requires (T inst_freq_computer, T::DataType data, T::OutType & inst_freq,
+                T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::OutType;
@@ -283,8 +301,9 @@ namespace NP_DSP{
             requires T::is_inst_freq_computer == true;
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::InstFreqType>;
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
-            inst_freq_computer.compute(data, inst_freq);
+            inst_freq_computer.compute(data, inst_freq, additional_data);
         };
 
         export
@@ -293,7 +312,8 @@ namespace NP_DSP{
 
         export
         template<typename T>
-        constexpr bool is_filter = requires (T filter, typename T::DataType data, typename T::OutType & out)
+        constexpr bool is_filter = requires (T filter, T::DataType data, T::OutType & out,
+                T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::OutType;
@@ -301,8 +321,9 @@ namespace NP_DSP{
             requires T::is_filter == true;
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::OutType>;
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
-            filter.compute(data, out);
+            filter.compute(data, out, additional_data);
         };
 
         export
@@ -312,8 +333,9 @@ namespace NP_DSP{
         export
         template<typename T>
         constexpr bool is_ortogonal_component_solver =
-                requires(T solver, typename T::DataType data, typename T::InstFreqType & inst_freq,
-                        typename T::InstAmplType & inst_ampl, typename T::DataType & ort_component, bool is_inst_freq_ready)
+                requires(T solver, T::DataType data, T::InstFreqType & inst_freq,
+                        T::InstAmplType & inst_ampl, T::DataType & ort_component, bool is_inst_freq_ready,
+                        T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::InstFreqType;
@@ -323,8 +345,9 @@ namespace NP_DSP{
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::InstFreqType>;
             requires is_signal<typename T::InstAmplType>;
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
-            solver.compute(data, inst_freq, inst_ampl, ort_component, is_inst_freq_ready);
+            solver.compute(data, inst_freq, inst_ampl, ort_component, is_inst_freq_ready, additional_data);
         };
 
         export

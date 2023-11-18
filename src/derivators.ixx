@@ -20,8 +20,9 @@ namespace NP_DSP{
                 constexpr static FinniteDifferenceType different_type = different_t;
                 using DataType = DataT;
                 using DerivativeType = DerivativeT;
+                using AdditionalDataType = GENERAL::Nil;
 
-                void compute(DataType data, DerivativeType & out)
+                void compute(DataType data, DerivativeType & out, GENERAL::Nil & additional_data)
                 {
                     //init first and last values
                     out.getRefByIdx(0) = data.getByIdx(1) - data.getByIdx(0);
