@@ -3,6 +3,7 @@ module;
 
 import npdsp_concepts;
 import signals;
+import <utility>;
 
 export module filters;
 
@@ -44,7 +45,7 @@ namespace NP_DSP{
                                                (val_expression, GENERAL::Nil{}, size_expr), out);
                 }
                 else{
-                    std::unreachable();                
+                    std::unreachable();
                 }
             }
         };
