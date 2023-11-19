@@ -37,6 +37,8 @@ namespace NP_DSP{
         template <typename T>
         constexpr bool is_signal = requires (T signal, T::IdxType idx, T::IdxType idx2, T::SampelType  value)
         {
+            requires T::is_signal == true;
+
             typename T::Base;
             requires is_signal_base<typename T::Base>;
 
@@ -95,6 +97,8 @@ namespace NP_DSP{
         template <typename T>
         constexpr bool is_signal = requires (T signal, T::IdxType idx, T::IdxType idx2, T::SampelType  value)
         {
+            requires T::is_signal == true;
+
             typename T::Base;
             requires is_signal_base<typename T::Base>;
 
