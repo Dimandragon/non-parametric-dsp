@@ -55,6 +55,8 @@ namespace NP_DSP{
             { signal.getSize() } -> std::convertible_to<size_t>;
             { signal.interpolate(idx) } -> std::convertible_to<typename T::SampleType>;
             { signal.findInterpolate(idx, idx2, value) } -> std::convertible_to<typename T::IdxType>;
+            { signal.findIncr(value, idx, idx2)} -> std::convertible_to<typename T::IdxType>;
+            { signal.findDecr(value, idx, idx2)} -> std::convertible_to<typename T::IdxType>;
         };
 
         export
@@ -115,6 +117,8 @@ namespace NP_DSP{
             { signal.getSize() } -> std::convertible_to<size_t>;
             { signal.interpolate(idx) } -> std::convertible_to<typename T::SampleType>;
             { signal.findInterpolate(idx, idx2, value) } -> std::convertible_to<typename T::IdxType>;
+            { signal.findIncr(value, idx, idx2)} -> std::convertible_to<typename T::IdxType>;
+            { signal.findDecr(value, idx, idx2)} -> std::convertible_to<typename T::IdxType>;
         };
 
         export
