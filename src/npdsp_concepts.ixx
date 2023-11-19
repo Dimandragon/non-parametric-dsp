@@ -170,6 +170,7 @@ namespace NP_DSP{
         {
             typename T::DataType;
             typename T::ModeType;
+            typename T::AdditionalDataType;
 
             requires (T::is_mode_extracor == true);
             requires is_signal<typename T::DataType>;
@@ -186,10 +187,12 @@ namespace NP_DSP{
 
         export
         template <typename T>
-        constexpr bool is_mode_graber = requires(T mode_graber, T::DataType & data, T::ModeType mode, T::AdditionalDataType & additional_data)
+        constexpr bool is_mode_graber =
+                requires(T mode_graber, T::DataType & data, T::ModeType mode, T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::ModeType;
+            typename T::AdditionalDataType;
 
             requires T::is_mode_graber == true;
             requires is_signal<typename T::DataType>;
@@ -211,6 +214,7 @@ namespace NP_DSP{
         {
             typename T::DataType;
             typename T::OutType;
+            typename T::AdditionalDataType;
 
             requires T::is_inst_freq_computer == true;
             requires is_signal<typename T::DataType>;
@@ -228,6 +232,7 @@ namespace NP_DSP{
             typename T::DataType;
             typename T::OutType;
             typename T::InstFreqType;
+            typename T::AdditionalDataType;
 
             requires T::is_filter == true;
             requires is_signal<typename T::DataType>;
@@ -251,6 +256,7 @@ namespace NP_DSP{
             typename T::DataType;
             typename T::InstFreqType;
             typename T::InstAmplType;
+            typename T::AdditionalDataType;
 
             requires T::is_ortogonal_component_solver == true;
             requires is_signal<typename T::DataType>;
@@ -276,6 +282,7 @@ namespace NP_DSP{
             requires T::is_derivator == true;
             typename T::DataType;
             typename T::DerivativeType;
+            typename T::AdditionalDataType;
 
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::DerivativeType>;
@@ -296,6 +303,7 @@ namespace NP_DSP{
             requires T::is_integrator == true;
             typename T::DataType;
             typename T::IntegralType;
+            typename T::AdditionalDataType;
 
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::IntegralType>;
@@ -316,6 +324,7 @@ namespace NP_DSP{
         {
             typename T::DataType;
             typename T::ModeType;
+            typename T::AdditionalDataType;
 
             requires (T::is_mode_extracor == true);
             requires is_signal<typename T::DataType>;
@@ -336,7 +345,7 @@ namespace NP_DSP{
         {
             typename T::DataType;
             typename T::ModeType;
-
+            typename T::AdditionalDataType;
             requires T::is_mode_graber == true;
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::ModeType>;
@@ -357,6 +366,7 @@ namespace NP_DSP{
         {
             typename T::DataType;
             typename T::OutType;
+            typename T::AdditionalDataType;
 
             requires T::is_inst_freq_computer == true;
             requires is_signal<typename T::DataType>;
@@ -377,6 +387,7 @@ namespace NP_DSP{
         {
             typename T::DataType;
             typename T::OutType;
+            typename T::AdditionalDataType;
 
             requires T::is_filter == true;
             requires is_signal<typename T::DataType>;
@@ -400,6 +411,7 @@ namespace NP_DSP{
             typename T::DataType;
             typename T::InstFreqType;
             typename T::InstAmplType;
+            typename T::AdditionalDataType;
 
             requires T::is_ortogonal_component_solver == true;
             requires is_signal<typename T::DataType>;
