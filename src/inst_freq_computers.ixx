@@ -51,21 +51,21 @@ namespace NP_DSP{
                     if constexpr (counting_kind == InstFreqDerivativeBasedKind::Momental){
                         derivator.compute(data, computer_buffer, nil);
                         for (int i = 0; i < data.getSize(); i++){
-                            computer_buffer.getRefByIdx(i) = std::atan(computer_buffer.getByIdx(i));
+                            computer_buffer.getRefByIdx(i) = std::atan(computer_buffer.getValueByIdx(i));
                         }
                         derivator.compute(computer_buffer, out, nil);
                         for (int i = 0; i < data.getSize(); i++){
-                            out.getRefByIdx(i) = std::abs(out.getByIdx(i)) / (std::numbers::pi * 2.0);
+                            out.getRefByIdx(i) = std::abs(out.getValueByIdx(i)) / (std::numbers::pi * 2.0);
                         }
                     }
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::TimeAverage){
                         derivator.compute(data, computer_buffer, nil);
                         for (int i = 0; i < data.getSize(); i++){
-                            computer_buffer.getRefByIdx(i) = std::atan(computer_buffer.getByIdx(i));
+                            computer_buffer.getRefByIdx(i) = std::atan(computer_buffer.getValueByIdx(i));
                         }
                         derivator.compute(computer_buffer, out, nil);
                         for (int i = 0; i < data.getSize(); i++){
-                            out.getRefByIdx(i) = std::abs(out.getByIdx(i)) / (std::numbers::pi * 2.0);
+                            out.getRefByIdx(i) = std::abs(out.getValueByIdx(i)) / (std::numbers::pi * 2.0);
                         }
                         integrator.compute(out, computer_buffer);
                         //todo
@@ -73,11 +73,11 @@ namespace NP_DSP{
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveAverage){
                         derivator.compute(data, computer_buffer, nil);
                         for (int i = 0; i < data.getSize(); i++){
-                            computer_buffer.getRefByIdx(i) = std::atan(computer_buffer.getByIdx(i));
+                            computer_buffer.getRefByIdx(i) = std::atan(computer_buffer.getValueByIdx(i));
                         }
                         derivator.compute(computer_buffer, out, nil);
                         for (int i = 0; i < data.getSize(); i++){
-                            out.getRefByIdx(i) = std::abs(out.getByIdx(i)) / (std::numbers::pi * 2.0);
+                            out.getRefByIdx(i) = std::abs(out.getValueByIdx(i)) / (std::numbers::pi * 2.0);
                         }
                         integrator.compute(out, computer_buffer);
                         //todo
@@ -85,11 +85,11 @@ namespace NP_DSP{
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveDouble){
                         derivator.compute(data, computer_buffer, nil);
                         for (int i = 0; i < data.getSize(); i++){
-                            computer_buffer.getRefByIdx(i) = std::atan(computer_buffer.getByIdx(i));
+                            computer_buffer.getRefByIdx(i) = std::atan(computer_buffer.getValueByIdx(i));
                         }
                         derivator.compute(computer_buffer, out, nil);
                         for (int i = 0; i < data.getSize(); i++){
-                            out.getRefByIdx(i) = std::abs(out.getByIdx(i)) / (std::numbers::pi * 2.0);
+                            out.getRefByIdx(i) = std::abs(out.getValueByIdx(i)) / (std::numbers::pi * 2.0);
                         }
                         integrator.compute(out, computer_buffer);
                         //todo
@@ -97,7 +97,7 @@ namespace NP_DSP{
 
                     if constexpr (!std::is_same_v<OptFunction, GENERAL::Nil>){
                         for (int i = 0; i < data.getSize(); i++){
-                            out.getRefByIdx(i) = out.getByIdx(i) * opt_function.getByIdx(i);
+                            out.getRefByIdx(i) = out.getValueByIdx(i) * opt_function.getValueByIdx(i);
                         }
                     }
                 }

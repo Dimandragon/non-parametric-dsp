@@ -18,9 +18,9 @@ namespace NP_DSP
         export
         template<typename T>
         struct SimpleVecWrapper{
-            using DataType = T;
+            using SampleType = T;
             using IdxType = std::size_t;
-            constexpr static bool is_signal = true;
+            constexpr static bool is_signal_base = true;
             constexpr static bool is_writable = true;
 
             std::vector<T> & vec;
@@ -28,7 +28,7 @@ namespace NP_DSP
                 return vec[idx];
             }
 
-            inline T getByIdx(std::size_t idx){
+            inline T getValueByIdx(std::size_t idx){
                 return vec[idx];
             }
 
@@ -37,18 +37,18 @@ namespace NP_DSP
             }
         };
 
-        static_assert(is_signal<SimpleVecWrapper<int>>);
+        static_assert(is_signal_base<SimpleVecWrapper<int>>);
 
         export
         template<typename T, typename IdxT, typename DataValExpr, typename DataRefExpr, typename SizeExpr, bool is_writeble_b>
         struct ExpressionWrapper{
-            using DataType = T;
+            using SampleType = T;
             using IdxType = IdxT;
             using DataValueExpression = DataValExpr;
             using DataReferenceExpression = DataRefExpr;
             using SizeExpression = SizeExpr;
 
-            constexpr static bool is_signal = true;
+            constexpr static bool is_signal_base = true;
             constexpr static bool is_writable = is_writeble_b;
 
             DataValExpr val_expression;
@@ -70,7 +70,7 @@ namespace NP_DSP
                 }
             }
 
-            inline T getByIdx(std::size_t idx){
+            inline T getValueByIdx(std::size_t idx){
                 if constexpr (! std::is_same_v<DataReferenceExpression, GENERAL::Nil>){
                     return val_expression(idx);
                 }
@@ -94,14 +94,14 @@ namespace NP_DSP
         export
         template<typename T, typename IdxT, typename DataValExpr, typename DataRefExpr, typename SizeExpr, bool is_writeble_b>
         struct ExpressionWrapper{
-            using DataType = T;
+            using SampleType = T;
             using IdxType = IdxT;
             using DataValueExpression = DataValExpr;
             using DataReferenceExpression = DataRefExpr;
             using SizeExpression = SizeExpr;
             constexpr static std::size_t dims_count = std::tuple_size_v<IdxType>;
 
-            constexpr static bool is_signal = true;
+            constexpr static bool is_signal_base = true;
             constexpr static bool is_writable = is_writeble_b;
 
             DataValExpr val_expression;
@@ -123,7 +123,7 @@ namespace NP_DSP
                 }
             }
 
-            inline T getByIdx(IdxType idx){
+            inline T getValueByIdx(IdxType idx){
                 if constexpr (! std::is_same_v<DataReferenceExpression, GENERAL::Nil>){
                     return val_expression(idx);
                 }

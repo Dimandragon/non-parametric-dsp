@@ -28,20 +28,20 @@ namespace NP_DSP{
 
                     if constexpr (polygon_type == PolygonType::ByPoint) {
                         for (size_t i = 0; i < data.getSize(); i++){
-                            integral += static_cast<IntegralType>(data.getByIdx(i));
+                            integral += static_cast<IntegralType>(data.getValueByIdx(i));
                             out.getRefByIdx(i) = integral;
                         }
                     }
                     else if constexpr (polygon_type == PolygonType::ByAverage){
-                        integral += static_cast<IntegralType>(data.getByIdx(1) + data.getByIdx(0))/static_cast<IntegralType>(4.0);
+                        integral += static_cast<IntegralType::SampleType>(data.getValueByIdx(1) + data.getValueByIdx(0))/static_cast<IntegralType::SampleType>(4.0);
                         out.getRefByIdx(0) = integral;
                         for (size_t i = 1; i < data.getSize()-1; i++){
-                            integral += static_cast<IntegralType>(data.getByIdx(i-1) + data.getByIdx(i)*2 + data.getByIdx(i+1))
-                                    / static_cast<IntegralType>(4.0);
+                            integral += static_cast<IntegralType::SampleType>(data.getValueByIdx(i-1) + data.getValueByIdx(i)*2 + data.getValueByIdx(i+1))
+                                    / static_cast<IntegralType::SampleType>(4.0);
                             out.getRefByIdx(i) = integral;
                         }
-                        integral += static_cast<IntegralType>(data.getByIdx(data.getSize()-1) + data.getByIdx(data.getSize()-2))
-                                    / static_cast<IntegralType>(4.0);
+                        integral += static_cast<IntegralType::SampleType>(data.getValueByIdx(data.getSize()-1) + data.getValueByIdx(data.getSize()-2))
+                                    / static_cast<IntegralType::SampleType>(4.0);
                         out.getRefByIdx(data.getSize()-1) = integral;
                     }
                 }

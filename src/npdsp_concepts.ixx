@@ -15,22 +15,48 @@ namespace NP_DSP{
 
         export
         template <typename T>
-        constexpr bool is_signal =
+        constexpr bool is_signal_base =
                 requires (T signal, typename T::IdxType idx, std::size_t dim_number)
         {
             requires (T::is_writable == true || T::is_writable == false);
             requires T::is_signal == true;
             requires T::dims_count == std::tuple_size_v<typename T::IdxType>;
             typename T::IdxType;
-            typename T::DataType;
+            typename T::SampleType;
 
-            { signal.getRefByIdx(idx) } -> std::convertible_to<typename T::DataType &>;
-            { signal.getByIdx(idx) } -> std::convertible_to<typename T::DataType>;
+            { signal.getRefByIdx(idx) } -> std::convertible_to<typename T::SampleType &>;
+            { signal.getValueByIdx(idx) } -> std::convertible_to<typename T::SampleType>;
             { signal.getDimSize(dim_number) } -> std::convertible_to<size_t>;
         };
 
         export
         template <typename T>
+        concept SignalBase = is_signal_base<T>;
+
+        export
+        template <typename T>
+        constexpr bool is_signal = requires (T signal, T::IdxType idx, T::IdxType idx2, T::SampelType  value)
+        {
+            typename T::Base;
+            requires is_signal_base<typename T::Base>;
+
+            typename T::IdxType;
+            requires std::is_same_v<typename T::IdxType, typename T::Base::IdxType>;
+
+            typename T::SampleType;
+            requires std::is_same_v<typename T::SampleType, typename T::Base::IdxType>;
+
+            requires T::is_signal == true;
+
+            { signal.getRefByIdx(idx) } -> std::convertible_to<typename T::SampleType &>;
+            { signal.getValueByIdx(idx) } -> std::convertible_to<typename T::SampleType>;
+            { signal.getSize() } -> std::convertible_to<size_t>;
+            { signal.interpolate(idx) } -> std::convertible_to<typename T::SampleType>;
+            { signal.findInterpolate(idx, idx2, value) } -> std::convertible_to<typename T::IdxType>;
+        };
+
+        export
+        template<typename T>
         concept Signal = is_signal<T>;
 
         export
@@ -47,24 +73,50 @@ namespace NP_DSP{
     namespace ONE_D{
         export
         template <typename T>
-        constexpr bool is_signal
-                = requires (T signal, typename T::IdxType idx, std::size_t dim_number)
+        constexpr bool is_signal_base
+                = requires (T signal, T::IdxType idx)
         {
-            requires T::is_signal == true;
+            requires T::is_signal_base == true;
             requires (T::is_writable == true || T::is_writable == false);
 
             typename T::IdxType;
-            typename T::DataType;
+            typename T::SampleType;
 
-            { signal.getRefByIdx(idx) } -> std::convertible_to<typename T::DataType &>;
-            { signal.getByIdx(idx) } -> std::convertible_to<typename T::DataType>;
+            { signal.getRefByIdx(idx) } -> std::convertible_to<typename T::SampleType &>;
+            { signal.getValueByIdx(idx) } -> std::convertible_to<typename T::SampleType>;
             { signal.getSize() } -> std::convertible_to<size_t>;
         };
 
+        export
+        template <typename T>
+        concept SignalBase = is_signal_base<T>;
 
         export
         template <typename T>
+        constexpr bool is_signal = requires (T signal, T::IdxType idx, T::IdxType idx2, T::SampelType  value)
+        {
+            typename T::Base;
+            requires is_signal_base<typename T::Base>;
+
+            typename T::IdxType;
+            requires std::is_same_v<typename T::IdxType, typename T::Base::IdxType>;
+
+            typename T::SampleType;
+            requires std::is_same_v<typename T::SampleType, typename T::Base::IdxType>;
+
+            requires T::is_signal == true;
+
+            { signal.getRefByIdx(idx) } -> std::convertible_to<typename T::SampleType &>;
+            { signal.getValueByIdx(idx) } -> std::convertible_to<typename T::SampleType>;
+            { signal.getSize() } -> std::convertible_to<size_t>;
+            { signal.interpolate(idx) } -> std::convertible_to<typename T::SampleType>;
+            { signal.findInterpolate(idx, idx2, value) } -> std::convertible_to<typename T::IdxType>;
+        };
+
+        export
+        template<typename T>
         concept Signal = is_signal<T>;
+
 
         export
         template <typename T>
