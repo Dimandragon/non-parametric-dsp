@@ -4,6 +4,7 @@ import <concepts>;
 import <tuple>;
 import <type_traits>;
 import <cstddef>;
+import <optional>;
 
 export module npdsp_concepts;
 
@@ -35,7 +36,7 @@ namespace NP_DSP{
 
         export
         template <typename T>
-        constexpr bool is_signal = requires (T signal, T::IdxType idx, T::IdxType idx2, T::SampelType  value)
+        constexpr bool is_signal = requires (T signal, T::IdxType idx, std::optional<typename T::IdxType> idx1, std::optional<typename T::IdxType> idx2, T::SampelType  value)
         {
             requires T::is_signal == true;
 
@@ -48,15 +49,13 @@ namespace NP_DSP{
             typename T::SampleType;
             requires std::is_same_v<typename T::SampleType, typename T::Base::IdxType>;
 
-            requires T::is_signal == true;
-
             { signal.getRefByIdx(idx) } -> std::convertible_to<typename T::SampleType &>;
             { signal.getValueByIdx(idx) } -> std::convertible_to<typename T::SampleType>;
             { signal.getSize() } -> std::convertible_to<size_t>;
             { signal.interpolate(idx) } -> std::convertible_to<typename T::SampleType>;
-            { signal.findInterpolate(idx, idx2, value) } -> std::convertible_to<typename T::IdxType>;
-            { signal.findIncr(value, idx, idx2)} -> std::convertible_to<typename T::IdxType>;
-            { signal.findDecr(value, idx, idx2)} -> std::convertible_to<typename T::IdxType>;
+            { signal.findInterpolate(value, idx1, idx2) } -> std::convertible_to<typename T::IdxType>;
+            { signal.findIncr(value, idx1, idx2)} -> std::convertible_to<typename T::IdxType>;
+            { signal.findDecr(value, idx1, idx2)} -> std::convertible_to<typename T::IdxType>;
         };
 
         export
@@ -97,7 +96,7 @@ namespace NP_DSP{
 
         export
         template <typename T>
-        constexpr bool is_signal = requires (T signal, T::IdxType idx, T::IdxType idx2, T::SampelType  value)
+        constexpr bool is_signal = requires (T signal, T::IdxType idx, std::optional<typename T::IdxType> idx1, std::optional<typename T::IdxType> idx2, T::SampelType  value)
         {
             requires T::is_signal == true;
 
@@ -116,9 +115,9 @@ namespace NP_DSP{
             { signal.getValueByIdx(idx) } -> std::convertible_to<typename T::SampleType>;
             { signal.getSize() } -> std::convertible_to<size_t>;
             { signal.interpolate(idx) } -> std::convertible_to<typename T::SampleType>;
-            { signal.findInterpolate(idx, idx2, value) } -> std::convertible_to<typename T::IdxType>;
-            { signal.findIncr(value, idx, idx2)} -> std::convertible_to<typename T::IdxType>;
-            { signal.findDecr(value, idx, idx2)} -> std::convertible_to<typename T::IdxType>;
+            { signal.findInterpolate(idx1, idx2, value) } -> std::convertible_to<typename T::IdxType>;
+            { signal.findIncr(value, idx1, idx2)} -> std::convertible_to<typename T::IdxType>;
+            { signal.findDecr(value, idx1, idx2)} -> std::convertible_to<typename T::IdxType>;
         };
 
         export
