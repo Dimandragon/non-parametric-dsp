@@ -6,6 +6,8 @@ import derivators;
 import integrators;
 import <cmath>;
 import <numbers>;
+import <vector>;
+import <utility>;
 
 export module inst_freq_computers;
 
@@ -157,6 +159,66 @@ namespace NP_DSP{
                     }
                 }
             };
+
+            enum class ExtremumsBasedComputeInstFreqKind {Simple, Linear};
+
+            template<Signal DataT, Signal OutT, ExtremumsBasedComputeInstFreqKind compute_kind>
+            struct ExtremumsBased{
+                using DataType = DataT;
+                using OutType = OutT;
+                using AdditionalDataType = GENERAL::Nil;
+
+                constexpr static ExtremumsBasedComputeInstFreqKind kind = compute_kind;
+                constexpr static bool is_inst_freq_computer = true;
+
+                static_assert(OutT::is_writable == true);
+
+                void compute(DataType data, OutType out, GENERAL::Nil nil){
+                    std::vector<typename DataType::IdxType> extremums;
+                    extremums.push_back(static_cast<typename DataType::IdxType>(0));
+                    for (auto i = 1; i < data.getSize()-1; i++){
+                        if ((data.getValueByIdx(i) >= data.getValueByIdx(i-1) &&
+                            data.getValueByIdx(i) > data.getValueByIdx(i+1)) ||
+                            (data.getValueByIdx(i) > data.getValueByIdx(i-1) &&
+                            data.getValueByIdx(i) >= data.getValueByIdx(i+1)) ||
+                            (data.getValueByIdx(i) <= data.getValueByIdx(i-1) &&
+                             data.getValueByIdx(i) < data.getValueByIdx(i+1)) ||
+                            (data.getValueByIdx(i) < data.getValueByIdx(i-1) &&
+                             data.getValueByIdx(i) <= data.getValueByIdx(i+1)))
+                        {
+                            extremums.push_back(i);
+                        }
+                    }
+                    extremums.push_back(static_cast<typename DataType::IdxType>(data.getSize()-1));
+                    if constexpr (kind == ExtremumsBasedComputeInstFreqKind::Simple){
+                        auto left = extremums[0];
+                        auto right = extremums[1];
+                        auto counter = 0;
+                        for (auto i = 0; i < data.getSize(); i++){
+                            if (i>right){
+                                counter++;
+                                left = extremums[counter];
+                                right = extremums[counter+1];
+                            }
+                            out.getRefByIdx(i) = static_cast<OutType::SampleType>(0.5/(right - left));
+                        }
+                    }
+                    else if constexpr (kind == ExtremumsBasedComputeInstFreqKind::Linear){
+                        std::vector<std::pair<typename OutType::SampleType, typename OutType::SampleType>> points;
+                        points.push_back({static_cast<OutType::SampleType>(0), static_cast<OutType::SampleType>(0.5/(extremums[1] - extremums[0]))});
+                        for (auto i = 0; i < extremums.size()-1; i++){
+                            points.push_back({static_cast<OutType::SampleType>((extremums[i+1] + extremums[i])/2.0),
+                                              static_cast<OutType::SampleType>(0.5/(extremums[i+1] - extremums[i]))});
+                        }
+                        points.push_back({static_cast<OutType::SampleType>(data.getSize()-1), static_cast<OutType::SampleType>
+                                    (0.5/(extremums[extremums.size()-1] - extremums[extremums.size()-2]))});
+                    }
+                    else{
+                        std::unreachable();
+                    }
+                }
+            };
+
         }
     }
 }
