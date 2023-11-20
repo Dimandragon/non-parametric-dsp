@@ -24,29 +24,27 @@ namespace NP_DSP{
             constexpr static bool is_filter = true;
 
             void compute(DataType data, OutType & out, GENERAL::Nil & additional_data){
-                auto nil = GENERAL::Nil{};
-
                 auto size_expr = [=](){
                     return data.getSize();
                 };
 
                 if constexpr (inst_freq_kind == InstFreqKind::Average){
                     auto val_expression = [=](DataType::IdxType idx){
-                        return (data.getValueByIdx(idx + 0.5/inst_freq.getValueByIdx(idx)) - data.getValueByIdx(idx - 0.5/inst_freq.getValueByIdx(idx))) *
-                        inst_freq.getValueByIdx(idx);
+                        return (data.interpolate(idx + 0.5/inst_freq.interpolate(idx)) - data.interpolate(idx - 0.5/inst_freq.interpolate(idx))) *
+                        inst_freq.interpolate(idx);
                     };
                     integrator.compute(ExpressionWrapper<typename DataType::SampleType,typename DataType::IdxType,
                             decltype(val_expression), GENERAL::Nil, decltype(size_expr), false>
-                                               (val_expression, GENERAL::Nil{}, size_expr), out, nil);
+                                               (val_expression, GENERAL::Nil{}, size_expr), out, {});
                 }
                 else if constexpr (inst_freq_kind == InstFreqKind::Double){
                     auto val_expression = [=](DataType::IdxType idx){
-                        return data.getValueByIdx(idx + 0.5/inst_freq.getValueByIdx(idx).forward) * inst_freq.getValueByIdx(idx).forward
-                        - data.getValueByIdx(idx - 0.5/inst_freq.getValueByIdx(idx).backward) * inst_freq.getValueByIdx(idx).backward;
+                        return data.interpolate(idx + 0.5/inst_freq.interpolate(idx).forward) * inst_freq.interpolate(idx).forward
+                        - data.interpolate(idx - 0.5/inst_freq.interpolate(idx).backward) * inst_freq.interpolate(idx).backward;
                     };
                     integrator.compute(ExpressionWrapper<typename DataType::SampleType,typename DataType::IdxType,
                             decltype(val_expression), GENERAL::Nil, decltype(size_expr), false>
-                                               (val_expression, GENERAL::Nil{}, size_expr), out, nil);
+                                               (val_expression, GENERAL::Nil{}, size_expr), out, {});
                 }
                 else{
                     std::unreachable();

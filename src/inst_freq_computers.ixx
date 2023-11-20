@@ -47,23 +47,22 @@ namespace NP_DSP{
 
                 void compute(DataType data, OutType & out, AdditionalDataType & computer_buffer)
                 {
-                    auto nil = GENERAL::Nil{};
                     if constexpr (counting_kind == InstFreqDerivativeBasedKind::Momental){
-                        derivator.compute(data, computer_buffer, nil);
+                        derivator.compute(data, computer_buffer, {});
                         for (int i = 0; i < data.getSize(); i++){
                             computer_buffer.getRefByIdx(i) = std::atan(computer_buffer.getValueByIdx(i));
                         }
-                        derivator.compute(computer_buffer, out, nil);
+                        derivator.compute(computer_buffer, out, {});
                         for (int i = 0; i < data.getSize(); i++){
                             out.getRefByIdx(i) = std::abs(out.getValueByIdx(i)) / (std::numbers::pi * 2.0);
                         }
                     }
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::TimeAverage){
-                        derivator.compute(data, computer_buffer, nil);
+                        derivator.compute(data, computer_buffer, {});
                         for (int i = 0; i < data.getSize(); i++){
                             computer_buffer.getRefByIdx(i) = std::atan(computer_buffer.getValueByIdx(i));
                         }
-                        derivator.compute(computer_buffer, out, nil);
+                        derivator.compute(computer_buffer, out, {});
                         for (int i = 0; i < data.getSize(); i++){
                             out.getRefByIdx(i) = std::abs(out.getValueByIdx(i)) / (std::numbers::pi * 2.0);
                         }
@@ -87,11 +86,11 @@ namespace NP_DSP{
                         }
                     }
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveAverage){
-                        derivator.compute(data, computer_buffer, nil);
+                        derivator.compute(data, computer_buffer, {});
                         for (int i = 0; i < data.getSize(); i++){
                             computer_buffer.getRefByIdx(i) = std::atan(computer_buffer.getValueByIdx(i));
                         }
-                        derivator.compute(computer_buffer, out, nil);
+                        derivator.compute(computer_buffer, out, {});
                         for (int i = 0; i < data.getSize(); i++){
                             out.getRefByIdx(i) = std::abs(out.getValueByIdx(i)) / (std::numbers::pi * 2.0);
                         }
