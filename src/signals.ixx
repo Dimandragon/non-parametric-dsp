@@ -6,6 +6,7 @@ import <cassert>;
 import <cstddef>;
 import <utility>;
 import <type_traits>;
+import <optional>;
 
 import npdsp_concepts;
 
@@ -88,6 +89,47 @@ namespace NP_DSP
                 }
             }
         };
+
+        export
+        template<SignalBase BaseT>
+        struct GenericSignal{
+            constexpr static bool is_signal = true;
+            using Base = BaseT;
+            using IdxType = Base::IdxType;
+            using SampleType = Base::SapleType;
+            Base base;
+
+            GenericSignal(Base & base_o){
+                base = base_o;
+            }
+            SampleType & getRefByIdx(IdxType idx){
+                return base.getRefByIdx(idx);
+            }
+            SampleType getValueByIdx(IdxType idx){
+                return base.getValueByIdx(idx);
+            }
+            size_t getSize(){
+                return base.getSize();
+            }
+
+            template<typename Idx>
+            SampleType interpolate(Idx idx){
+                //todo
+            }
+            template<typename Idx>
+            IdxType findInterpolate(SampleType value, std::optional<Idx>, std::optional<Idx>){
+                //todo
+            }
+            template<typename Idx>
+            IdxType findIncr(SampleType value, std::optional<Idx>, std::optional<Idx>){
+                //todo
+            }
+            template<typename Idx>
+            IdxType findDecr(SampleType value, std::optional<Idx>, std::optional<Idx>){
+                //todo
+            }
+        };
+
     }
 
     namespace GENERAL{
