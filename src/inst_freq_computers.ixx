@@ -8,6 +8,7 @@ import <cmath>;
 import <numbers>;
 import <vector>;
 import <utility>;
+import utility_math;
 
 export module inst_freq_computers;
 
@@ -212,6 +213,20 @@ namespace NP_DSP{
                         }
                         points.push_back({static_cast<OutType::SampleType>(data.getSize()-1), static_cast<OutType::SampleType>
                                     (0.5/(extremums[extremums.size()-1] - extremums[extremums.size()-2]))});
+
+                        auto left = points[0];
+                        auto right = points[1];
+                        auto counter = 0;
+
+                        for (auto i = 0; i < out.getSize(); i++){
+                            if (i>right.first){
+                                counter++;
+                                left = points[counter];
+                                right = points[counter+1];
+                            }
+                            out.getRefByIdx(i) =
+                                    GENERAL::UTILITY_MATH::linearInterpolate(left, right,static_cast<OutType::SampleType>(i));
+                        }
                     }
                     else{
                         std::unreachable();
