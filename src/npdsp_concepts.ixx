@@ -25,9 +25,8 @@ namespace NP_DSP{
             typename T::IdxType;
             typename T::SampleType;
 
-            { signal.getRefByIdx(idx) } -> std::convertible_to<typename T::SampleType &>;
-            { signal.getValueByIdx(idx) } -> std::convertible_to<typename T::SampleType>;
-            { signal.getDimSize(dim_number) } -> std::convertible_to<size_t>;
+            { signal[idx] } -> std::convertible_to<typename T::SampleType &>;
+            { signal.dimSize(dim_number) } -> std::convertible_to<size_t>;
         };
 
         export
@@ -36,7 +35,7 @@ namespace NP_DSP{
 
         export
         template <typename T>
-        constexpr bool is_signal = requires (T signal, T::IdxType idx, std::optional<typename T::IdxType> idx1, std::optional<typename T::IdxType> idx2, T::SampelType  value)
+        constexpr bool is_signal = requires (T signal, T::IdxType idx, size_t dim_number, std::optional<typename T::IdxType> idx1, std::optional<typename T::IdxType> idx2, T::SampelType  value)
         {
             requires T::is_signal == true;
 
@@ -49,9 +48,8 @@ namespace NP_DSP{
             typename T::SampleType;
             requires std::is_same_v<typename T::SampleType, typename T::Base::IdxType>;
 
-            { signal.getRefByIdx(idx) } -> std::convertible_to<typename T::SampleType &>;
-            { signal.getValueByIdx(idx) } -> std::convertible_to<typename T::SampleType>;
-            { signal.getSize() } -> std::convertible_to<size_t>;
+            { signal[idx] } -> std::convertible_to<typename T::SampleType &>;
+            { signal.dimSize(dim_number) } -> std::convertible_to<size_t>;
             { signal.interpolate(idx) } -> std::convertible_to<typename T::SampleType>;
             { signal.findInterpolate(value, idx1, idx2) } -> std::convertible_to<typename T::IdxType>;
             { signal.findIncr(value, idx1, idx2)} -> std::convertible_to<typename T::IdxType>;
@@ -85,9 +83,8 @@ namespace NP_DSP{
             typename T::IdxType;
             typename T::SampleType;
 
-            { signal.getRefByIdx(idx) } -> std::convertible_to<typename T::SampleType &>;
-            { signal.getValueByIdx(idx) } -> std::convertible_to<typename T::SampleType>;
-            { signal.getSize() } -> std::convertible_to<size_t>;
+            { signal[idx] } -> std::convertible_to<typename T::SampleType &>;
+            { signal.size() } -> std::convertible_to<size_t>;
         };
 
         export
@@ -111,9 +108,8 @@ namespace NP_DSP{
 
             requires T::is_signal == true;
 
-            { signal.getRefByIdx(idx) } -> std::convertible_to<typename T::SampleType &>;
-            { signal.getValueByIdx(idx) } -> std::convertible_to<typename T::SampleType>;
-            { signal.getSize() } -> std::convertible_to<size_t>;
+            { signal[idx] } -> std::convertible_to<typename T::SampleType &>;
+            { signal.size() } -> std::convertible_to<size_t>;
             { signal.interpolate(idx) } -> std::convertible_to<typename T::SampleType>;
             { signal.findInterpolate(idx1, idx2, value) } -> std::convertible_to<typename T::IdxType>;
             { signal.findIncr(value, idx1, idx2)} -> std::convertible_to<typename T::IdxType>;
@@ -424,6 +420,10 @@ namespace NP_DSP{
         export
         template<typename T>
         concept OrtogonalComponentSolver = is_ortogonal_component_solver<T>;
+
+        //export
+        //template<typename T>
+        //concept
     }
 }
 

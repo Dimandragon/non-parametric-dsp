@@ -25,15 +25,15 @@ namespace NP_DSP
             constexpr static bool is_writable = true;
 
             std::vector<T> & vec;
-            inline T& getRefByIdx(std::size_t idx){
+            inline T& operator[](std::size_t idx){
                 return vec[idx];
             }
 
-            inline T getValueByIdx(std::size_t idx){
+            inline const T& operator[](std::size_t idx) const{
                 return vec[idx];
             }
 
-            std::size_t getSize(){
+            inline std::size_t size(){
                 return vec.size();
             }
         };
@@ -62,7 +62,7 @@ namespace NP_DSP
                 size_expression = size_expr;
             }
 
-            inline T& getRefByIdx(std::size_t idx){
+            inline T& operator[](std::size_t idx){
                 if constexpr (! std::is_same_v<DataReferenceExpression, GENERAL::Nil>){
                     return ref_expression(idx);
                 }
@@ -70,8 +70,7 @@ namespace NP_DSP
                     std::unreachable();
                 }
             }
-
-            inline T getValueByIdx(std::size_t idx){
+            inline T operator[](std::size_t idx) const{
                 if constexpr (! std::is_same_v<DataReferenceExpression, GENERAL::Nil>){
                     return val_expression(idx);
                 }
@@ -80,7 +79,7 @@ namespace NP_DSP
                 }
             }
 
-            std::size_t getSize(){
+            std::size_t size(){
                 if constexpr (! std::is_same_v<DataReferenceExpression, GENERAL::Nil>){
                     return size_expression();
                 }
@@ -99,17 +98,19 @@ namespace NP_DSP
             using SampleType = Base::SapleType;
             Base base;
 
-            GenericSignal(Base & base_o){
+            explicit GenericSignal(Base & base_o){
                 base = base_o;
             }
-            SampleType & getRefByIdx(IdxType idx){
-                return base.getRefByIdx(idx);
+            inline SampleType & operator[](IdxType idx){
+                return base[idx];
             }
-            SampleType getValueByIdx(IdxType idx){
-                return base.getValueByIdx(idx);
+
+            inline SampleType operator[](IdxType idx) const {
+                return base[idx];
             }
-            size_t getSize(){
-                return base.getSize();
+
+            inline size_t size(){
+                return base.size();
             }
 
             template<typename Idx>
@@ -156,7 +157,7 @@ namespace NP_DSP
                 dim_size_expression = size_expr;
             }
 
-            inline T& getRefByIdx(IdxType idx){
+            inline T& operator[](std::size_t idx){
                 if constexpr (! std::is_same_v<DataReferenceExpression, GENERAL::Nil>){
                     return ref_expression(idx);
                 }
@@ -164,8 +165,7 @@ namespace NP_DSP
                     std::unreachable();
                 }
             }
-
-            inline T getValueByIdx(IdxType idx){
+            inline const T& operator[](std::size_t idx) const{
                 if constexpr (! std::is_same_v<DataReferenceExpression, GENERAL::Nil>){
                     return val_expression(idx);
                 }
@@ -174,7 +174,7 @@ namespace NP_DSP
                 }
             }
 
-            std::size_t getDimSize(std::size_t dim_number){
+            std::size_t dimSize(std::size_t dim_number){
                 if constexpr (! std::is_same_v<DataReferenceExpression, GENERAL::Nil>){
                     return dim_size_expression(dim_number);
                 }

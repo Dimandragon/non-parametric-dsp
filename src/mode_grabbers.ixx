@@ -18,8 +18,8 @@ namespace NP_DSP{
 
             void compute(DataType & data, ModeType mode, GENERAL::Nil nil)
             {
-                for (std::size_t i = 0; i < data.getSize(); i++){
-                    data.getRefByIdx(i) = data.getValueByIdx(i) - mode.getValueByIdx(i);
+                for (std::size_t i = 0; i < data.size(); i++){
+                    data[i] = data[i] - mode[i];
                 }
             }
 

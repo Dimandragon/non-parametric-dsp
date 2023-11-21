@@ -25,7 +25,7 @@ namespace NP_DSP{
 
             void compute(DataType data, OutType & out, GENERAL::Nil & additional_data){
                 auto size_expr = [=](){
-                    return data.getSize();
+                    return data.size();
                 };
 
                 if constexpr (inst_freq_kind == InstFreqKind::Average){
