@@ -33,9 +33,13 @@ namespace NP_DSP{
         template <typename T>
         concept SignalBase = is_signal_base<T>;
 
+        export enum class PlottingKind {Simple};
+
         export
         template <typename T>
-        constexpr bool is_signal = requires (T signal, T::IdxType idx, size_t dim_number, std::optional<typename T::IdxType> idx1, std::optional<typename T::IdxType> idx2, T::SampelType  value)
+        constexpr bool is_signal = requires (T signal, T::IdxType idx, size_t dim_number,
+                std::optional<typename T::IdxType> idx1, std::optional<typename T::IdxType> idx2,
+                T::SampelType  value, PlottingKind kind)
         {
             requires T::is_signal == true;
 
@@ -54,6 +58,7 @@ namespace NP_DSP{
             { signal.findInterpolate(value, idx1, idx2) } -> std::convertible_to<typename T::IdxType>;
             { signal.findIncr(value, idx1, idx2)} -> std::convertible_to<typename T::IdxType>;
             { signal.findDecr(value, idx1, idx2)} -> std::convertible_to<typename T::IdxType>;
+            signal.show(kind);
         };
 
         export
@@ -91,9 +96,11 @@ namespace NP_DSP{
         template <typename T>
         concept SignalBase = is_signal_base<T>;
 
+        export enum class PlottingKind {Simple};
+
         export
         template <typename T>
-        constexpr bool is_signal = requires (T signal, T::IdxType idx, std::optional<typename T::IdxType> idx1, std::optional<typename T::IdxType> idx2, T::SampelType  value)
+        constexpr bool is_signal = requires (T signal, T::IdxType idx, std::optional<typename T::IdxType> idx1, std::optional<typename T::IdxType> idx2, T::SampelType value, PlottingKind kind)
         {
             requires T::is_signal == true;
 
@@ -114,6 +121,7 @@ namespace NP_DSP{
             { signal.findInterpolate(idx1, idx2, value) } -> std::convertible_to<typename T::IdxType>;
             { signal.findIncr(value, idx1, idx2)} -> std::convertible_to<typename T::IdxType>;
             { signal.findDecr(value, idx1, idx2)} -> std::convertible_to<typename T::IdxType>;
+            signal.show(kind);
         };
 
         export
@@ -421,9 +429,24 @@ namespace NP_DSP{
         template<typename T>
         concept OrtogonalComponentSolver = is_ortogonal_component_solver<T>;
 
-        //export
-        //template<typename T>
-        //concept
+        export
+        template<typename T, Signal SignalT>
+        constexpr bool is_signal_approximator =
+                requires(T & approximator, T::Loss loss, T::StopPoint stop_point, T::ApproxModel model, T::IdxType idx, SignalT signal){
+            typename T::IdxType;
+            typename T::DataType;
+            typename T::Loss;
+            typename T::StopPoint;
+            typename T::ApproxModel;
+
+            requires T::is_signal_approximator == true;
+
+            { delete new T(loss, stop_point, model) };
+            { loss(approximator) } -> std::convertible_to<typename T::DataType>;
+            { approximator.train() };
+            { approximator.train(signal) };
+            { approximator.compute(idx) } -> std::convertible_to<typename T::DataType>;
+        };
     }
 }
 

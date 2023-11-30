@@ -1,13 +1,60 @@
 add_rules("mode.debug", "mode.release")
 
+add_requires("brew::matplotplusplus")
+
 set_languages("c++23")
-target("class")
+--set_toolset("cxx", "clang++")
+--set_toolset("ld", "clang++")
+
+target("pocketfft")
+
+    set_kind("headeronly")
+    --add_headerfiles("pocketfft/pocketfft_hdronly.h", {public = true})
+    add_includedirs("pocketfft", {public = true})
+
+
+package("matplotplusplus")
+    add_deps("cmake")
+    set_sourcedir(path.join(os.scriptdir(), "matplotplusplus"))
+    on_install(function (package)
+        local configs = {"-DMATPLOTPP_BUILD_EXAMPLES=OFF                  \
+                             -DMATPLOTPP_BUILD_SHARED_LIBS=OFF                \
+                             -DMATPLOTPP_BUILD_TESTS=OFF                     \
+                             -DCMAKE_BUILD_TYPE=Release            \
+                             -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON"}
+        --table.insert(configs, "-DCMAKE_BUILD_TYPE=Release")
+        --table.insert(configs, "-DMATPLOTPP_BUILD_EXAMPLES=OFF")
+        --table.insert(configs, "-DMATPLOTPP_BUILD_SHARED_LIBS=ON")
+        --table.insert(configs, "-DMATPLOTPP_BUILD_TESTS=OFF")
+        --table.insert(configs, "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON")
+        import("package.tools.cmake").install(package, configs)
+    end)
+    on_test(function (package)
+        assert(package:has_cfuncs("add", {includes = "matplot/matplot.h"}))
+    end)
+package_end()
+
+--add_requires("matplotplusplus")
+
+
+target("non-parametric_dsp")
+    --set_toolset("cxx", "clang")
+    --set_toolset("ld", "clang++")
+    set_kind("static")
+    add_files("src/npdsp_concepts.ixx", "src/signals.ixx", "src/derivators.ixx"
+           , "src/integrators.ixx", "src/filters.ixx", "src/inst_freq_computers.ixx",
+           "src/mode_grabbers.ixx", "src/utility_math.ixx", "src/approximators.ixx")
+    add_packages("brew::matplotplusplus")
+    add_deps("pocketfft")
+
+
+target("fft-example")
+    --set_toolset("cxx", "clang")
+    --set_toolset("ld", "clang++")
     set_kind("binary")
-    add_files("src/main.cpp", "src/npdsp_concepts.ixx", "src/signals.ixx", "src/derivators.ixx"
-            , "src/integrators.ixx", "src/filters.ixx", "src/inst_freq_computers.ixx",
-            "src/mode_grabbers.ixx", "src/utility_math.ixx")
-
-
+    add_files("examples/utility/fft/main.cpp")
+    add_deps("pocketfft")
+    add_packages("brew::matplotplusplus")
 --
 -- If you want to known more usage about xmake, please see https://xmake.io
 --

@@ -1,5 +1,8 @@
 module;
 
+import <matplot/matplot.h>;
+
+
 import <vector>;
 import <tuple>;
 import <cassert>;
@@ -111,6 +114,18 @@ namespace NP_DSP
 
             inline size_t size(){
                 return base.size();
+            }
+
+            void show(PlottingKind kind){
+                if (kind == PlottingKind::Simple){
+                    std::vector<SampleType> plotting_data = {};
+                    for (auto i = 0; i < base.size(); i++){
+                        plotting_data.push_back(base[i]);
+                    }
+                    matplot::plot(plotting_data);
+
+                    matplot::show();
+                }
             }
 
             template<typename Idx>
