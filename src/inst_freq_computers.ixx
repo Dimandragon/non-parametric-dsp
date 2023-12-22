@@ -19,7 +19,7 @@ namespace NP_DSP{
             enum class InstFreqDerivativeBasedKind {Momental, TimeAverage, DeriveAverage, DeriveDouble};
 
             export
-            template<Signal DataT, Signal OutT, SignalWrapper OptFn, OptFn opt_fn,
+            template<Signal DataT, Signal OutT, SignalWrapper OptFn, /*OptFn opt_fn,*/
                     Integrator IntegratorT, Derivator DerivatorT, InstFreqDerivativeBasedKind kind>
             struct DerivativeBased{
                 using DataType = DataT;
@@ -30,7 +30,7 @@ namespace NP_DSP{
                 constexpr static InstFreqDerivativeBasedKind counting_kind = kind;
 
                 using OptFunction = OptFn;
-                OptFunction opt_function = opt_fn;
+                //OptFunction opt_function = opt_fn;
 
                 using IntegratorType = IntegratorT;
                 using DerivatorType = DerivatorT;
@@ -155,7 +155,7 @@ namespace NP_DSP{
             };
 
             export
-            template<Signal DataT, Signal OutT, SignalWrapper OptFn, OptFn opt_fn,
+            template<Signal DataT, Signal OutT, /*SignalWrapper OptFn, OptFn opt_fn,*/
                     Integrator IntegratorT, Derivator DerivatorT, InstFreqDerivativeBasedKind kind>
             struct DerivativeBasedWithExternalOptParametr{
                 using DataType = DataT;
@@ -165,8 +165,8 @@ namespace NP_DSP{
                 constexpr static bool is_inst_freq_computer = true;
                 constexpr static InstFreqDerivativeBasedKind counting_kind = kind;
 
-                using OptFunction = OptFn;
-                OptFunction opt_function = opt_fn;
+                //using OptFunction = OptFn;
+                //OptFunction opt_function = opt_fn;
 
                 using IntegratorType = IntegratorT;
                 using DerivatorType = DerivatorT;
@@ -360,8 +360,7 @@ namespace NP_DSP{
                                 left = points[counter];
                                 right = points[counter+1];
                             }
-                            out[i] =
-                                    GENERAL::UTILITY_MATH::linearInterpolate(left, right,static_cast<OutType::SampleType>(i));
+                            out[i] = UTILITY_MATH::linearInterpolate(left, right,static_cast<OutType::SampleType>(i));
                         }
                     }
                     else{
@@ -369,6 +368,29 @@ namespace NP_DSP{
                     }
                 }
             };
+
+
+            template<Signal DataT, Signal OutT, SignalWrapper OptFn,
+                    Integrator IntegratorT, Derivator DerivatorT,
+            InstFreqDerivativeBasedKind kind, ExtremumsBasedComputeInstFreqKind compute_kind>
+            struct periodAndExtremumsBased {
+                using DataType = DataT;
+                using OutType = OutT;
+                using AdditionalDataType = GENERAL::Nil;
+
+                constexpr static bool is_inst_freq_computer = true;
+                constexpr static InstFreqDerivativeBasedKind counting_kind = kind;
+
+                using IntegratorType = IntegratorT;
+                using DerivatorType = DerivatorT;
+
+
+                IntegratorType integrator;
+                DerivatorType derivator;
+
+                static_assert(OutType::is_writable == true);
+            };
+
         }
     }
 }

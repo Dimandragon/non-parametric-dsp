@@ -54,9 +54,20 @@ namespace NP_DSP{
 
 
         export
-        template<typename T>
+        template<Signal DataT, Signal OutT, Signal InstFreqT, InstFreqT inst_freq,
+                Integrator IntegratorT, IntegratorT integrator, InstFreqKind inst_freq_k>
         struct OptPeriodBasedFilter{
-            //todo
+            using DataType = DataT;
+            using OutType = OutT;
+            using InstFreqType = InstFreqT;
+            using AdditionalDataType = GENERAL::Nil;
+
+            constexpr static InstFreqKind inst_freq_kind = inst_freq_k;
+            constexpr static bool is_filter = true;
+
+            void compute(DataType data, OutType & out, GENERAL::Nil & additional_data) {
+                //todo
+            }
         };
     }
 }

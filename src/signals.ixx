@@ -2,7 +2,6 @@ module;
 
 import <matplot/matplot.h>;
 
-
 import <vector>;
 import <tuple>;
 import <cassert>;
@@ -12,6 +11,7 @@ import <type_traits>;
 import <optional>;
 
 import npdsp_concepts;
+import utility_math;
 
 export module signals;
 
@@ -130,19 +130,26 @@ namespace NP_DSP
 
             template<typename Idx>
             SampleType interpolate(Idx idx){
-                //todo
+                return ONE_D::UTILITY_MATH::linearInterpolate({idx % (Idx)0, base[(IdxType)idx % (Idx)0]}, {idx % (Idx)0 + 1, base[(IdxType)idx % (Idx)0 + 1]});
             }
+
             template<typename Idx>
-            IdxType findInterpolate(SampleType value, std::optional<Idx>, std::optional<Idx>){
-                //todo
+            IdxType findInterpolateUnimode(SampleType value, Idx idx1, Idx idx2){
+                if (idx1 > idx2) {
+                    auto idx_buffer = idx1;
+                    idx1 = idx2;
+                    idx2 = idx_buffer;
+                }
+                //while (idx2 > idx1) {
+                    //todo unimode find
+                //}
+                return ONE_D::UTILITY_MATH::backLinearInterpolate({idx1, base[idx1]}, {idx2, base[idx2]}, value);
             }
+
             template<typename Idx>
-            IdxType findIncr(SampleType value, std::optional<Idx>, std::optional<Idx>){
-                //todo
-            }
-            template<typename Idx>
-            IdxType findDecr(SampleType value, std::optional<Idx>, std::optional<Idx>){
-                //todo
+            IdxType findMonotone(SampleType value, std::optional<Idx> idx1, std::optional<Idx> idx2){
+                std::pair<int, int> idxes = ONE_D::UTILITY_MATH::interpoationSearch(base, idx1, idx2, value);
+                return ONE_D::UTILITY_MATH::backLinearInterpolate({idx1, base[idx1]}, {idx2, base[idx2]}, value);
             }
         };
 

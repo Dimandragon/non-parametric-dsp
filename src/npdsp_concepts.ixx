@@ -432,19 +432,20 @@ namespace NP_DSP{
         export
         template<typename T, Signal SignalT>
         constexpr bool is_signal_approximator =
-                requires(T & approximator, T::Loss loss, T::StopPoint stop_point, T::ApproxModel model, T::IdxType idx, SignalT signal){
+                requires(T & approximator, T::Loss loss, T::StopPoint stop_point, T::ApproxModel model, T::IdxType idx, SignalT signal, T::DataType max_error){
             typename T::IdxType;
             typename T::DataType;
             typename T::Loss;
             typename T::StopPoint;
-            typename T::ApproxModel;
+            //typename T::ApproxModel;
 
             requires T::is_signal_approximator == true;
 
-            { delete new T(loss, stop_point, model) };
+            { approximator.max_error } -> std::convertible_to<typename T::DataType>;
+            { delete new T(loss, stop_point, model, max_error) };
+            { stop_point(approximator, loss) } -> std::convertible_to<bool>;
             { loss(approximator) } -> std::convertible_to<typename T::DataType>;
             { approximator.train() };
-            { approximator.train(signal) };
             { approximator.compute(idx) } -> std::convertible_to<typename T::DataType>;
         };
     }

@@ -7,7 +7,6 @@ import npdsp_concepts;
 
 export module derivators;
 
-
 namespace NP_DSP{
     namespace ONE_D{
         namespace DERIVATORS{

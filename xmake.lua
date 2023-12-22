@@ -1,60 +1,89 @@
 add_rules("mode.debug", "mode.release")
 
-add_requires("brew::matplotplusplus")
-
 set_languages("c++23")
---set_toolset("cxx", "clang++")
---set_toolset("ld", "clang++")
+
+--xmake f --cxx=clang++ --cc=clang
+
+task("build matplot++")
+    on_run(function()
+        fl = os.exec("sh matplot_build.sh")
+    end)
+
+target("matplot++_external")
+    set_kind("headeronly")
+    on_load(function(target)
+        import("core.base.task")
+        task.run("build matplot++")
+    end)
+    add_headerfiles("$(projectdir)/matplotplusplus/source/matplot/matplot.h", {public = true})
+    add_headerfiles("$(projectdir)/matplotplusplus/source/3rd_party/nodesoup/include/nodesoup.h", {public = true})
+
+    add_links("$(projectdir)/matplotplusplus/build/local/source/matplot/libmatplot.a", {public = true})
+    add_links("$(projectdir)/matplotplusplus/build/local/source/3rd_party/libnodesoup.a", {public = true})
+
 
 target("pocketfft")
-
     set_kind("headeronly")
     --add_headerfiles("pocketfft/pocketfft_hdronly.h", {public = true})
     add_includedirs("pocketfft", {public = true})
 
 
-package("matplotplusplus")
-    add_deps("cmake")
-    set_sourcedir(path.join(os.scriptdir(), "matplotplusplus"))
-    on_install(function (package)
-        local configs = {"-DMATPLOTPP_BUILD_EXAMPLES=OFF                  \
-                             -DMATPLOTPP_BUILD_SHARED_LIBS=OFF                \
-                             -DMATPLOTPP_BUILD_TESTS=OFF                     \
-                             -DCMAKE_BUILD_TYPE=Release            \
-                             -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON"}
-        --table.insert(configs, "-DCMAKE_BUILD_TYPE=Release")
-        --table.insert(configs, "-DMATPLOTPP_BUILD_EXAMPLES=OFF")
-        --table.insert(configs, "-DMATPLOTPP_BUILD_SHARED_LIBS=ON")
-        --table.insert(configs, "-DMATPLOTPP_BUILD_TESTS=OFF")
-        --table.insert(configs, "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON")
-        import("package.tools.cmake").install(package, configs)
-    end)
-    on_test(function (package)
-        assert(package:has_cfuncs("add", {includes = "matplot/matplot.h"}))
-    end)
-package_end()
-
---add_requires("matplotplusplus")
-
-
 target("non-parametric_dsp")
-    --set_toolset("cxx", "clang")
-    --set_toolset("ld", "clang++")
     set_kind("static")
     add_files("src/npdsp_concepts.ixx", "src/signals.ixx", "src/derivators.ixx"
            , "src/integrators.ixx", "src/filters.ixx", "src/inst_freq_computers.ixx",
            "src/mode_grabbers.ixx", "src/utility_math.ixx", "src/approximators.ixx")
-    add_packages("brew::matplotplusplus")
     add_deps("pocketfft")
+    add_deps("matplot++_external")
 
 
 target("fft-example")
-    --set_toolset("cxx", "clang")
-    --set_toolset("ld", "clang++")
     set_kind("binary")
     add_files("examples/utility/fft/main.cpp")
+    add_deps("non-parametric_dsp")
     add_deps("pocketfft")
-    add_packages("brew::matplotplusplus")
+    add_deps("matplot++_external")
+
+
+target("fft-experiments")
+    set_kind("binary")
+    add_files("examples/utility/fft/experiments.cpp")
+    add_deps("non-parametric_dsp")
+    add_deps("pocketfft")
+    add_deps("matplot++_external")
+
+target("theta_loss_check")
+    set_kind("binary")
+    add_files("examples/utility/fft/cos_theta_loss.cpp")
+    add_deps("matplot++_external")
+
+target("ampl_loss_check")
+    set_kind("binary")
+    add_files("examples/utility/fft/cos_ampl_loss.cpp")
+    add_deps("matplot++_external")
+--[[
+target("matplot++")
+
+    set_kind("static")
+    add_files("matplotplusplus/source/matplot/axes_objects/**.cpp")
+    add_files("matplotplusplus/source/matplot/backend/**.cpp")
+    add_files("matplotplusplus/source/matplot/core/**.cpp")
+    add_files("matplotplusplus/source/matplot/detail/**.cpp")
+    add_files("matplotplusplus/source/matplot/freestanding/**.cpp")
+    add_files("matplotplusplus/source/matplot/util/**.cpp")
+    add_files("matplotplusplus/source/3rd_party/nodesoup/src/**.cpp")
+    add_includedirs("matplotplusplus/source/matplot/axes_objects")
+    add_includedirs("matplotplusplus/source/matplot/backend")
+    add_includedirs("matplotplusplus/source/matplot/core")
+    add_includedirs("matplotplusplus/source/matplot/detail")
+    add_includedirs("matplotplusplus/source/matplot/freestanding")
+    add_includedirs("matplotplusplus/source/matplot/util")
+    add_includedirs("matplotplusplus/source/3rd_party/nodesoup/src")
+    add_includedirs("matplotplusplus/source/3rd_party/nodesoup/include")
+    add_includedirs("matplotplusplus/source/3rd_party/simg")
+    add_includedirs("matplotplusplus/source/matplot", {public = true})
+]]--
+
 --
 -- If you want to known more usage about xmake, please see https://xmake.io
 --
@@ -123,4 +152,3 @@ target("fft-example")
 --
 -- @endcode
 --
-
