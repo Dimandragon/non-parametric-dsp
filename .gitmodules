@@ -1,6 +1,7 @@
 [submodule "pocketfft"]
 	path = pocketfft
 	url = https://github.com/mreineck/pocketfft.git
+
 [submodule "matplotplusplus"]
 	path = matplotplusplus
 	url = https://github.com/alandefreitas/matplotplusplus/
