@@ -4,3 +4,6 @@
 /.vscode
 CMakeLists.txt
 compile_commands.json
+CMakeFiles
+examples/utility/fft/images
+makefile
