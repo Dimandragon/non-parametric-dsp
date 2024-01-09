@@ -1,7 +1,10 @@
 [submodule "pocketfft"]
 	path = pocketfft
-	url = https://github.com/mreineck/pocketfft.git
+	url = https://github.com/mreineck/pocketfft
 
 [submodule "matplotplusplus"]
 	path = matplotplusplus
 	url = https://github.com/alandefreitas/matplotplusplus/
+[submodule "icecream-cpp"]
+	path = icecream-cpp
+	url = https://github.com/renatoGarcia/icecream-cpp

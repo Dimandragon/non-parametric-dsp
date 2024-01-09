@@ -1,11 +1,11 @@
 module;
 
+export module derivators;
+
 import <cstddef>;
 import <utility>;
 
 import npdsp_concepts;
-
-export module derivators;
 
 namespace NP_DSP{
     namespace ONE_D{

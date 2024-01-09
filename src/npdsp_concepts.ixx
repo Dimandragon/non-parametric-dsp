@@ -1,12 +1,13 @@
 module;
 
+export module npdsp_concepts;
+
 import <concepts>;
 import <tuple>;
 import <type_traits>;
 import <cstddef>;
 import <optional>;
-
-export module npdsp_concepts;
+import <string>;
 
 namespace NP_DSP{
     namespace GENERAL
@@ -25,6 +26,7 @@ namespace NP_DSP{
             typename T::IdxType;
             typename T::SampleType;
 
+            { delete new T };
             { signal[idx] } -> std::convertible_to<typename T::SampleType &>;
             { signal.dimSize(dim_number) } -> std::convertible_to<size_t>;
         };
@@ -39,7 +41,7 @@ namespace NP_DSP{
         template <typename T>
         constexpr bool is_signal = requires (T signal, T::IdxType idx, size_t dim_number,
                 std::optional<typename T::IdxType> idx1, std::optional<typename T::IdxType> idx2,
-                T::SampelType  value, PlottingKind kind)
+                T::SampelType  value, PlottingKind kind, const std::string & filename, const std::string & format)
         {
             requires T::is_signal == true;
 
@@ -52,13 +54,14 @@ namespace NP_DSP{
             typename T::SampleType;
             requires std::is_same_v<typename T::SampleType, typename T::Base::IdxType>;
 
+            { delete new T };
             { signal[idx] } -> std::convertible_to<typename T::SampleType &>;
             { signal.dimSize(dim_number) } -> std::convertible_to<size_t>;
             { signal.interpolate(idx) } -> std::convertible_to<typename T::SampleType>;
             { signal.findInterpolate(value, idx1, idx2) } -> std::convertible_to<typename T::IdxType>;
-            { signal.findIncr(value, idx1, idx2)} -> std::convertible_to<typename T::IdxType>;
-            { signal.findDecr(value, idx1, idx2)} -> std::convertible_to<typename T::IdxType>;
-            signal.show(kind);
+            { signal.findMonotone(value, idx1, idx2)} -> std::convertible_to<typename T::IdxType>;
+            signal.show(kind, filename);
+            signal.show(kind, filename, format);
         };
 
         export
@@ -83,11 +86,12 @@ namespace NP_DSP{
                 = requires (T signal, T::IdxType idx)
         {
             requires T::is_signal_base == true;
-            requires (T::is_writable == true || T::is_writable == false);
+            //requires (T::is_writable == true || T::is_writable == false);
 
             typename T::IdxType;
             typename T::SampleType;
 
+            { delete new T };
             { signal[idx] } -> std::convertible_to<typename T::SampleType &>;
             { signal.size() } -> std::convertible_to<size_t>;
         };
@@ -100,8 +104,8 @@ namespace NP_DSP{
 
         export
         template <typename T>
-        constexpr bool is_signal = requires (T signal, T::IdxType idx, std::optional<typename T::IdxType> idx1, std::optional<typename T::IdxType> idx2, T::SampelType value, PlottingKind kind)
-        {
+        constexpr bool is_signal = requires(T signal, T::IdxType idx, std::optional<typename T::IdxType> idx1,
+        T::SampleType value, PlottingKind kind, const std::string & filename, const std::string & format) {
             requires T::is_signal == true;
 
             typename T::Base;
@@ -111,18 +115,17 @@ namespace NP_DSP{
             requires std::is_same_v<typename T::IdxType, typename T::Base::IdxType>;
 
             typename T::SampleType;
-            requires std::is_same_v<typename T::SampleType, typename T::Base::IdxType>;
+            requires std::is_same_v<typename T::SampleType, typename T::Base::SampleType>;
 
-            requires T::is_signal == true;
-
+            { delete new T };
             { signal[idx] } -> std::convertible_to<typename T::SampleType &>;
             { signal.size() } -> std::convertible_to<size_t>;
             { signal.interpolate(idx) } -> std::convertible_to<typename T::SampleType>;
-            { signal.findInterpolate(idx1, idx2, value) } -> std::convertible_to<typename T::IdxType>;
-            { signal.findIncr(value, idx1, idx2)} -> std::convertible_to<typename T::IdxType>;
-            { signal.findDecr(value, idx1, idx2)} -> std::convertible_to<typename T::IdxType>;
-            signal.show(kind);
-        };
+            //{ signal.findInterpolateUnimode(value, idx, idx) } -> std::convertible_to<typename T::IdxType>;
+            { signal.findMonotone(value, idx1, idx1)} -> std::convertible_to<typename T::IdxType>;
+            { signal.show(kind, filename) };
+            { signal.show(kind, filename, format) };
+        };  
 
         export
         template<typename T>
@@ -430,23 +433,26 @@ namespace NP_DSP{
         concept OrtogonalComponentSolver = is_ortogonal_component_solver<T>;
 
         export
-        template<typename T, Signal SignalT>
+        template<typename T>
         constexpr bool is_signal_approximator =
-                requires(T & approximator, T::Loss loss, T::StopPoint stop_point, T::ApproxModel model, T::IdxType idx, SignalT signal, T::DataType max_error){
+                requires(T & approximator, T::Loss loss, T::StopPoint stop_point, T::ApproxModel model, T::IdxType idx, T::SignalType signal, T::SampleType max_error){
             typename T::IdxType;
-            typename T::DataType;
+            typename T::SampleType;
+            typename T::SignalType;
             typename T::Loss;
             typename T::StopPoint;
             //typename T::ApproxModel;
 
             requires T::is_signal_approximator == true;
 
-            { approximator.max_error } -> std::convertible_to<typename T::DataType>;
+            { approximator.latest_loss } -> std::convertible_to<typename T::SampleType>;
+            { approximator.max_error } -> std::convertible_to<typename T::SampleType>;
             { delete new T(loss, stop_point, model, max_error) };
-            { stop_point(approximator, loss) } -> std::convertible_to<bool>;
-            { loss(approximator) } -> std::convertible_to<typename T::DataType>;
+            { stop_point(loss, approximator) } -> std::convertible_to<bool>;
+            //here loss is the opt iteration losses different
+            { loss(approximator) } -> std::convertible_to<typename T::SampleType>;
             { approximator.train() };
-            { approximator.compute(idx) } -> std::convertible_to<typename T::DataType>;
+            { approximator.compute(idx) } -> std::convertible_to<typename T::SampleType>;
         };
     }
 }

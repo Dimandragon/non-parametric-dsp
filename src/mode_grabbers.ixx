@@ -1,9 +1,9 @@
 module;
 
+export module mode_grabbers;
+
 import npdsp_concepts;
 import <cstddef>;
-
-export module mode_grabbers;
 
 namespace NP_DSP{
     namespace ONE_D{

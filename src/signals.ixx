@@ -1,5 +1,9 @@
 module;
 
+#include "icecream.hpp"
+
+export module signals;
+
 import <matplot/matplot.h>;
 
 import <vector>;
@@ -9,12 +13,12 @@ import <cstddef>;
 import <utility>;
 import <type_traits>;
 import <optional>;
+import <memory>;
+import <iostream>;
 
 import npdsp_concepts;
 import utility_math;
-
-export module signals;
-
+import npdsp_config;
 
 namespace NP_DSP
 {
@@ -22,22 +26,40 @@ namespace NP_DSP
         export
         template<typename T>
         struct SimpleVecWrapper{
+            bool has_ovnership = false;
+
             using SampleType = T;
             using IdxType = std::size_t;
             constexpr static bool is_signal_base = true;
             constexpr static bool is_writable = true;
 
-            std::vector<T> & vec;
+            std::vector<T> * vec;
+
+            SimpleVecWrapper(){
+                has_ovnership = true;
+                vec = new std::vector<T>;
+            }
+
+            ~SimpleVecWrapper(){
+                if (has_ovnership){
+                    delete vec;
+                }
+            }
+
+            SimpleVecWrapper(std::vector<T> & vec_in){
+                vec = &vec_in;
+            }
+
             inline T& operator[](std::size_t idx){
-                return vec[idx];
+                return (*vec)[idx];
             }
 
             inline const T& operator[](std::size_t idx) const{
-                return vec[idx];
+                return (*vec)[idx];
             }
 
             inline std::size_t size(){
-                return vec.size();
+                return vec->size();
             }
         };
 
@@ -95,44 +117,80 @@ namespace NP_DSP
         export
         template<SignalBase BaseT>
         struct GenericSignal{
+            bool has_ovnership = false;
+
             constexpr static bool is_signal = true;
             using Base = BaseT;
             using IdxType = Base::IdxType;
-            using SampleType = Base::SapleType;
-            Base base;
+            using SampleType = Base::SampleType;
+            Base * base;
 
-            explicit GenericSignal(Base & base_o){
-                base = base_o;
-            }
-            inline SampleType & operator[](IdxType idx){
-                return base[idx];
+            GenericSignal(Base & base_o){
+                base = &base_o;
             }
 
-            inline SampleType operator[](IdxType idx) const {
-                return base[idx];
+            GenericSignal(){
+                base = new Base;
+                has_ovnership = true;
             }
 
-            inline size_t size(){
-                return base.size();
-            }
-
-            void show(PlottingKind kind){
-                if (kind == PlottingKind::Simple){
-                    std::vector<SampleType> plotting_data = {};
-                    for (auto i = 0; i < base.size(); i++){
-                        plotting_data.push_back(base[i]);
-                    }
-                    matplot::plot(plotting_data);
-
-                    matplot::show();
+            ~GenericSignal(){
+                if (has_ovnership){
+                    delete base;
                 }
             }
 
-            template<typename Idx>
-            SampleType interpolate(Idx idx){
-                return ONE_D::UTILITY_MATH::linearInterpolate({idx % (Idx)0, base[(IdxType)idx % (Idx)0]}, {idx % (Idx)0 + 1, base[(IdxType)idx % (Idx)0 + 1]});
+            inline SampleType & operator[](IdxType idx){
+                return (*base)[idx];
             }
 
+            inline SampleType operator[](IdxType idx) const {
+                return (*base)[idx];
+            }
+
+            inline size_t size(){
+                return base->size();
+            }
+
+            void show(PlottingKind kind, const std::string & filename, const std::string & format){
+                if (kind == PlottingKind::Simple){
+                    std::vector<SampleType> plotting_data = {};
+                    for (auto i = 0; i < base->size(); i++){
+                        plotting_data.push_back((*base)[i]);
+                    }
+                    matplot::plot(plotting_data);
+                    matplot::show();
+                    matplot::save(filename, format);
+                }
+            }
+
+            void show(PlottingKind kind, const std::string & filename){
+                if (kind == PlottingKind::Simple){
+                    std::vector<SampleType> plotting_data = {};
+                    for (auto i = 0; i < base->size(); i++){
+                        plotting_data.push_back((*base)[i]);
+                    }
+                    matplot::plot(plotting_data);
+                    matplot::show();
+                    matplot::save(filename);
+                }
+            }
+
+            //получение значения в неизвестной точке внутри диапазона определения (те в нашем случае по дробному индексу)
+            template<typename Idx>
+            SampleType interpolate(Idx idx){
+                if (idx>=0 && idx < base->size() - 1){
+                    return ONE_D::UTILITY_MATH::linearInterpolate<double, SampleType>({static_cast<double>(static_cast<int>(idx)), (*base)[static_cast<int>(idx)]}, {static_cast<double>(static_cast<int>(idx) + 1), (*base)[static_cast<int>(idx) + 1]}, static_cast<double>(idx));
+                }
+                else if (idx<0){
+                    return ONE_D::UTILITY_MATH::linearInterpolate<double, SampleType>({static_cast<double>(0), (*base)[0]}, {static_cast<double>(1), (*base)[1]}, static_cast<double>(idx));
+                }
+                else if (idx >= base->size() - 1){
+                    return ONE_D::UTILITY_MATH::linearInterpolate<double, SampleType>({static_cast<double>(base->size()-2), (*base)[base->size()-2]}, {static_cast<double>(base->size()-1), (*base)[base->size()-1]}, static_cast<double>(idx));
+                }
+            }
+
+            /*
             template<typename Idx>
             IdxType findInterpolateUnimode(SampleType value, Idx idx1, Idx idx2){
                 if (idx1 > idx2) {
@@ -140,19 +198,38 @@ namespace NP_DSP
                     idx1 = idx2;
                     idx2 = idx_buffer;
                 }
-                //while (idx2 > idx1) {
-                    //todo unimode find
-                //}
-                return ONE_D::UTILITY_MATH::backLinearInterpolate({idx1, base[idx1]}, {idx2, base[idx2]}, value);
+                while (idx2 > idx1-1) {
+                    auto value_left = interpolate(idx1);
+                    auto value_right = interpolate(idx2);
+                    auto value_central = 
+                }
+                return ONE_D::UTILITY_MATH::backLinearInterpolate({idx1, (*base)[idx1]}, {idx2, (*base)[idx2]}, value);
             }
+            */
 
             template<typename Idx>
             IdxType findMonotone(SampleType value, std::optional<Idx> idx1, std::optional<Idx> idx2){
-                std::pair<int, int> idxes = ONE_D::UTILITY_MATH::interpoationSearch(base, idx1, idx2, value);
-                return ONE_D::UTILITY_MATH::backLinearInterpolate({idx1, base[idx1]}, {idx2, base[idx2]}, value);
+                if (!idx1){
+                    idx1 = {0};
+                }
+                if (!idx2){
+                    idx2 = {size()};
+                }
+                //std::cout << "stop_pont_1" << std::endl;
+                //std::pair<int, int> idxes = ONE_D::UTILITY_MATH::interpoationSearch(*base, *idx1, *idx2, value);
+                auto idx_lambda = [&](int idx){
+                    return interpolate(idx);
+                };
+                std::pair<int, int> idxes = ONE_D::UTILITY_MATH::interpoationSearch(*idx1, *idx2, value, idx_lambda);
+                //std::cout << "stop_pont_2" << std::endl;
+                if constexpr (CONFIG::debug){
+                    IC(idxes.first, idxes.second);
+                }
+                return ONE_D::UTILITY_MATH::backLinearInterpolate<Idx, SampleType>({*idx1, (*base)[*idx1]}, {*idx2, (*base)[*idx2]}, value);
             }
         };
 
+        static_assert(ONE_D::is_signal<GenericSignal<SimpleVecWrapper<int>>>);
     }
 
     namespace GENERAL{

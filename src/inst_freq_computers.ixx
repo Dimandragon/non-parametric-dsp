@@ -1,5 +1,7 @@
 module;
 
+export module inst_freq_computers;
+
 import npdsp_concepts;
 import signals;
 import derivators;
@@ -9,8 +11,7 @@ import <numbers>;
 import <vector>;
 import <utility>;
 import utility_math;
-
-export module inst_freq_computers;
+import approximators;
 
 namespace NP_DSP{
     namespace ONE_D{
@@ -372,11 +373,13 @@ namespace NP_DSP{
 
             template<Signal DataT, Signal OutT, SignalWrapper OptFn,
                     Integrator IntegratorT, Derivator DerivatorT,
-            InstFreqDerivativeBasedKind kind, ExtremumsBasedComputeInstFreqKind compute_kind>
+            InstFreqDerivativeBasedKind kind>
             struct periodAndExtremumsBased {
                 using DataType = DataT;
                 using OutType = OutT;
                 using AdditionalDataType = GENERAL::Nil;
+
+                using SampleType = DataType::SampleType;
 
                 constexpr static bool is_inst_freq_computer = true;
                 constexpr static InstFreqDerivativeBasedKind counting_kind = kind;
@@ -389,8 +392,52 @@ namespace NP_DSP{
                 DerivatorType derivator;
 
                 static_assert(OutType::is_writable == true);
-            };
+                SampleType max_error = static_cast<typename DataType::SampleType>(1000000);
 
+                void compute(DataType data, OutType & out, AdditionalDataType & computer_buffer) {
+                    // compute extremums inst freq ->
+                    // compute period based with external opt parameter equal const 1
+                    // use fourier based approximator
+                    // train it to approximate external opt parameter to minimize loss with extremums
+
+                    std::vector<SampleType> extremums_freq_vec (data.size());
+                    SimpleVecWrapper<SampleType> extremums_freq_wrapper(extremums_freq_vec);
+                    GenericSignal<SimpleVecWrapper<SampleType>> extremums_freq(extremums_freq_wrapper);
+
+                    ExtremumsBased<DataType, OutType, ExtremumsBasedComputeInstFreqKind::Linear> extremums_based;
+                    extremums_based.compute(data, extremums_freq, {});
+
+                    std::vector<SampleType> external_opt_parametr_vector (data.size());
+                    SimpleVecWrapper<SampleType> external_opt_parametr_wrapper(extremums_freq_vec);
+                    GenericSignal<SimpleVecWrapper<SampleType>> external_opt_parametr(external_opt_parametr_wrapper);
+
+                    DerivativeBasedWithExternalOptParametr<DataType, OutType, IntegratorType, DerivatorType, kind> inst_freq_computer;
+
+                    for (auto i = 0; i < external_opt_parametr.size(); i++) {
+                        external_opt_parametr[i] = static_cast<SampleType>(0);
+                    }
+                    inst_freq_computer.compute(data, out, external_opt_parametr);
+
+                    auto loss = [=](auto & approximator) {
+                        approximator.is_actual = false;
+                        SampleType accum = static_cast<SampleType>(0);
+                        inst_freq_computer.compute(data, out, external_opt_parametr);
+                        for(auto i = 0; i < extremums_freq.size(); i++) {
+                            accum += (extremums_freq[i] - out[i]) * (extremums_freq[i] - out[i]);
+                        }
+                        return accum;
+                    };
+
+                    auto stopPoint = [](auto losses_different, auto & approximator) {
+                        if (losses_different > 0.0001){ //todo move precision to external parameter
+                            return false;
+                        }
+                    };
+                    //APPROX::FourerSeriesBased
+                    auto approximator = APPROX::FourerSeriesBased(loss, external_opt_parametr, stopPoint);
+                    approximator.train();
+                }
+            };
         }
     }
 }

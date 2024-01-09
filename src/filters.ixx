@@ -1,11 +1,10 @@
 module;
 
+export module filters;
 
 import npdsp_concepts;
 import signals;
 import <utility>;
-
-export module filters;
 
 namespace NP_DSP{
     namespace ONE_D{
@@ -66,7 +65,7 @@ namespace NP_DSP{
             constexpr static bool is_filter = true;
 
             void compute(DataType data, OutType & out, GENERAL::Nil & additional_data) {
-                //todo
+
             }
         };
     }

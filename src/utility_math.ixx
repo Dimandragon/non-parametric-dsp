@@ -1,14 +1,16 @@
 module;
 
 #include "pocketfft_hdronly.h"
+#include "icecream.hpp"
+
+export module utility_math;
 
 import <utility>;
 import <complex>;
 import <vector>;
 
 import npdsp_concepts;
-
-export module utility_math;
+import npdsp_config;
 
 namespace NP_DSP{
     namespace ONE_D{
@@ -73,18 +75,64 @@ namespace NP_DSP{
             export
             template <typename TIndex, SignalBase Base, typename TValue>
             std::pair<TIndex, TIndex> interpoationSearch(Base data, TIndex idx1, TIndex idx2, TValue value) {
+                //todo interpolate or values limits
                 if (idx1 > idx2) {
-                    std::swap(&idx1, &idx2);
+                    auto buffer = idx1;
+                    idx1 = idx2;
+                    idx2 = buffer;
                 }
-                while (idx2 - idx1 > 1) {
+                while (std::abs(idx2 - idx1) > 1) {
                     auto dx = static_cast<double>(idx2 - idx1);
                     auto dy = static_cast<double>(data[idx2] - data[idx1]);
                     auto idx_new = static_cast<TIndex>(idx1 + dx * (value - data[idx1])/dy);
+                    if constexpr (CONFIG::debug){
+                        IC(idx1, idx2, dx, dy, idx_new);
+                    }
                     if (data[idx_new] > value) {
                         idx2 = idx_new;
                     }
-                    else if(data[idx_new] <= value){
+                    else if(data[idx_new] < value){
                         idx1 = idx_new;
+                    }
+                    else if (data[idx_new] == value){
+                        idx1 = idx_new;
+                        idx2 = idx1 + 1;
+                    }
+                    if constexpr (CONFIG::debug){
+                        IC(idx1, idx2);
+                    }
+                }
+                return {idx1, idx2};
+            }
+
+            export
+            template <typename TIndex, typename TValue, typename IdxLambdaT>
+            std::pair<TIndex, TIndex> interpoationSearch(TIndex idx1, TIndex idx2, TValue value, IdxLambdaT idx_lambda) {
+                //todo interpolate or values limits
+                if (idx1 > idx2) {
+                    auto buffer = idx1;
+                    idx1 = idx2;
+                    idx2 = buffer;
+                }
+                while (std::abs(idx2 - idx1) > 1) {
+                    auto dx = static_cast<double>(idx2 - idx1);
+                    auto dy = static_cast<double>(idx_lambda(idx2) - idx_lambda(idx1));
+                    auto idx_new = static_cast<TIndex>(idx1 + dx * (value - idx_lambda(idx1))/dy);
+                    if constexpr (CONFIG::debug){
+                        IC(idx1, idx2, dx, dy, idx_new);
+                    }
+                    if (idx_lambda(idx_new) > value) {
+                        idx2 = idx_new;
+                    }
+                    else if(idx_lambda(idx_new) < value){
+                        idx1 = idx_new;
+                    }
+                    else if (idx_lambda(idx_new) == value){
+                        idx1 = idx_new;
+                        idx2 = idx1 + 1;
+                    }
+                    if constexpr (CONFIG::debug){
+                        IC(idx1, idx2);
                     }
                 }
                 return {idx1, idx2};

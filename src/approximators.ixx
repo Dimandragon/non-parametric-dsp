@@ -1,12 +1,12 @@
 module;
 
+export module approximators;
+
 import npdsp_concepts;
 import <vector>;
 import <complex>;
 import utility_math;
 import <numbers>;
-
-export module approximators;
 
 namespace NP_DSP{
     namespace ONE_D{
@@ -15,7 +15,7 @@ namespace NP_DSP{
             template<Signal SignalT, typename LossFunc, typename StopPointFunc>
             struct FourerSeriesBased{
                 using SignalType = SignalT;
-                using DataType = SignalT::DataType;
+                using SampleType = SignalT::SampleType;
                 using Loss = LossFunc;
                 using StopPoint = StopPointFunc;
                 using IdxType = SignalT::IdxType;
@@ -23,23 +23,22 @@ namespace NP_DSP{
 
                 Loss loss;
                 StopPoint stopPont;
-                SignalType signal;
+                SignalType & signal;
                 bool is_actual = false;
 
 
-                std::vector<std::complex<DataType>> fourier_series;
-                std::vector<std::complex<DataType>> approximated_data;
+                std::vector<std::complex<SampleType>> fourier_series;
+                std::vector<std::complex<SampleType>> approximated_data;
 
-                DataType max_value = 1000000;
-                DataType max_error;
+                SampleType max_value = 1000000000;
 
-                FourerSeriesBased(Loss lossFn, StopPoint stopPointFn, SignalType signal_in, DataType max_error_in){
+
+                FourerSeriesBased(Loss lossFn, SignalType & signal_in, StopPointFunc stop_point){
                     loss = lossFn;
-                    stopPont = stopPointFn;
                     signal = signal_in;
-                    fourier_series = new std::vector<std::complex<DataType>>(signal_in.size());
-                    approximated_data = new std::vector<std::complex<DataType>>(signal_in.size());
-                    max_error = max_error_in;
+                    fourier_series = new std::vector<std::complex<SampleType>>(signal_in.size());
+                    approximated_data = new std::vector<std::complex<SampleType>>(signal_in.size());
+                    stopPont = stop_point;
                 }
 
                 ~FourerSeriesBased(){
@@ -52,17 +51,17 @@ namespace NP_DSP{
                     UTILITY_MATH::ifftc2c(fourier_series, approximated_data);
                 }
 
-                inline std::complex<DataType> computeSample(IdxType idx){
-                    std::complex<DataType> accum = {static_cast<DataType>(0), static_cast<DataType>(0)};
-                    DataType w = std::numbers::pi * 2.0 * static_cast<DataType>(idx) / static_cast<DataType>(fourier_series.size());
+                std::complex<SampleType> computeSample(IdxType idx){
+                    std::complex<SampleType> accum = {static_cast<SampleType>(0), static_cast<SampleType>(0)};
+                    SampleType w = std::numbers::pi * 2.0 * static_cast<SampleType>(idx) / static_cast<SampleType>(fourier_series.size());
                     for (auto i = 0; i < fourier_series.size(); i++){
-                        accum+= fourier_series[i]*std::complex<DataType>{std::cos(w*i), std::sin(w*i)};
+                        accum+= fourier_series[i]*std::complex<SampleType>{std::cos(w*i), std::sin(w*i)};
                     }
                     return accum;
                 }
 
-                DataType compute(IdxType idx){
-                    if(idx % 0 == 0){
+                SampleType compute(IdxType idx){
+                    if(std::abs(static_cast<double>(idx) - static_cast<int64_t>(idx)) == 0){
                         if(is_actual){
                             return approximated_data[idx].real;
                         }
@@ -79,28 +78,28 @@ namespace NP_DSP{
                 void train() {
                     for (auto i = 0; i < fourier_series.size(); i++) {
                         //auto triginimetric_sample = ONE_D::UTILITY_MATH::convertFSampleC2T(fourier_series[i]);
-                        std::pair<DataType, DataType> triginimetric_sample;
+                        std::pair<SampleType, SampleType> triginimetric_sample;
                         //optimize
                         // optimize theta
-                        auto theta_min = static_cast<DataType>(-std::numbers::pi/2);
-                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C({static_cast<DataType>(1.0), theta_min});
+                        auto theta_min = static_cast<SampleType>(-std::numbers::pi/2);
+                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C({static_cast<SampleType>(1.0), theta_min});
                         auto left_loss_pos = loss(*this);
-                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C({static_cast<DataType>(-1.0), theta_min});
+                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C({static_cast<SampleType>(-1.0), theta_min});
                         auto left_loss_neg = loss(*this);
-                        auto theta_max = static_cast<DataType>(std::numbers::pi/2);
-                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C({static_cast<DataType>(1.0), theta_max});
+                        auto theta_max = static_cast<SampleType>(std::numbers::pi/2);
+                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C({static_cast<SampleType>(1.0), theta_max});
                         auto right_loss_pos = loss(*this);
-                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C({static_cast<DataType>(-1.0), theta_max});
+                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C({static_cast<SampleType>(-1.0), theta_max});
                         auto right_loss_neg = loss(*this);
-                        auto theta_central = static_cast<DataType>(0.0);
-                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C({static_cast<DataType>(1.0), theta_central});
+                        auto theta_central = static_cast<SampleType>(0.0);
+                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C({static_cast<SampleType>(1.0), theta_central});
                         auto central_loss_pos = loss(*this);
-                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C({static_cast<DataType>(-1.0), theta_central});
+                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C({static_cast<SampleType>(-1.0), theta_central});
                         auto central_loss_neg = loss(*this);
 
-                        DataType right_loss;
-                        DataType left_loss;
-                        DataType central_loss;
+                        SampleType right_loss;
+                        SampleType left_loss;
+                        SampleType central_loss;
 
                         if (central_loss_neg < central_loss_pos || right_loss_neg < right_loss_pos || left_loss_neg < left_loss_pos) {
                             triginimetric_sample.first = - 1.0;
@@ -116,7 +115,7 @@ namespace NP_DSP{
                         }
 
 
-                        while (std::abs(right_loss - left_loss) > max_error) {
+                        while (!stopPont(std::abs(right_loss - left_loss), *this)) {
                             if (left_loss > central_loss && central_loss > right_loss) {
                                 left_loss = central_loss;
                                 theta_min = theta_central;
@@ -181,9 +180,9 @@ namespace NP_DSP{
 
                         //optimize ampl
                         if (triginimetric_sample.first == 1.0) {
-                            DataType ampl_left = 0.0;
-                            DataType ampl_right = max_value;
-                            DataType ampl_central = (ampl_left + ampl_right) / 2;
+                            SampleType ampl_left = 0.0;
+                            SampleType ampl_right = max_value;
+                            SampleType ampl_central = (ampl_left + ampl_right) / 2;
                             triginimetric_sample.first = ampl_left;
                             fourier_series[i] = UTILITY_MATH::convertFSampleT2C(triginimetric_sample);
                             auto loss_left = loss(*this);
@@ -194,7 +193,7 @@ namespace NP_DSP{
                             fourier_series[i] = UTILITY_MATH::convertFSampleT2C(triginimetric_sample);
                             auto loss_central = loss(*this);
 
-                            while(std::abs(loss_right - loss_left) > max_error) {
+                            while(!stopPont(std::abs(right_loss - left_loss), *this)) {
                                 if(loss_left > loss_central && loss_central > loss_right) {
                                     loss_left = loss_central;
                                     ampl_left = ampl_central;
@@ -257,9 +256,9 @@ namespace NP_DSP{
                             triginimetric_sample.first = ampl_central;
                         }
                         else {
-                            DataType ampl_left = - max_value;
-                            DataType ampl_right = 0;
-                            DataType ampl_central = (ampl_left + ampl_right) / 2;
+                            SampleType ampl_left = - max_value;
+                            SampleType ampl_right = 0;
+                            SampleType ampl_central = (ampl_left + ampl_right) / 2;
                             triginimetric_sample.first = ampl_left;
                             fourier_series[i] = UTILITY_MATH::convertFSampleT2C(triginimetric_sample);
                             auto loss_left = loss(*this);
@@ -270,7 +269,7 @@ namespace NP_DSP{
                             fourier_series[i] = UTILITY_MATH::convertFSampleT2C(triginimetric_sample);
                             auto loss_central = loss(*this);
 
-                            while(std::abs(loss_right - loss_left) > max_error) {
+                            while(!stopPont(std::abs(right_loss - left_loss), *this)) {
                                 if(loss_left > loss_central && loss_central > loss_right) {
                                     loss_left = loss_central;
                                     ampl_left = ampl_central;
