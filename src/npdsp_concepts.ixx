@@ -147,7 +147,7 @@ namespace NP_DSP{
         export
         template <typename T>
         constexpr bool is_rotator =
-                requires (T rotator, T::DataType data, T::OutType & out, T::RotorType rotor, T::AdditionalDataType & additional_data)
+                requires (T rotator, const T::DataType & data, T::OutType & out, T::RotorType rotor, T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::OutType;
@@ -172,7 +172,7 @@ namespace NP_DSP{
         export
         template <typename T>
         constexpr bool is_mode_extracor =
-                requires (T mode_extractor, T::DataType data, T::ModeType & out, T::AdditionalDataType & additional_data)
+                requires (T mode_extractor, const T::DataType & data, T::ModeType & out, T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::ModeType;
@@ -194,7 +194,7 @@ namespace NP_DSP{
         export
         template <typename T>
         constexpr bool is_mode_graber =
-                requires(T mode_graber, T::DataType & data, T::ModeType mode, T::AdditionalDataType & additional_data)
+                requires(T mode_graber, T::DataType & data, const T::ModeType & mode, T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::ModeType;
@@ -216,7 +216,7 @@ namespace NP_DSP{
         export
         template<typename T>
         constexpr bool is_inst_freq_computer =
-                requires (T inst_freq_computer, T::DataType data, T::OutType & inst_freq, T::AdditionalDataType & additional_data)
+                requires (T inst_freq_computer, const T::DataType & data, T::OutType & inst_freq, T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::OutType;
@@ -233,7 +233,7 @@ namespace NP_DSP{
 
         export
         template<typename T>
-        constexpr bool is_filter = requires (T filter, typename T::DataType data, typename T::OutType & out, T::AdditionalDataType & additional_data)
+        constexpr bool is_filter = requires (T filter, const T::DataType & data, T::OutType & out, T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::OutType;
@@ -256,7 +256,7 @@ namespace NP_DSP{
         export
         template<typename T>
         constexpr bool is_ortogonal_component_solver =
-                requires(T solver, T::DataType data, T::InstFreqType & inst_freq, T::InstAmplType & inst_ampl,
+                requires(T solver, const T::DataType & data, T::InstFreqType & inst_freq, T::InstAmplType & inst_ampl,
                         T::DataType & ort_component, bool is_inst_freq_ready, T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
@@ -282,7 +282,7 @@ namespace NP_DSP{
     {
         export
         template <typename T>
-        constexpr bool is_derivator = requires(T derivator, T::DataType data, T::DerivativeType & out,
+        constexpr bool is_derivator = requires(T derivator, const T::DataType & data, T::DerivativeType & out,
                 T::AdditionalDataType & additional_data)
         {
             requires T::is_derivator == true;
@@ -303,7 +303,7 @@ namespace NP_DSP{
 
         export
         template <typename T>
-        constexpr bool is_integrator = requires(T integrator, T::DataType data, T::IntegralType & out,
+        constexpr bool is_integrator = requires(T integrator, const T::DataType & data, T::IntegralType & out,
                 T::AdditionalDataType & additional_data)
         {
             requires T::is_integrator == true;
@@ -325,7 +325,7 @@ namespace NP_DSP{
 
         export
         template <typename T>
-        constexpr bool is_mode_extracor = requires (T mode_extractor, T::DataType data, T::ModeType & out,
+        constexpr bool is_mode_extracor = requires (T mode_extractor, const T::DataType & data, T::ModeType & out,
                 T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
@@ -346,7 +346,7 @@ namespace NP_DSP{
 
         export
         template <typename T>
-        constexpr bool is_mode_graber = requires(T mode_graber, T::DataType & data, T::ModeType mode,
+        constexpr bool is_mode_graber = requires(T mode_graber, T::DataType & data, const T::ModeType & mode,
                 T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
@@ -367,7 +367,7 @@ namespace NP_DSP{
         export
         template<typename T>
         constexpr bool is_inst_freq_computer =
-                requires (T inst_freq_computer, T::DataType data, T::OutType & inst_freq,
+                requires (T inst_freq_computer, const T::DataType & data, T::OutType & inst_freq,
                 T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
@@ -388,7 +388,7 @@ namespace NP_DSP{
 
         export
         template<typename T>
-        constexpr bool is_filter = requires (T filter, T::DataType data, T::OutType & out,
+        constexpr bool is_filter = requires (T filter, const T::DataType & data, T::OutType & out,
                 T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
@@ -410,7 +410,7 @@ namespace NP_DSP{
         export
         template<typename T>
         constexpr bool is_ortogonal_component_solver =
-                requires(T solver, T::DataType data, T::InstFreqType & inst_freq,
+                requires(T solver, const T::DataType & data, T::InstFreqType & inst_freq,
                         T::InstAmplType & inst_ampl, T::DataType & ort_component, bool is_inst_freq_ready,
                         T::AdditionalDataType & additional_data)
         {
@@ -435,7 +435,7 @@ namespace NP_DSP{
         export
         template<typename T>
         constexpr bool is_signal_approximator =
-                requires(T & approximator, T::Loss loss, T::StopPoint stop_point, T::ApproxModel model, T::IdxType idx, T::SignalType signal, T::SampleType max_error){
+                requires(T & approximator, T::Loss loss, T::StopPoint stop_point, T::ApproxModel model, T::IdxType idx, T::SampleType max_error){
             typename T::IdxType;
             typename T::SampleType;
             typename T::SignalType;
