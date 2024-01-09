@@ -58,7 +58,7 @@ namespace NP_DSP
                 return (*vec)[idx];
             }
 
-            inline std::size_t size(){
+            inline std::size_t size() const {
                 return vec->size();
             }
         };
@@ -104,7 +104,7 @@ namespace NP_DSP
                 }
             }
 
-            std::size_t size(){
+            std::size_t size() const {
                 if constexpr (! std::is_same_v<DataReferenceExpression, GENERAL::Nil>){
                     return size_expression();
                 }
@@ -148,11 +148,11 @@ namespace NP_DSP
                 return (*base)[idx];
             }
 
-            inline size_t size(){
+            inline size_t size() const {
                 return base->size();
             }
 
-            void show(PlottingKind kind, const std::string & filename, const std::string & format){
+            void show(PlottingKind kind, const std::string & filename, const std::string & format) const {
                 if (kind == PlottingKind::Simple){
                     std::vector<SampleType> plotting_data = {};
                     for (auto i = 0; i < base->size(); i++){
@@ -164,7 +164,7 @@ namespace NP_DSP
                 }
             }
 
-            void show(PlottingKind kind, const std::string & filename){
+            void show(PlottingKind kind, const std::string & filename) const {
                 if (kind == PlottingKind::Simple){
                     std::vector<SampleType> plotting_data = {};
                     for (auto i = 0; i < base->size(); i++){
@@ -178,7 +178,7 @@ namespace NP_DSP
 
             //получение значения в неизвестной точке внутри диапазона определения (те в нашем случае по дробному индексу)
             template<typename Idx>
-            SampleType interpolate(Idx idx){
+            SampleType interpolate(Idx idx) const {
                 if (idx>=0 && idx < base->size() - 1){
                     return ONE_D::UTILITY_MATH::linearInterpolate<double, SampleType>({static_cast<double>(static_cast<int>(idx)), (*base)[static_cast<int>(idx)]}, {static_cast<double>(static_cast<int>(idx) + 1), (*base)[static_cast<int>(idx) + 1]}, static_cast<double>(idx));
                 }
@@ -208,7 +208,7 @@ namespace NP_DSP
             */
 
             template<typename Idx>
-            IdxType findMonotone(SampleType value, std::optional<Idx> idx1, std::optional<Idx> idx2){
+            IdxType findMonotone(SampleType value, std::optional<Idx> idx1, std::optional<Idx> idx2) const {
                 if (!idx1){
                     idx1 = {0};
                 }

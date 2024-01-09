@@ -1,8 +1,9 @@
-#include <cmath>
-#include <vector>
-#include <matplot/matplot.h>
-#include <iostream>
 #include "icecream.hpp"
+
+import <cmath>;
+import <vector>;
+import <matplot/matplot.h>;
+import <iostream>;
 
 import signals;
 import npdsp_concepts;

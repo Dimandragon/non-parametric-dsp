@@ -1,5 +1,7 @@
 module;
 
+#include "icecream.hpp"
+
 export module derivators;
 
 import <cstddef>;
@@ -21,23 +23,24 @@ namespace NP_DSP{
                 using DerivativeType = DerivativeT;
                 using AdditionalDataType = GENERAL::Nil;
 
-                void compute(DataType data, DerivativeType & out, GENERAL::Nil & additional_data)
+                void compute(const DataType & data, DerivativeType & out, GENERAL::Nil & additional_data)
                 {
                     //init first and last values
                     out[0] = data[1] - data[0];
                     out[data.size()-1] = data[data.size()-1] - data[data.size()-2];
+                    //IC("")
                     if constexpr (different_type == FinniteDifferenceType::Backward){
-                        for (std::size_t i = 1; i < data.size() - 1; i++){
+                        for (auto i = 1; i < data.size() - 1; i++){
                             out[i] = static_cast<typename DerivativeType::SampleType>(data[i] - data[i-1]);
                         }
                     }
                     else if constexpr (different_type == FinniteDifferenceType::Central){
-                        for (std::size_t i = 1; i < data.size() - 1; i++){
+                        for (auto i = 1; i < data.size() - 1; i++){
                             out[i] = (data[i+1] - data[i-1]) / static_cast<typename DerivativeType::SampleType>(2.0);
                         }
                     }
                     else if constexpr (different_type == FinniteDifferenceType::Forward){
-                        for (std::size_t i = 1; i < data.size() - 1; i++){
+                        for (auto i = 1; i < data.size() - 1; i++){
                             out[i] = static_cast<typename DerivativeType::SampleType>(data[i+1] - data[i]);
                         }
                     }
