@@ -48,6 +48,11 @@ int main(){
     using SignalT = decltype(signal1);
     IC(incr(point)); //1
     
+    //if (len == 100) fs[51].re == fs[49].re, fs[51].im = -fs[49].im; fs[50]is uniq
+    //if len == 101 its 50 and 51
+    //0 and last are different
+    //if 10 then 4 and 6
+    //if 11 then 5 and 6
     for (auto i = 0; i < 100; i++){
         signal1.base->vec->push_back(0.);
         IC(i);
@@ -61,8 +66,9 @@ int main(){
         approximator.is_actual = false;
         auto accum = 0.;
         for(auto i = 0; i < signal1.size(); i++){
-            accum += (approximator.compute(i) - signal1[i]) * (approximator.compute(i) - signal1[i]);
+            //accum += NP_DSP::ONE_D::UTILITY_MATH::complexL2(approximator.computeComplex(i), {signal1[i], 0.0})*NP_DSP::ONE_D::UTILITY_MATH::complexL2(approximator.computeComplex(i), {signal1[i], 0.0});
             //accum += std::abs(approximator.compute(i) - signal1[i]);
+            accum += (approximator.compute(i) - signal1[i]) * (approximator.compute(i) - signal1[i])/signal1.size();
             //IC(std::abs(approximator.compute(i) - signal1[i]));
         }
         //approximator.show(NP_DSP::ONE_D::PlottingKind::Simple);

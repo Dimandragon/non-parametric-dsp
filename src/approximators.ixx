@@ -76,8 +76,30 @@ namespace NP_DSP{
                     }
                 }
 
+                std::complex<SampleType> computeComplex(IdxType idx){
+                    if(std::abs(static_cast<double>(idx) - static_cast<int64_t>(idx)) == 0){
+                        if(is_actual){
+                            return approximated_data[idx];
+                        }
+                        else{
+                            computeData();
+                            return approximated_data[idx];
+                        }
+                    }
+                    else{
+                        return computeSample(idx);
+                    }
+                }
+
                 void train() {
                     for (auto i = 0; i < fourier_series.size(); i++) {
+                        if (i > fourier_series.size()/2)
+                        {
+                            fourier_series[i] = {fourier_series[fourier_series.size() - i].real() / 2.0, -fourier_series[fourier_series.size() - i].imag() / 2.0};
+                            fourier_series[fourier_series.size() - i] = fourier_series[fourier_series.size() - i] / 2.0;
+                            continue;
+                        }
+                        //i = 50
                         //auto trigonometric_sample = ONE_D::UTILITY_MATH::convertFSampleC2T(fourier_series[i]);
                         std::pair<SampleType, SampleType> trigonometric_sample;
                         trigonometric_sample.first = 10.;
@@ -94,27 +116,47 @@ namespace NP_DSP{
                             IC(mark); 
                         }
 
-                        SampleType check_loss[&](std::pair<T, T> data){
-                            fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>(data);
+                        auto check_loss = [&](std::pair<SampleType, SampleType> data){
+                            auto complex_sample = UTILITY_MATH::convertFSampleT2C<SampleType>(data);
+                            fourier_series[i] = complex_sample;
                             SampleType loss1 = (*loss)(*this);
-                            fourier_series[i] = {fourier_series[i].imag2(), fourier_series[i].imag()};
+                            fourier_series[i] = {complex_sample.real(), -complex_sample.imag()};
                             SampleType loss2 = (*loss)(*this);
-                            if (loss1<loss2)[
-                                fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>(data);
+                            fourier_series[i] = {-complex_sample.real(), complex_sample.imag()};
+                            SampleType loss3 = (*loss)(*this);
+                            fourier_series[i] = {-complex_sample.real(), -complex_sample.imag()};
+                            SampleType loss4 = (*loss)(*this);
+
+                            if (loss1 <= loss2 && loss1 <= loss3 && loss1 <= loss4){
+                                fourier_series[i] = complex_sample;
                                 return loss1;
-                            ]
-                            return loss2;
-                        }
+                            }
+                            else if (loss2 <= loss1 && loss2 <= loss3 && loss2 <= loss4){
+                                fourier_series[i] = {complex_sample.real(), -complex_sample.imag()};
+                                return loss2;
+                            }
+                            else if (loss3 <= loss2 && loss3 <= loss1 && loss3 <= loss4){
+                                fourier_series[i] = {-complex_sample.real(), complex_sample.imag()};
+                                return loss3;
+                            }
+                            else{
+                                fourier_series[i] = {-complex_sample.real(), -complex_sample.imag()};
+                                return loss4;
+                            }
+                            //std::complex<SampleType> complex_sample = UTILITY_MATH::convertFSampleT2C<SampleType>(data);
+                            //if (data.second > 0){
+                                //complex_sample = -complex_sample;
+                            //}
+                            //fourier_series[i] = complex_sample;
+                            //return (*loss)(*this);
+                        };
 
                         auto theta_min = static_cast<SampleType>(-std::numbers::pi/2.0 + 0.01);
-                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>({static_cast<SampleType>(10.), theta_min});
-                        auto left_loss = (*loss)(*this);
+                        auto left_loss = check_loss({static_cast<SampleType>(10.), theta_min});
                         auto theta_max = static_cast<SampleType>(std::numbers::pi/2.0 + 0.01);
-                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>({static_cast<SampleType>(10.), theta_max});
-                        auto right_loss = (*loss)(*this);
+                        auto right_loss = check_loss({static_cast<SampleType>(10.), theta_max});
                         auto theta_central = static_cast<SampleType>(0.0);
-                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>({static_cast<SampleType>(10.), theta_central});
-                        auto central_loss = (*loss)(*this);
+                        auto central_loss = check_loss({static_cast<SampleType>(10.), theta_central});
 
                         if constexpr (CONFIG::debug){
                             std::string mark = "end compute first losses";
@@ -145,30 +187,26 @@ namespace NP_DSP{
                                 theta_min = theta_central;
                                 theta_central = (theta_min + theta_max) / 2;
                                 trigonometric_sample.second = theta_central;
-                                fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>(trigonometric_sample);
-                                central_loss = (*loss)(*this);
+                                central_loss = check_loss(trigonometric_sample);
                             }
                             else if (left_diff <= 0 && right_diff > 0) {
                                 right_loss = central_loss;
                                 theta_max = theta_central;
                                 theta_central = (theta_min + theta_max) / 2;
                                 trigonometric_sample.second = theta_central;
-                                fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>(trigonometric_sample);
-                                central_loss = (*loss)(*this);
+                                central_loss = check_loss(trigonometric_sample);
                             }
                             else if (left_diff > right_diff) {
                                 //left branch is higher
                                 auto theta_left_avg = (theta_min + theta_central) / 2;
                                 trigonometric_sample.second = theta_left_avg;
-                                fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>(trigonometric_sample);
-                                auto new_left_loss = (*loss)(*this);
+                                auto new_left_loss = check_loss(trigonometric_sample);
                                 if(new_left_loss < left_loss && new_left_loss > central_loss) {
                                     left_loss = new_left_loss;
                                     theta_min = theta_left_avg;
                                     theta_central = (theta_min + theta_max) / 2;
                                     trigonometric_sample.second = theta_central;
-                                    fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>(trigonometric_sample);
-                                    central_loss = (*loss)(*this);
+                                    central_loss = check_loss(trigonometric_sample);
                                 }
                                 else {
                                     right_loss = central_loss;
@@ -181,15 +219,13 @@ namespace NP_DSP{
                                 //right branch is higher
                                 auto theta_right_avg = (theta_max + theta_central) / 2;
                                 trigonometric_sample.second = theta_right_avg;
-                                fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>(trigonometric_sample);
-                                auto new_right_loss = (*loss)(*this);
+                                auto new_right_loss = check_loss(trigonometric_sample);
                                 if (new_right_loss < right_loss && new_right_loss > central_loss) {
                                     right_loss = new_right_loss;
                                     theta_max = theta_right_avg;
                                     theta_central = (theta_max + theta_min) / 2;
                                     trigonometric_sample.second = theta_central;
-                                    fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>(trigonometric_sample);
-                                    central_loss = (*loss)(*this);
+                                    central_loss = check_loss(trigonometric_sample);
                                 }
                                 else {
                                     left_loss = central_loss;
@@ -212,14 +248,11 @@ namespace NP_DSP{
                         SampleType ampl_right = max_value;
                         SampleType ampl_central = (ampl_left + ampl_right) / 2;
                         trigonometric_sample.first = ampl_left;
-                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>(trigonometric_sample);
-                        auto loss_left = (*loss)(*this);
+                        auto loss_left = check_loss(trigonometric_sample);
                         trigonometric_sample.first = ampl_right;
-                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>(trigonometric_sample);
-                        auto loss_right = (*loss)(*this);
+                        auto loss_right = check_loss(trigonometric_sample);
                         trigonometric_sample.first = ampl_central;
-                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>(trigonometric_sample);
-                        auto loss_central = (*loss)(*this);
+                        auto loss_central = check_loss(trigonometric_sample);
                         auto ampl_opt_iter = 0;
                         //while(!(*stopPont)(std::abs(ampl_right - ampl_left), *this)) {
                         auto errors_counter = 0; 
@@ -237,30 +270,26 @@ namespace NP_DSP{
                                 ampl_left = ampl_central;
                                 ampl_central = (ampl_left + ampl_right) / 2;
                                 trigonometric_sample.first = ampl_central;
-                                fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>(trigonometric_sample);
-                                loss_central = (*loss)(*this);
+                                loss_central = check_loss(trigonometric_sample);
                             }
                             else if (left_diff <= 0 && right_diff > 0) {
                                 loss_right = loss_central;
                                 ampl_right = ampl_central;
                                 ampl_central = (ampl_left + ampl_right) / 2;
                                 trigonometric_sample.first = ampl_central;
-                                fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>(trigonometric_sample);
-                                loss_central = (*loss)(*this);
+                                loss_central = check_loss(trigonometric_sample);
                             }
                             else if (left_diff > right_diff) {
                                 //left branch is higher
                                 auto ampl_left_avg = (ampl_left + ampl_central) / 2;
                                 trigonometric_sample.first = ampl_left_avg;
-                                fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>(trigonometric_sample);
-                                auto new_loss_left = (*loss)(*this);
+                                auto new_loss_left = check_loss(trigonometric_sample);
                                 if (new_loss_left < loss_left && new_loss_left > central_loss) {
                                     loss_left = new_loss_left;
                                     ampl_left = ampl_left_avg;
                                     ampl_central = (ampl_left + ampl_right) / 2;
                                     trigonometric_sample.first = ampl_central;
-                                    fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>(trigonometric_sample);
-                                    loss_central = (*loss)(*this);
+                                    loss_central = check_loss(trigonometric_sample);
                                 }
                                 else {
                                     loss_right = loss_central;
@@ -272,15 +301,13 @@ namespace NP_DSP{
                             else if (left_diff <= right_diff) {
                                 auto ampl_right_avg = (ampl_right + ampl_central) / 2;
                                 trigonometric_sample.first = ampl_right_avg;
-                                fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>(trigonometric_sample);
-                                auto new_loss_right = (*loss)(*this);
+                                auto new_loss_right = check_loss(trigonometric_sample);
                                 if (new_loss_right < loss_right && new_loss_right > loss_central) {
                                     loss_right = new_loss_right;
                                     ampl_right = ampl_right_avg;
                                     ampl_central = (ampl_left + ampl_right) / 2;
                                     trigonometric_sample.first = ampl_central;
-                                    fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>(trigonometric_sample);
-                                    loss_central = (*loss)(*this);
+                                    loss_central = check_loss(trigonometric_sample);
                                 }
                                 else {
                                     loss_left = loss_central;
@@ -332,7 +359,7 @@ namespace NP_DSP{
                         }
                         trigonometric_sample.first = ampl_central;
                         
-                        fourier_series[i] = UTILITY_MATH::convertFSampleT2C<SampleType>(trigonometric_sample);
+                        check_loss(trigonometric_sample);
                         show(PlottingKind::Simple);
                     }
                 }
