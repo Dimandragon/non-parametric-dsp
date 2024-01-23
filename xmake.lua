@@ -96,6 +96,13 @@ target("finnite_difference_example")
     add_deps("non-parametric_dsp")
     add_deps("icecream")
 
+target("fs_based_approx_example")
+    set_kind("binary")
+    add_files("examples/approximators/fourier_series_based.cpp")
+    add_deps("matplot++_external")
+    add_deps("non-parametric_dsp")
+    add_deps("icecream")
+
 --target("opengl_plotting_test")
     --set_kind("binary")
     --add_files("examples/plotting/opengl_test.cpp")

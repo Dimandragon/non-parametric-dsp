@@ -15,6 +15,21 @@ import npdsp_config;
 namespace NP_DSP{
     namespace ONE_D{
         namespace UTILITY_MATH{
+            template <typename T>
+            T complexL2(std::complex<T> a, std::complex<T> b){
+                return (a.imag()-b.imag())*(a.imag()-b.imag()) + (a.real()-b.real())*(a.real()-b.real());
+            }
+
+            template <typename T>
+            T pairL2(std::pair<T, T> a, std::pair<T, T> b){
+                return (a.first-b.first)*(a.first-b.first) + (a.second-b.second)*(a.second-b.second);
+            }
+
+            auto sec(auto z_r)
+            {
+                return 1 / std::cos(z_r);
+            }
+
             export
             template<typename xType, typename yType>
             yType linearInterpolate(std::pair<xType, yType> point1, std::pair<xType, yType> point2, xType x_in){
@@ -68,7 +83,7 @@ namespace NP_DSP{
                 {
                     axes.push_back(i);
                 }
-                c2c(shape, stridef, stridef, axes, pocketfft::BACKWARD,
+                pocketfft::c2c(shape, stridef, stridef, axes, pocketfft::BACKWARD,
                     data_in.data(), data_out.data(), static_cast<T>(1));
             }
 
@@ -143,19 +158,47 @@ namespace NP_DSP{
             std::pair<T, T> convertFSampleC2T(std::complex<T> sample) {
                 return std::pair{
                     std::sqrt(sample.real()*sample.real() + sample.imag()*sample.imag()),
-                    std::atan(sample.imag()/sample.real())
+                    std::atan2(sample.imag(), sample.real())
                 };
             }
 
             export
             template <typename T>
             std::complex<T> convertFSampleT2C(std::pair<T, T> sample) {
-                auto theta = sample.second;
-                auto ampl = sample.first;
-                std::complex<T> result;
-                result.imag = ampl * std::sin(theta);
-                result.real = ampl * std::cos(theta);
-                return result;
+                T theta = sample.second;
+                T ampl = sample.first;
+                
+                auto b1 = -ampl * std::tan(theta) / std::sqrt(sec(theta) * sec(theta));
+                auto a1 = -ampl / std::sqrt(sec(theta) * sec(theta));
+                auto b2 = ampl * std::tan(theta) / std::sqrt(sec(theta) * sec(theta));
+                auto a2 = ampl / std::sqrt(sec(theta) * sec(theta));
+
+                std::complex<T> result1 {a1, b1};
+                std::complex<T> result2 {a1, b2};
+                std::complex<T> result3 {a2, b1};
+                std::complex<T> result4 {a2, b2};
+
+                T error1 = pairL2<T>(sample, convertFSampleC2T(result1));
+                T error2 = pairL2<T>(sample, convertFSampleC2T(result2));
+                T error3 = pairL2<T>(sample, convertFSampleC2T(result3));
+                T error4 = pairL2<T>(sample, convertFSampleC2T(result4));
+                
+                if (error1 <= error2 && error1 <= error3 && error1 <= error4){
+                    IC(convertFSampleC2T(result1), sample);
+                    return result1;
+                }
+                else if (error2 <= error1 && error2 <= error3 && error2 <= error4){
+                    IC(convertFSampleC2T(result2), sample);
+                    return result2;
+                }
+                else if (error3 <= error1 && error3 <= error2 && error3 <= error4){
+                    IC(convertFSampleC2T(result3), sample);
+                    return result3;
+                }
+                else{
+                    IC(convertFSampleC2T(result4), sample);
+                    return result4;
+                }
             }
         }
     }

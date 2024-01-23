@@ -55,7 +55,7 @@ struct Plotter {
 
 
 int main(){
-    auto len = 128;
+    auto len = 5000;
     std::vector<std::complex<float>> data(len);
     std::vector<std::complex<float>> out(len);
 
@@ -66,7 +66,8 @@ int main(){
     //fill.push_back({{5.0, 2.0}, {10.0, 12.0}});
     //createFill(data, fill);
     for (int i = 0; i < data.size(); i++) {
-        data[i] = static_cast<double>(i * 5) / static_cast<double>(data.size()) * std::cos(2.0 * std::numbers::pi / static_cast<double>(data.size()) * std::pow(static_cast<float>(i), 2.) / 10);
+        //data[i] = static_cast<double>(i * 5) / static_cast<double>(data.size()) * std::cos(2.0 * std::numbers::pi / static_cast<double>(data.size()) * std::pow(static_cast<float>(i), 2.) / 10);
+        data[i] = std::rand();
     }
 
 
@@ -107,11 +108,22 @@ int main(){
 
     std::vector<std::pair<float, float>> trigonometric_series;
     convertFSeriesFromComplexToTrigonometric(out, trigonometric_series);
+    std::vector<float> phase_vec;
+    std::vector<float> ampl_vec;
+    for (auto i = 0; i < trigonometric_series.size(); i++){
+        phase_vec.push_back(trigonometric_series[i].second);
+        ampl_vec.push_back(trigonometric_series[i].first);
+    }
+    matplot::plot(phase_vec);
+    matplot::show();
+
+    matplot::plot(ampl_vec);
+    matplot::show();
 
     Plotter plotter;
     plotter.plot_id = 3;
-    plotter.plotTrigonometricFourierSeries(trigonometric_series, out.size());
-
+    //plotter.plotTrigonometricFourierSeries(trigonometric_series, out.size());
+    
 
     return 0;
 

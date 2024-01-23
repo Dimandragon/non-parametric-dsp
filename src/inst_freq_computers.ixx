@@ -434,7 +434,7 @@ namespace NP_DSP{
                         }
                     };
                     //APPROX::FourerSeriesBased
-                    auto approximator = APPROX::FourerSeriesBased(loss, external_opt_parametr, stopPoint);
+                    auto approximator = APPROX::FourierSeriesBased(loss, external_opt_parametr, stopPoint);
                     approximator.train();
                 }
             };

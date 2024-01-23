@@ -152,6 +152,17 @@ namespace NP_DSP
                 return base->size();
             }
 
+            void show(PlottingKind kind){
+                if (kind == PlottingKind::Simple){
+                    std::vector<SampleType> plotting_data = {};
+                    for (auto i = 0; i < base->size(); i++){
+                        plotting_data.push_back((*base)[i]);
+                    }
+                    matplot::plot(plotting_data);
+                    matplot::show();
+                }
+            }
+
             void show(PlottingKind kind, const std::string & filename, const std::string & format) const {
                 if (kind == PlottingKind::Simple){
                     std::vector<SampleType> plotting_data = {};
