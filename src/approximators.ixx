@@ -31,6 +31,7 @@ namespace NP_DSP{
                 StopPoint * stopPont;
                 SignalType * signal;
                 bool is_actual = false;
+                int polynoms_count;
 
 
                 std::vector<std::complex<SampleType>> fourier_series;
@@ -45,11 +46,16 @@ namespace NP_DSP{
                     fourier_series = std::vector<std::complex<SampleType>>(signal_in.size());
                     approximated_data = std::vector<std::complex<SampleType>>(signal_in.size());
                     stopPont = &stop_point;
+                    polynoms_count = signal_in.size() / 2;
                 }
 
                 void computeData(){
                     is_actual = true;
                     UTILITY_MATH::ifftc2c(fourier_series, approximated_data);
+                }
+
+                void setpolynomsCount(int count){
+                    polynoms_count = count;
                 }
 
                 std::complex<SampleType> computeSample(IdxType idx){
@@ -97,6 +103,9 @@ namespace NP_DSP{
                         {
                             fourier_series[i] = {fourier_series[fourier_series.size() - i].real() / 2.0, -fourier_series[fourier_series.size() - i].imag() / 2.0};
                             fourier_series[fourier_series.size() - i] = fourier_series[fourier_series.size() - i] / 2.0;
+                            continue;
+                        }
+                        if (i >= polynoms_count){
                             continue;
                         }
                         //i = 50
@@ -266,6 +275,8 @@ namespace NP_DSP{
                             auto left_diff = loss_left-loss_central;
                             auto right_diff = loss_right-loss_central;
                             if(left_diff > 0 && right_diff <=0) {
+                                std::string point_mark = "ampl 1 branch";
+                                IC(point_mark);
                                 loss_left = loss_central;
                                 ampl_left = ampl_central;
                                 ampl_central = (ampl_left + ampl_right) / 2;
@@ -273,6 +284,8 @@ namespace NP_DSP{
                                 loss_central = check_loss(trigonometric_sample);
                             }
                             else if (left_diff <= 0 && right_diff > 0) {
+                                std::string point_mark = "ampl 2 branch";
+                                IC(point_mark);
                                 loss_right = loss_central;
                                 ampl_right = ampl_central;
                                 ampl_central = (ampl_left + ampl_right) / 2;
@@ -280,11 +293,15 @@ namespace NP_DSP{
                                 loss_central = check_loss(trigonometric_sample);
                             }
                             else if (left_diff > right_diff) {
+                                std::string point_mark = "ampl 3 branch";
+                                IC(point_mark);
                                 //left branch is higher
                                 auto ampl_left_avg = (ampl_left + ampl_central) / 2;
                                 trigonometric_sample.first = ampl_left_avg;
                                 auto new_loss_left = check_loss(trigonometric_sample);
                                 if (new_loss_left < loss_left && new_loss_left > central_loss) {
+                                    std::string point_mark = "ampl 3.1 branch";
+                                    IC(point_mark);
                                     loss_left = new_loss_left;
                                     ampl_left = ampl_left_avg;
                                     ampl_central = (ampl_left + ampl_right) / 2;
@@ -292,17 +309,25 @@ namespace NP_DSP{
                                     loss_central = check_loss(trigonometric_sample);
                                 }
                                 else {
-                                    loss_right = loss_central;
-                                    ampl_right = ampl_central;
-                                    ampl_central = ampl_left_avg;
-                                    loss_central = new_loss_left;
+                                    std::string point_mark = "ampl 3.2 branch";
+                                    IC(point_mark);
+                                    ampl_right = (ampl_central+ampl_right) / 2;
+                                    trigonometric_sample.first = ampl_right;
+                                    loss_right = check_loss(trigonometric_sample);
+                                    ampl_central = (ampl_right + ampl_left) / 2;
+                                    trigonometric_sample.first = ampl_central;
+                                    loss_central = check_loss(trigonometric_sample);
                                 }
                             }
                             else if (left_diff <= right_diff) {
+                                std::string point_mark = "ampl 4 branch";
+                                IC(point_mark);
                                 auto ampl_right_avg = (ampl_right + ampl_central) / 2;
                                 trigonometric_sample.first = ampl_right_avg;
                                 auto new_loss_right = check_loss(trigonometric_sample);
                                 if (new_loss_right < loss_right && new_loss_right > loss_central) {
+                                    std::string point_mark = "ampl 4.1 branch";
+                                    IC(point_mark);
                                     loss_right = new_loss_right;
                                     ampl_right = ampl_right_avg;
                                     ampl_central = (ampl_left + ampl_right) / 2;
@@ -310,10 +335,16 @@ namespace NP_DSP{
                                     loss_central = check_loss(trigonometric_sample);
                                 }
                                 else {
-                                    loss_left = loss_central;
-                                    ampl_left = ampl_central;
-                                    loss_central = new_loss_right;
-                                    ampl_central = ampl_right_avg;
+                                    std::string point_mark = "ampl 4.2 branch";
+                                    IC(point_mark);
+                                    ampl_left = (ampl_central + ampl_left)/2;
+                                    trigonometric_sample.first = ampl_left;
+                                    //IC(point_mark);
+                                    loss_left = check_loss(trigonometric_sample);
+                                    ampl_central = (ampl_right + ampl_left) / 2;
+                                    trigonometric_sample.first = ampl_central;
+                                    loss_central = check_loss(trigonometric_sample);
+                                    //IC(point_mark);
                                 }
                             }
                             //auto left_diff = loss_left-loss_central;
@@ -333,7 +364,7 @@ namespace NP_DSP{
                                     
                                     if (errors_counter > 10){
                                         if constexpr (CONFIG::debug){
-                                            IC("aaaa fuck x4");
+                                            //IC("aaaa fuck x4");
                                             for(;;){}
                                         }
                                         
