@@ -35,7 +35,7 @@ namespace NP_DSP{
         template <typename T>
         concept SignalBase = is_signal_base<T>;
 
-        export enum class PlottingKind {Simple};
+        export enum class PlottingKind {Simple, Interpolate};
 
         export
         template <typename T>
@@ -100,7 +100,7 @@ namespace NP_DSP{
         template <typename T>
         concept SignalBase = is_signal_base<T>;
 
-        export enum class PlottingKind {Simple};
+        export enum class PlottingKind {Simple, Interpolate};
 
         export
         template <typename T>
@@ -313,7 +313,7 @@ namespace NP_DSP{
 
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::IntegralType>;
-            requires (std::tuple_size_v<typename T::IntegralType::IdxType> == std::tuple_size_v<typename T::DataType::IdxType>);
+            //requires (std::tuple_size_v<typename T::IntegralType::IdxType> == std::tuple_size_v<typename T::DataType::IdxType>);
             requires is_signal_wrapper<typename T::AdditionalDataType>;
 
             integrator.compute(data, out, additional_data);

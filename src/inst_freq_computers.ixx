@@ -1,5 +1,7 @@
 module;
 
+#include "icecream.hpp"
+
 export module inst_freq_computers;
 
 import npdsp_concepts;
@@ -12,6 +14,9 @@ import <vector>;
 import <utility>;
 import utility_math;
 import approximators;
+import <optional>;
+import npdsp_config;
+import <complex>;
 
 namespace NP_DSP{
     namespace ONE_D{
@@ -20,7 +25,7 @@ namespace NP_DSP{
             enum class InstFreqDerivativeBasedKind {Momental, TimeAverage, DeriveAverage, DeriveDouble};
 
             export
-            template<Signal DataT, Signal OutT, SignalWrapper OptFn, /*OptFn opt_fn,*/
+            template<Signal DataT, Signal OutT, /*SignalWrapper OptFn, OptFn opt_fn,*/
                     Integrator IntegratorT, Derivator DerivatorT, InstFreqDerivativeBasedKind kind>
             struct DerivativeBased{
                 using DataType = DataT;
@@ -30,7 +35,7 @@ namespace NP_DSP{
                 constexpr static bool is_inst_freq_computer = true;
                 constexpr static InstFreqDerivativeBasedKind counting_kind = kind;
 
-                using OptFunction = OptFn;
+                //using OptFunction = OptFn;
                 //OptFunction opt_function = opt_fn;
 
                 using IntegratorType = IntegratorT;
@@ -40,7 +45,7 @@ namespace NP_DSP{
                 IntegratorType integrator;
                 DerivatorType derivator;
 
-                static_assert(OutType::is_writable == true);
+                //static_assert(OutType::is_writable == true);
 
                 DerivativeBased(IntegratorT integrator_o,
                                 DerivatorT derivator_o)
@@ -49,28 +54,59 @@ namespace NP_DSP{
                     derivator = derivator_o;
                 }
 
-                void compute(DataType data, OutType & out, AdditionalDataType & computer_buffer)
+                void compute(const DataType & data, OutType & out, AdditionalDataType & computer_buffer)
                 {
+                    GENERAL::Nil nil;
                     if constexpr (counting_kind == InstFreqDerivativeBasedKind::Momental){
-                        derivator.compute(data, computer_buffer, {});
+                        derivator.compute(data, computer_buffer, nil);
                         for (int i = 0; i < data.size(); i++){
                             computer_buffer[i] = std::atan(computer_buffer[i]);
                         }
-                        derivator.compute(computer_buffer, out, {});
+                        derivator.compute(computer_buffer, out, nil);
                         for (int i = 0; i < data.size(); i++){
                             out[i] = std::abs(out[i]) / (std::numbers::pi * 2.0);
                         }
                     }
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::TimeAverage){
-                        derivator.compute(data, computer_buffer, {});
+
+                        if constexpr (NP_DSP::CONFIG::debug){
+                            //data.show(PlottingKind::Interpolate);
+                        }
+                        derivator.compute(data, computer_buffer, nil);
+                        if constexpr (NP_DSP::CONFIG::debug){
+                            //std::string mark = "plot1";
+                            //IC(mark);
+                            //computer_buffer.show(PlottingKind::Interpolate);
+                        }
                         for (int i = 0; i < data.size(); i++){
                             computer_buffer[i] = std::atan(computer_buffer[i]);
                         }
-                        derivator.compute(computer_buffer, out, {});
-                        for (int i = 0; i < data.size(); i++){
-                            out[i] = std::abs(out[i]) / (std::numbers::pi * 2.0);
+                        if constexpr (NP_DSP::CONFIG::debug){
+                            //std::string mark = "plot2";
+                            //IC(mark);
+                            //computer_buffer.show(PlottingKind::Interpolate);
                         }
-                        integrator.compute(out, computer_buffer);
+                        derivator.compute(computer_buffer, out, nil);
+                        if constexpr (NP_DSP::CONFIG::debug){
+                            //std::string mark = "plot3";
+                            //IC(mark);
+                            //out.show(PlottingKind::Interpolate);
+                        }
+                        for (int i = 0; i < data.size(); i++){
+                            out[i] = std::abs(out[i]);
+                        }
+                        if constexpr (NP_DSP::CONFIG::debug){
+                            //std::string mark = "plot4";
+                            //IC(mark);
+                            //out.show(PlottingKind::Interpolate);
+                        }
+                        integrator.compute(out, computer_buffer, nil);
+                        if constexpr (NP_DSP::CONFIG::debug){
+                            //std::string mark = "plot5";
+                            //IC(mark);
+                            //computer_buffer.show(PlottingKind::Interpolate);
+                        }
+                        
                         for (auto i = 0; i < data.size(); i++){
                             auto approx_answer = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer = approx_answer;
@@ -78,8 +114,7 @@ namespace NP_DSP{
                             while (approx_answer < 2.0 * std::numbers::pi){
                                 counter++;
                                 old_approx_answer = approx_answer;
-                                approx_answer += std::abs(computer_buffer.interpolate(i+counter)-computer_buffer.interpolate(i+counter-1)) +
-                                        std::abs(computer_buffer.interpolate(i-counter)-computer_buffer.interpolate(i-counter+1));
+                                approx_answer = computer_buffer.interpolate(i+counter) - computer_buffer.interpolate(i - counter);
                             }
                             auto left_loss = std::numbers::pi * 2.0 - old_approx_answer;
                             auto right_loss = approx_answer - std::numbers::pi * 2.0;
@@ -89,28 +124,64 @@ namespace NP_DSP{
                         }
                     }
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveAverage){
-                        derivator.compute(data, computer_buffer, {});
+                        derivator.compute(data, computer_buffer, nil);
                         for (int i = 0; i < data.size(); i++){
                             computer_buffer[i] = std::atan(computer_buffer[i]);
                         }
-                        derivator.compute(computer_buffer, out, {});
+                        derivator.compute(computer_buffer, out, nil);
                         for (int i = 0; i < data.size(); i++){
-                            out[i] = std::abs(out[i]) / (std::numbers::pi * 2.0);
+                            out[i] = std::abs(out[i]);
                         }
-                        integrator.compute(out, computer_buffer);
-                        auto right_edge = computer_buffer.findIncr(computer_buffer[0] + std::numbers::pi, {0}, {});
-                        auto left_edge = computer_buffer.findIncr(computer_buffer[0] - std::numbers::pi, {}, {0});
-                        auto period = right_edge + left_edge;
-                        out[0] = static_cast<OutType::SampleType>(1.0/period);
-                        for (auto i = 1; i < data.size(); i++){
-                            right_edge = computer_buffer.findIncr(computer_buffer[i] + std::numbers::pi, {right_edge}, {});
-                            left_edge = computer_buffer.findIncr(computer_buffer[i] - std::numbers::pi, {left_edge}, {});
-                            period = right_edge + left_edge;
+                        integrator.compute(out, computer_buffer, nil);
+                        if constexpr (NP_DSP::CONFIG::debug){
+                            computer_buffer.show(PlottingKind::Interpolate);
+                        }
+                        //SampleType right_edge;// = computer_buffer.template findMonotone<double>(computer_buffer[0] + std::numbers::pi, {0}, {});
+                        //SampleType left_edge;// = computer_buffer.template findMonotone<double>(computer_buffer[0] - std::numbers::pi, {}, {0});
+                        //SampleType period; //= right_edge + left_edge;
+                        //out[0] = static_cast<OutType::SampleType>(1.0/period);
+                        for (auto i = 0; i < data.size(); i++){
+                            //right_edge = computer_buffer.template findMonotone<double>(computer_buffer[i] + std::numbers::pi, {right_edge}, {});
+                            //left_edge = computer_buffer.template findMonotone<double>(computer_buffer[i] - std::numbers::pi, {left_edge}, {});
+                            auto approx_answer_right = static_cast<OutType::SampleType>(0.0);
+                            auto old_approx_answer_right = approx_answer_right;
+                            auto counter = 0;
+                            while (approx_answer_right < std::numbers::pi){
+                                counter++;
+                                old_approx_answer_right = approx_answer_right;
+                                //approx_answer_right = compute_buffer.interpolate(i+counter) - compute_buffer.interpolate(i);
+                                approx_answer_right = computer_buffer.interpolate(i + counter) - computer_buffer.interpolate(i);
+                                //std::abs(computer_buffer.interpolate(i+counter)-computer_buffer.interpolate(i+counter-1));
+                                //        std::abs(computer_buffer.interpolate(i-counter)-computer_buffer.interpolate(i-counter+1));
+                            }
+                            auto left_loss_right_edge = std::numbers::pi - old_approx_answer_right;
+                            auto right_loss_right_edge = approx_answer_right - std::numbers::pi;
+                            auto sum_loss_right_edge = left_loss_right_edge + right_loss_right_edge;
+                            auto right_edge = static_cast<OutType::SampleType>(counter) - right_loss_right_edge/sum_loss_right_edge;
+                            
+                            //auto right_edge = computer_buffer.template findMonotone<double>(computer_buffer[i] + std::numbers::pi, {i + counter-1}, {i + counter});
+                            
+                            auto approx_answer_left = static_cast<OutType::SampleType>(0.0);
+                            auto old_approx_answer_left = approx_answer_left;
+                            counter = 0;
+                            while (approx_answer_left < std::numbers::pi){
+                                counter++;
+                                old_approx_answer_left = approx_answer_left;
+                                //approx_answer_right = compute_buffer.interpolate(i+counter) - compute_buffer.interpolate(i);
+                                approx_answer_left = computer_buffer.interpolate(i)-computer_buffer.interpolate(i-counter);
+                            }
+                            //auto left_edge = computer_buffer.template findMonotone<double>(computer_buffer[i] - std::numbers::pi, {i - counter}, {i - counter + 1});
+                            auto left_loss_left_edge = std::numbers::pi - old_approx_answer_left;
+                            auto right_loss_left_edge = approx_answer_left - std::numbers::pi;
+                            auto sum_loss_left_edge = left_loss_left_edge + right_loss_left_edge;
+                            auto left_edge = static_cast<OutType::SampleType>(counter) - right_loss_left_edge/sum_loss_left_edge; 
+
+                            auto period = right_edge + left_edge;
                             out[i] = static_cast<OutType::SampleType>(1.0/period);
                         }
                     }
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveDouble){
-                        derivator.compute(data, computer_buffer, {});
+                        derivator.compute(data, computer_buffer, nil);
                         for (int i = 0; i < data.size(); i++){
                             computer_buffer[i] = std::atan(computer_buffer[i]);
                         }
@@ -135,19 +206,23 @@ namespace NP_DSP{
                             decltype(get_size_lamda), true>(out_val_getter_lamda, out_ref_forward_getter_lamda, get_size_lamda);
                         auto signal_for_compute = GenericSignal(signal_base);
 
-                        derivator.compute(computer_buffer, signal_for_compute, {});
+                        derivator.compute(computer_buffer, signal_for_compute, nil);
                         for (int i = 0; i < data.size(); i++){
                             out_ref_forward_getter_lamda(i) = std::abs(out_val_getter_lamda(i)) / (std::numbers::pi * 2.0);
                         }
                         integrator.compute(signal_for_compute, computer_buffer);
+                        //if constexpr (NP_DSP::CONFIG::debug){
+                        //    computer_buffer.show(PlottingKind::Interpolate);
+                        //}
+                        //todo
 
-                        auto right_edge = computer_buffer.findIncr(computer_buffer[0] + std::numbers::pi, {0}, {});
-                        auto left_edge = computer_buffer.findIncr(computer_buffer[0] - std::numbers::pi, {}, {0});
+                        auto right_edge = computer_buffer.findIncr(computer_buffer[0] + std::numbers::pi, {0}, nil);
+                        auto left_edge = computer_buffer.findIncr(computer_buffer[0] - std::numbers::pi, nil, {0});
                         out_ref_forward_getter_lamda(0) = static_cast<OutType::SampleType>(1.0/left_edge);
                         out_ref_backward_getter_lamda(0) = static_cast<OutType::SampleType>(1.0/right_edge);
                         for (auto i = 1; i < data.size(); i++){
-                            right_edge = computer_buffer.findIncr(computer_buffer[i] + std::numbers::pi, {right_edge}, {});
-                            left_edge = computer_buffer.findIncr(computer_buffer[i] - std::numbers::pi, {left_edge}, {});
+                            right_edge = computer_buffer.findIncr(computer_buffer[i] + std::numbers::pi, {right_edge}, nil);
+                            left_edge = computer_buffer.findIncr(computer_buffer[i] - std::numbers::pi, {left_edge}, nil);
                             out_ref_forward_getter_lamda(0) = static_cast<OutType::SampleType>(1.0/left_edge);
                             out_ref_backward_getter_lamda(0) = static_cast<OutType::SampleType>(1.0/right_edge);
                         }
@@ -176,7 +251,7 @@ namespace NP_DSP{
                 IntegratorType integrator;
                 DerivatorType derivator;
 
-                static_assert(OutType::is_writable == true);
+                //static_assert(OutType::is_writable == true);
 
                 DerivativeBasedWithExternalOptParametr(IntegratorT integrator_o,
                                 DerivatorT derivator_o)
@@ -185,30 +260,67 @@ namespace NP_DSP{
                     derivator = derivator_o;
                 }
 
-                void compute(DataType data, OutType & out, AdditionalDataType & computer_buffer)
+                void compute(const DataType & data, OutType & out, AdditionalDataType & computer_buffer)
                 {
-                    if constexpr (counting_kind == InstFreqDerivativeBasedKind::TimeAverage){
-                        derivator.compute(data, out, {});
-                        std::vector<typename OutType::SampleType> memory_buffer;
-                        for (auto i = 0; i < data.size(); i++){
+                    GENERAL::Nil nil;
+                    if constexpr (counting_kind == InstFreqDerivativeBasedKind::Momental){
+                        derivator.compute(data, out, nil);
+                        for (int i = 0; i < data.size(); i++){
                             out[i] = std::atan(out[i]) * computer_buffer[i];
-                            memory_buffer.push_back(computer_buffer[i]);
                         }
-                        derivator.compute(out, computer_buffer, {});
-                        for (auto i = 0; i < data.size(); i++){
+                        derivator.compute(out, computer_buffer, nil);
+                        for (int i = 0; i < data.size(); i++){
                             out[i] = std::abs(computer_buffer[i]) / (std::numbers::pi * 2.0);
                         }
-                        integrator.compute(out, computer_buffer);
+                    }
+                    else if constexpr (counting_kind == InstFreqDerivativeBasedKind::TimeAverage){
+
+                        if constexpr (NP_DSP::CONFIG::debug){
+                            //data.show(PlottingKind::Interpolate);
+                        }
+                        derivator.compute(data, out, nil);
+                        if constexpr (NP_DSP::CONFIG::debug){
+                            //std::string mark = "plot1";
+                            //IC(mark);
+                            //out.show(PlottingKind::Interpolate);
+                        }
+                        for (int i = 0; i < data.size(); i++){
+                            computer_buffer[i] = std::atan(out[i]) * computer_buffer[i];
+                        }
+                        if constexpr (NP_DSP::CONFIG::debug){
+                            //std::string mark = "plot2";
+                            //IC(mark);
+                            //computer_buffer.show(PlottingKind::Interpolate);
+                        }
+                        derivator.compute(computer_buffer, out, nil);
+                        if constexpr (NP_DSP::CONFIG::debug){
+                            //std::string mark = "plot3";
+                            //IC(mark);
+                            //out.show(PlottingKind::Interpolate);
+                        }
+                        for (int i = 0; i < data.size(); i++){
+                            out[i] = std::abs(out[i]);
+                        }
+                        if constexpr (NP_DSP::CONFIG::debug){
+                            //std::string mark = "plot4";
+                            //IC(mark);
+                            //out.show(PlottingKind::Interpolate);
+                        }
+                        integrator.compute(out, computer_buffer, nil);
+                        if constexpr (NP_DSP::CONFIG::debug){
+                            //std::string mark = "plot5";
+                            //IC(mark);
+                            //computer_buffer.show(PlottingKind::Interpolate);
+                        }
+                        
                         for (auto i = 0; i < data.size(); i++){
                             auto approx_answer = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer = approx_answer;
                             auto counter = 0;
                             while (approx_answer < 2.0 * std::numbers::pi){
                                 counter++;
-
                                 old_approx_answer = approx_answer;
-                                approx_answer += std::abs(computer_buffer.interpolate(i+counter)-computer_buffer.interpolate(i+counter-1)) +
-                                                 std::abs(computer_buffer.interpolate(i-counter)-computer_buffer.interpolate(i-counter+1));
+                                approx_answer = computer_buffer.interpolate(i+counter) - computer_buffer.interpolate(i - counter);
                             }
                             auto left_loss = std::numbers::pi * 2.0 - old_approx_answer;
                             auto right_loss = approx_answer - std::numbers::pi * 2.0;
@@ -216,90 +328,57 @@ namespace NP_DSP{
                             auto period = (static_cast<OutType::SampleType>(counter) - right_loss/sum_loss) * 2;
                             out[i] = static_cast<OutType::SampleType>(1.0/period);
                         }
-                        for (auto i = 0; i < memory_buffer.size(); i++){
-                            computer_buffer[i] = memory_buffer[i];
-                        }
                     }
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveAverage){
-                        derivator.compute(data, out, {});
-                        std::vector<typename OutType::SampleType> memory_buffer;
-                        for (auto i = 0; i < data.size(); i++){
-                            out[i] = std::atan(out[i]) * computer_buffer[i];
-                            memory_buffer.push_back(computer_buffer[i]);
+                        derivator.compute(data, out, nil);
+                        for (int i = 0; i < data.size(); i++){
+                            computer_buffer[i] = std::atan(out[i]) * computer_buffer[i];
                         }
-                        derivator.compute(out, computer_buffer, {});
-                        for (auto i = 0; i < data.size(); i++){
-                            out[i] = std::abs(computer_buffer[i]) / (std::numbers::pi * 2.0);
+                        derivator.compute(computer_buffer, out, nil);
+                        for (int i = 0; i < data.size(); i++){
+                            out[i] = std::abs(out[i]);
                         }
-                        integrator.compute(out, computer_buffer);
-                        auto right_edge = computer_buffer.findIncr(computer_buffer[0] + std::numbers::pi, {0}, {});
-                        auto left_edge = computer_buffer.findIncr(computer_buffer[0] - std::numbers::pi, {}, {0});
-                        auto period = right_edge + left_edge;
-                        out[0] = static_cast<OutType::SampleType>(1.0/period);
-                        for (auto i = 1; i < data.size(); i++){
-                            right_edge = computer_buffer.findIncr(computer_buffer[i] + std::numbers::pi, {right_edge}, {});
-                            left_edge = computer_buffer.findIncr(computer_buffer[i] - std::numbers::pi, {left_edge}, {});
-                            period = right_edge + left_edge;
+                        integrator.compute(out, computer_buffer, nil);
+                        if constexpr (NP_DSP::CONFIG::debug){
+                            computer_buffer.show(PlottingKind::Interpolate);
+                        }
+                        for (auto i = 0; i < data.size(); i++){
+                            auto approx_answer_right = static_cast<OutType::SampleType>(0.0);
+                            auto old_approx_answer_right = approx_answer_right;
+                            auto counter = 0;
+                            while (approx_answer_right < std::numbers::pi){
+                                counter++;
+                                old_approx_answer_right = approx_answer_right;
+                                approx_answer_right = computer_buffer.interpolate(i + counter) - computer_buffer.interpolate(i);
+                            }
+                            auto left_loss_right_edge = std::numbers::pi - old_approx_answer_right;
+                            auto right_loss_right_edge = approx_answer_right - std::numbers::pi;
+                            auto sum_loss_right_edge = left_loss_right_edge + right_loss_right_edge;
+                            auto right_edge = static_cast<OutType::SampleType>(counter) - right_loss_right_edge/sum_loss_right_edge;
+                            
+                            auto approx_answer_left = static_cast<OutType::SampleType>(0.0);
+                            auto old_approx_answer_left = approx_answer_left;
+                            counter = 0;
+                            while (approx_answer_left < std::numbers::pi){
+                                counter++;
+                                old_approx_answer_left = approx_answer_left;
+                                approx_answer_left = computer_buffer.interpolate(i)-computer_buffer.interpolate(i-counter);
+                            }
+                            auto left_loss_left_edge = std::numbers::pi - old_approx_answer_left;
+                            auto right_loss_left_edge = approx_answer_left - std::numbers::pi;
+                            auto sum_loss_left_edge = left_loss_left_edge + right_loss_left_edge;
+                            auto left_edge = static_cast<OutType::SampleType>(counter) - right_loss_left_edge/sum_loss_left_edge; 
+
+                            auto period = right_edge + left_edge;
                             out[i] = static_cast<OutType::SampleType>(1.0/period);
-                        }
-                        for (auto i = 0; i < memory_buffer.size(); i++){
-                            computer_buffer[i] = memory_buffer[i];
-                        }
-                    }
-                    else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveDouble){
-                        std::vector<typename OutType::SampleType> memory_buffer;
-                        auto out_ref_forward_getter_lamda = [&out](OutType::IdxType idx){
-                            auto & ref = out[idx];
-                            auto & out_ref = ref.forward;
-                            return out_ref;
-                        };
-                        auto out_ref_backward_getter_lamda = [&out](OutType::IdxType idx){
-                            auto & ref = out[idx];
-                            auto & out_ref = ref.forward;
-                            return out_ref;
-                        };
-                        auto out_val_getter_lamda = [&out](OutType::IdxType idx){
-                            return out[idx].forward;
-                        };
-                        auto get_size_lamda = [out](){
-                            return out.size();
-                        };
-                        auto signal_base = ExpressionWrapper<typename OutType::SampleType,
-                                typename OutType::IdxType, decltype(out_val_getter_lamda), decltype(out_ref_forward_getter_lamda),
-                                decltype(get_size_lamda), true>(out_val_getter_lamda, out_ref_forward_getter_lamda, get_size_lamda);
-                        auto signal_for_compute = GenericSignal(signal_base);
-
-                        derivator.compute(data, signal_for_compute, {});
-
-                        for (int i = 0; i < data.size(); i++){
-                            out_ref_forward_getter_lamda(i) = std::atan(out.out_ref_forward_getter_lamda(i)) * computer_buffer[i];
-                            memory_buffer.push_back(computer_buffer[i]);
-                        }
-                        derivator.compute(signal_for_compute, computer_buffer, {});
-                        for (int i = 0; i < data.size(); i++){
-                            out_ref_forward_getter_lamda(i) = std::abs(computer_buffer[i]) / (std::numbers::pi * 2.0);
-                        }
-                        integrator.compute(signal_for_compute, computer_buffer);
-
-                        auto right_edge = computer_buffer.findIncr(computer_buffer[0] + std::numbers::pi, {0}, {});
-                        auto left_edge = computer_buffer.findIncr(computer_buffer[0] - std::numbers::pi, {}, {0});
-                        out_ref_forward_getter_lamda(0) = static_cast<OutType::SampleType>(1.0/left_edge);
-                        out_ref_backward_getter_lamda(0) = static_cast<OutType::SampleType>(1.0/right_edge);
-                        for (auto i = 1; i < data.size(); i++){
-                            right_edge = computer_buffer.findIncr(computer_buffer[i] + std::numbers::pi, {right_edge}, {});
-                            left_edge = computer_buffer.findIncr(computer_buffer[i] - std::numbers::pi, {left_edge}, {});
-                            out_ref_forward_getter_lamda(0) = static_cast<OutType::SampleType>(1.0/left_edge);
-                            out_ref_backward_getter_lamda(0) = static_cast<OutType::SampleType>(1.0/right_edge);
-                        }
-                        for (auto i = 0; i < memory_buffer.size(); i++){
-                            computer_buffer[i] = memory_buffer[i];
                         }
                     }
                 }
             };
 
-            enum class ExtremumsBasedComputeInstFreqKind {Simple, Linear};
+            export enum class ExtremumsBasedComputeInstFreqKind {Simple, Linear};
 
+            export
             template<Signal DataT, Signal OutT, ExtremumsBasedComputeInstFreqKind compute_kind>
             struct ExtremumsBased{
                 using DataType = DataT;
@@ -309,9 +388,7 @@ namespace NP_DSP{
                 constexpr static ExtremumsBasedComputeInstFreqKind kind = compute_kind;
                 constexpr static bool is_inst_freq_computer = true;
 
-                static_assert(OutT::is_writable == true);
-
-                void compute(DataType data, OutType out, GENERAL::Nil nil){
+                void compute(const DataType & data, OutType & out, GENERAL::Nil nil){
                     std::vector<typename DataType::IdxType> extremums;
                     extremums.push_back(static_cast<typename DataType::IdxType>(0));
                     for (auto i = 1; i < data.size()-1; i++){
@@ -328,13 +405,32 @@ namespace NP_DSP{
                         }
                     }
                     extremums.push_back(static_cast<typename DataType::IdxType>(data.size()-1));
+                    if(extremums.size() > 2){
+                        extremums[0] = extremums[1] * 2 - extremums[2];
+                        auto last = extremums.size() - 1;
+                        extremums[last] = extremums[last - 1] * 2 - extremums[last - 2];
+                        if (extremums[0] > 0){
+                            extremums[0] = - extremums[1];
+                        }
+                        if (extremums[last] < extremums.size() - 1){
+                            extremums[last] = data.size() + data.size() - extremums[last-1];
+                        }
+                    }
+                    else{
+                        auto last = extremums.size() - 1;
+                        extremums[0] = - extremums[1];
+                        extremums[last] = data.size() + data.size() - extremums[last-1];
+                    }
+                    
                     if constexpr (kind == ExtremumsBasedComputeInstFreqKind::Simple){
                         auto left = extremums[0];
                         auto right = extremums[1];
                         auto counter = 0;
-                        for (auto i = 0; i < data.size(); i++){
+                        for (auto i = 0; i < out.size(); i++){
                             if (i>right){
-                                counter++;
+                                if (counter + 2 < extremums.size()){
+                                    counter++;
+                                }
                                 left = extremums[counter];
                                 right = extremums[counter+1];
                             }
@@ -370,11 +466,11 @@ namespace NP_DSP{
                 }
             };
 
-
-            template<Signal DataT, Signal OutT, SignalWrapper OptFn,
+            export
+            template<Signal DataT, Signal OutT, /*SignalWrapper OptFn,*/
                     Integrator IntegratorT, Derivator DerivatorT,
             InstFreqDerivativeBasedKind kind>
-            struct periodAndExtremumsBased {
+            struct PeriodAndExtremumsBased {
                 using DataType = DataT;
                 using OutType = OutT;
                 using AdditionalDataType = GENERAL::Nil;
@@ -391,10 +487,18 @@ namespace NP_DSP{
                 IntegratorType integrator;
                 DerivatorType derivator;
 
-                static_assert(OutType::is_writable == true);
+                float approx_order_coeff;
+
+                //static_assert(OutType::is_writable == true);
                 SampleType max_error = static_cast<typename DataType::SampleType>(1000000);
 
-                void compute(DataType data, OutType & out, AdditionalDataType & computer_buffer) {
+                PeriodAndExtremumsBased(IntegratorType integrator_in, DerivatorType derivator_in){
+                    integrator = integrator_in;
+                    derivator = derivator_in;
+                }
+
+                void compute(const DataType & data, OutType & out, AdditionalDataType & computer_buffer) {
+                    GENERAL::Nil nil;
                     // compute extremums inst freq ->
                     // compute period based with external opt parameter equal const 1
                     // use fourier based approximator
@@ -405,37 +509,79 @@ namespace NP_DSP{
                     GenericSignal<SimpleVecWrapper<SampleType>> extremums_freq(extremums_freq_wrapper);
 
                     ExtremumsBased<DataType, OutType, ExtremumsBasedComputeInstFreqKind::Linear> extremums_based;
-                    extremums_based.compute(data, extremums_freq, {});
+                    extremums_based.compute(data, extremums_freq, nil);
 
                     std::vector<SampleType> external_opt_parametr_vector (data.size());
-                    SimpleVecWrapper<SampleType> external_opt_parametr_wrapper(extremums_freq_vec);
+                    SimpleVecWrapper<SampleType> external_opt_parametr_wrapper(external_opt_parametr_vector);
                     GenericSignal<SimpleVecWrapper<SampleType>> external_opt_parametr(external_opt_parametr_wrapper);
 
-                    DerivativeBasedWithExternalOptParametr<DataType, OutType, IntegratorType, DerivatorType, kind> inst_freq_computer;
+                    DerivativeBasedWithExternalOptParametr<DataType, OutType, IntegratorType, DerivatorType, kind> 
+                        inst_freq_computer(integrator, derivator);
 
                     for (auto i = 0; i < external_opt_parametr.size(); i++) {
-                        external_opt_parametr[i] = static_cast<SampleType>(0);
+                        external_opt_parametr[i] = static_cast<SampleType>(1.);
                     }
                     inst_freq_computer.compute(data, out, external_opt_parametr);
 
-                    auto loss = [=](auto & approximator) {
+                    auto loss = [&](auto & approximator) {
                         approximator.is_actual = false;
-                        SampleType accum = static_cast<SampleType>(0);
-                        inst_freq_computer.compute(data, out, external_opt_parametr);
-                        for(auto i = 0; i < extremums_freq.size(); i++) {
-                            accum += (extremums_freq[i] - out[i]) * (extremums_freq[i] - out[i]);
+                        std::vector<double> add_error = {};
+                        for (auto i = 0; i < data.size(); i++){
+                            external_opt_parametr[i] = approximator.compute(i);
+                            if (external_opt_parametr[i] < 0.05){
+                                add_error.push_back((0.05 - external_opt_parametr[i]));
+                                external_opt_parametr[i] = 0.05;
+                            }
+                            else{
+                                add_error.push_back(0.0);
+                            }
                         }
+                        SampleType accum = static_cast<SampleType>(0);
+                        
+                        std::string mark = "show external_opt_parametr";
+                        IC(mark);
+                        external_opt_parametr.show(PlottingKind::Simple);
+                        
+
+                        inst_freq_computer.compute(data, out, external_opt_parametr);
+                        /*
+                        mark = "show extr freq";
+                        IC(mark);
+                        
+                        extremums_freq.show(PlottingKind::Simple);
+                        */
+
+                        
+                        mark = "show out";
+                        IC(mark);
+                        out.show(PlottingKind::Simple);
+                        
+
+                        
+                        for(auto i = 0; i < extremums_freq.size(); i++) {
+                            accum += (add_error[i]) + (extremums_freq[i] - out[i]) * (extremums_freq[i] - out[i]);
+                        }
+                        IC(accum);
                         return accum;
                     };
 
                     auto stopPoint = [](auto losses_different, auto & approximator) {
-                        if (losses_different > 0.0001){ //todo move precision to external parameter
+                        if (losses_different > 0.1){ //todo move precision to external parameter
                             return false;
+                        }
+                        else{
+                            return true;
                         }
                     };
                     //APPROX::FourerSeriesBased
-                    auto approximator = APPROX::FourierSeriesBased(loss, external_opt_parametr, stopPoint);
+                    auto approximator = APPROX::FourierSeriesBased<DataType, decltype(loss), decltype(stopPoint)>
+                        (loss, external_opt_parametr, stopPoint);
+                    approximator.setpolynomsCount(data.size() / 2 * approx_order_coeff);
+                    approximator.max_value = 10;
                     approximator.train();
+
+
+                    //todo
                 }
             };
         }

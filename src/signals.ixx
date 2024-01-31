@@ -153,10 +153,24 @@ namespace NP_DSP
             }
 
             void show(PlottingKind kind){
-                if (kind == PlottingKind::Simple){
+                if (kind == PlottingKind::Interpolate){
+                    std::vector<SampleType> plotting_data = {};
+                    int i = -size();
+                    while(i < static_cast<int>(size() * 2)){
+                        i++;
+                        //IC(i, interpolate<double>(static_cast<double>(i)));
+                        plotting_data.push_back(static_cast<float>(interpolate<double>(static_cast<double>(i))));
+                    }
+                    matplot::plot(plotting_data);
+                    matplot::show();
+                }
+                else if (kind == PlottingKind::Simple){
                     std::vector<SampleType> plotting_data = {};
                     for (auto i = 0; i < base->size(); i++){
-                        plotting_data.push_back((*base)[i]);
+                        //IC(i);
+                        //IC(base->size());
+                        auto sample = (*base)[i];
+                        plotting_data.push_back(sample);
                     }
                     matplot::plot(plotting_data);
                     matplot::show();
@@ -168,6 +182,17 @@ namespace NP_DSP
                     std::vector<SampleType> plotting_data = {};
                     for (auto i = 0; i < base->size(); i++){
                         plotting_data.push_back((*base)[i]);
+                    }
+                    matplot::plot(plotting_data);
+                    matplot::show();
+                    matplot::save(filename, format);
+                }
+                else if (kind == PlottingKind::Interpolate){
+                    std::vector<SampleType> plotting_data = {};
+                    int i = -size();
+                    while(i < static_cast<int>(size() * 2)){
+                        i++;
+                        plotting_data.push_back(interpolate<int>(i));
                     }
                     matplot::plot(plotting_data);
                     matplot::show();
@@ -185,19 +210,58 @@ namespace NP_DSP
                     matplot::show();
                     matplot::save(filename);
                 }
+                else if (kind == PlottingKind::Interpolate){
+                    std::vector<SampleType> plotting_data = {};
+                    int i = -size();
+                    while(i < static_cast<int>(size() * 2)){
+                        i++;
+                        plotting_data.push_back(interpolate<int>(i));
+                    }
+                    matplot::plot(plotting_data);
+                    matplot::show();
+                    matplot::save(filename);
+                }
             }
+
 
             //получение значения в неизвестной точке внутри диапазона определения (те в нашем случае по дробному индексу)
             template<typename Idx>
             SampleType interpolate(Idx idx) const {
-                if (idx>=0 && idx < base->size() - 1){
-                    return ONE_D::UTILITY_MATH::linearInterpolate<double, SampleType>({static_cast<double>(static_cast<int>(idx)), (*base)[static_cast<int>(idx)]}, {static_cast<double>(static_cast<int>(idx) + 1), (*base)[static_cast<int>(idx) + 1]}, static_cast<double>(idx));
+                //IC(idx);
+                if (idx>=0 && idx < static_cast<Idx>(size() - 2)){
+                    return ONE_D::UTILITY_MATH::linearInterpolate<double, SampleType>({static_cast<double>(idx), (*base)[static_cast<int>(idx)]}, {static_cast<double>(idx + 1), (*base)[idx + 1]}, static_cast<double>(idx));
                 }
                 else if (idx<0){
-                    return ONE_D::UTILITY_MATH::linearInterpolate<double, SampleType>({static_cast<double>(0), (*base)[0]}, {static_cast<double>(1), (*base)[1]}, static_cast<double>(idx));
+                    Idx idx_new = idx + ((0 - static_cast<int>(idx)) % static_cast<int>(size())) * 2;
+                    if (NP_DSP::CONFIG::debug){
+                        //IC(idx_new);
+                    }
+                    if (idx_new == idx){
+                        idx_new++;
+                    }
+                    SampleType value_new = interpolate(idx_new);
+                    //std::vector<double> vec = {0., 1., 2.};
+                    //matplot::plot(vec);
+                    //matplot::show();
+                    return ONE_D::UTILITY_MATH::linearInterpolate<double, SampleType>({static_cast<double>(idx_new), value_new}, {0.0, (*base)[0]}, static_cast<double>(idx));
+                    //return ONE_D::UTILITY_MATH::linearInterpolate<double, SampleType>({static_cast<double>(0), (*base)[0]}, {static_cast<double>(1), (*base)[1]}, static_cast<double>(idx));
                 }
-                else if (idx >= base->size() - 1){
-                    return ONE_D::UTILITY_MATH::linearInterpolate<double, SampleType>({static_cast<double>(base->size()-2), (*base)[base->size()-2]}, {static_cast<double>(base->size()-1), (*base)[base->size()-1]}, static_cast<double>(idx));
+                else if (idx > size() - 1){
+                    Idx idx_new = idx - ((static_cast<int>(idx) - static_cast<int>(size())) % static_cast<int>(size())) * 2 - 1;
+                    if (idx_new == idx){
+                        idx_new--;
+                    }
+                    if (NP_DSP::CONFIG::debug){
+                        //IC(idx_new);
+                    }
+                    //std::vector<double> vec = {0., 1., 2.};
+                    //matplot::plot(vec);
+                    //matplot::show();
+                    SampleType value_new = interpolate(idx_new);
+                    return ONE_D::UTILITY_MATH::linearInterpolate<double, SampleType>({static_cast<double>(size()-1), (*base)[size()-1]}, {static_cast<double>(idx_new), value_new}, static_cast<double>(idx));
+                }
+                else{
+                    return ONE_D::UTILITY_MATH::linearInterpolate<double, SampleType>({static_cast<double>(size() - 1), (*base)[size() - 1]}, {static_cast<double>(size() - 2), (*base)[size() - 2]}, static_cast<double>(idx));
                 }
             }
 
@@ -221,10 +285,20 @@ namespace NP_DSP
             template<typename Idx>
             IdxType findMonotone(SampleType value, std::optional<Idx> idx1, std::optional<Idx> idx2) const {
                 if (!idx1){
-                    idx1 = {0};
+                    if (*idx2!=0){
+                        idx1 = {0};
+                    }
+                    else{
+                        idx1 = {-size()};
+                    }
                 }
                 if (!idx2){
-                    idx2 = {size()};
+                    if (*idx2!=0){
+                        idx1 = {2 * size()};
+                    }
+                    else{
+                        idx2 = {size()};
+                    }
                 }
                 //std::cout << "stop_pont_1" << std::endl;
                 //std::pair<int, int> idxes = ONE_D::UTILITY_MATH::interpoationSearch(*base, *idx1, *idx2, value);
@@ -234,7 +308,8 @@ namespace NP_DSP
                 std::pair<int, int> idxes = ONE_D::UTILITY_MATH::interpoationSearch(*idx1, *idx2, value, idx_lambda);
                 //std::cout << "stop_pont_2" << std::endl;
                 if constexpr (CONFIG::debug){
-                    IC(idxes.first, idxes.second);
+                    std::string mark = "find monotone";
+                    IC(mark, idxes.first, idxes.second, value);
                 }
                 return ONE_D::UTILITY_MATH::backLinearInterpolate<Idx, SampleType>({*idx1, (*base)[*idx1]}, {*idx2, (*base)[*idx2]}, value);
             }

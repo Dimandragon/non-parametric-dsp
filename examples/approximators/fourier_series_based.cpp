@@ -53,7 +53,7 @@ int main(){
     //0 and last are different
     //if 10 then 4 and 6
     //if 11 then 5 and 6
-    for (auto i = 0; i < 100; i++){
+    for (auto i = 0; i < 101; i++){
         signal1.base->vec->push_back(0.);
         IC(i);
     }

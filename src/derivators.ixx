@@ -26,6 +26,7 @@ namespace NP_DSP{
                 void compute(const DataType & data, DerivativeType & out, GENERAL::Nil & additional_data)
                 {
                     //init first and last values
+                    
                     out[0] = data[1] - data[0];
                     out[data.size()-1] = data[data.size()-1] - data[data.size()-2];
                     //IC("")

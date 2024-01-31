@@ -391,7 +391,7 @@ namespace NP_DSP{
                         trigonometric_sample.first = ampl_central;
                         
                         check_loss(trigonometric_sample);
-                        show(PlottingKind::Simple);
+                        //show(PlottingKind::Simple);
                     }
                 }
 

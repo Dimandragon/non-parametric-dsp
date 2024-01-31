@@ -33,9 +33,12 @@ namespace NP_DSP{
 
             export
             template<typename xType, typename yType>
-            yType linearInterpolate(std::pair<xType, yType> point1, std::pair<xType, yType> point2, xType x_in){
+            yType linearInterpolate(std::pair<xType, yType> point1, std::pair<xType, yType> point2, xType x_in) {
                 auto dx = point2.first - point1.first;
                 auto dy = point2.second - point1.second;
+                if (dx == 0){
+                    return (point1.second + point2.second) / 2;
+                }
                 return point1.second + dy*(x_in-point1.first)/dx;
             }
 
@@ -44,6 +47,9 @@ namespace NP_DSP{
             xType backLinearInterpolate(std::pair<xType, yType> point1, std::pair<xType, yType> point2, yType y_in){
                 auto dx = point2.first - point1.first;
                 auto dy = point2.second - point1.second;
+                if (dy == 0){
+                    return (point1.first + point2.first) / 2;
+                }
                 return point1.first + dx*(y_in-point1.second)/dy;
             }
 
@@ -100,6 +106,9 @@ namespace NP_DSP{
                 while (std::abs(idx2 - idx1) > 1) {
                     auto dx = static_cast<double>(idx2 - idx1);
                     auto dy = static_cast<double>(data[idx2] - data[idx1]);
+                    if (dy == 0){
+                        break;
+                    }
                     auto idx_new = static_cast<TIndex>(idx1 + dx * (value - data[idx1])/dy);
                     if constexpr (CONFIG::debug){
                         IC(idx1, idx2, dx, dy, idx_new);
@@ -133,8 +142,13 @@ namespace NP_DSP{
                 while (std::abs(idx2 - idx1) > 1) {
                     auto dx = static_cast<double>(idx2 - idx1);
                     auto dy = static_cast<double>(idx_lambda(idx2) - idx_lambda(idx1));
+                    if (dy == 0){
+                        idx2 = idx1 + 1;
+                        break;
+                    }
                     auto idx_new = static_cast<TIndex>(idx1 + dx * (value - idx_lambda(idx1))/dy);
                     if constexpr (CONFIG::debug){
+                        std::string mark = "creating idx_new in interpolation search";
                         IC(idx1, idx2, dx, dy, idx_new);
                     }
                     if (idx_lambda(idx_new) > value) {
