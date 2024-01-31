@@ -28,7 +28,7 @@ int main(){
     
     NP_DSP::ONE_D::InstFreqComputers::PeriodAndExtremumsBased
         <SignalT, SignalT, decltype(integrator), decltype(derivator),
-            NP_DSP::ONE_D::InstFreqComputers::InstFreqDerivativeBasedKind::TimeAverage>
+            NP_DSP::ONE_D::InstFreqComputers::InstFreqDerivativeBasedKind::Momental>
                 inst_freq_computer(integrator, derivator);
     inst_freq_computer.approx_order_coeff = 1.0;
     NP_DSP::GENERAL::Nil nil;

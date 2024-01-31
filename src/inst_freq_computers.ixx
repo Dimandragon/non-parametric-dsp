@@ -535,31 +535,30 @@ namespace NP_DSP{
                             else{
                                 add_error.push_back(0.0);
                             }
+                            
                         }
                         SampleType accum = static_cast<SampleType>(0);
                         
-                        std::string mark = "show external_opt_parametr";
-                        IC(mark);
-                        external_opt_parametr.show(PlottingKind::Simple);
+                        //std::string mark = "show external_opt_parametr";
+                        //IC(mark);
+                        //external_opt_parametr.show(PlottingKind::Simple);
                         
 
                         inst_freq_computer.compute(data, out, external_opt_parametr);
-                        /*
-                        mark = "show extr freq";
-                        IC(mark);
                         
-                        extremums_freq.show(PlottingKind::Simple);
-                        */
-
+                        //mark = "show extr freq";
+                        //IC(mark);
                         
-                        mark = "show out";
-                        IC(mark);
-                        out.show(PlottingKind::Simple);
+                        //extremums_freq.show(PlottingKind::Simple);
                         
 
+                        
+                        //mark = "show out";
+                        //IC(mark);
+                        //out.show(PlottingKind::Simple);
                         
                         for(auto i = 0; i < extremums_freq.size(); i++) {
-                            accum += (add_error[i]) + (extremums_freq[i] - out[i]) * (extremums_freq[i] - out[i]);
+                            accum += add_error[i] + (extremums_freq[i] - out[i]) * (extremums_freq[i] - out[i]);
                         }
                         IC(accum);
                         return accum;
@@ -574,8 +573,9 @@ namespace NP_DSP{
                         }
                     };
                     //APPROX::FourerSeriesBased
-                    auto approximator = APPROX::FourierSeriesBased<DataType, decltype(loss), decltype(stopPoint)>
+                    auto approximator = APPROX::FourierSeriesBasedPositive<DataType, decltype(loss), decltype(stopPoint)>
                         (loss, external_opt_parametr, stopPoint);
+                        approximator.is_actual = false;
                     approximator.setpolynomsCount(data.size() / 2 * approx_order_coeff);
                     approximator.max_value = 10;
                     approximator.train();

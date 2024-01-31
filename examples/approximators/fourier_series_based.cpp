@@ -53,7 +53,7 @@ int main(){
     //0 and last are different
     //if 10 then 4 and 6
     //if 11 then 5 and 6
-    for (auto i = 0; i < 101; i++){
+    for (auto i = 0; i < 102; i++){
         signal1.base->vec->push_back(0.);
         IC(i);
     }
@@ -86,7 +86,7 @@ int main(){
     };
     
     NP_DSP::ONE_D::APPROX::FourierSeriesBased<SignalT, decltype(error), decltype(stopPoint)> approximator(error, signal1, stopPoint);
-    approximator.setpolynomsCount(51);
+    approximator.setpolynomsCount(52);
     approximator.train();
     approximator.is_actual = false;
     for (auto i = 0; i < signal1.size(); i++){
