@@ -4,6 +4,7 @@ module;
 
 export module inst_freq_computers;
 
+import <matplot/matplot.h>;
 import npdsp_concepts;
 import signals;
 import derivators;
@@ -537,7 +538,6 @@ namespace NP_DSP{
                             }
                             
                         }
-                        SampleType accum = static_cast<SampleType>(0);
                         
                         //std::string mark = "show external_opt_parametr";
                         //IC(mark);
@@ -558,14 +558,15 @@ namespace NP_DSP{
                         //out.show(PlottingKind::Simple);
                         
                         for(auto i = 0; i < extremums_freq.size(); i++) {
-                            accum += add_error[i] + (extremums_freq[i] - out[i]) * (extremums_freq[i] - out[i]);
+
+                            accum += add_error[i] + (extremums_freq[i] - out[i]) * (extremums_freq[i] - out[i]) / 1000; /// data[i];
                         }
                         IC(accum);
                         return accum;
                     };
 
                     auto stopPoint = [](auto losses_different, auto & approximator) {
-                        if (losses_different > 0.1){ //todo move precision to external parameter
+                        if (losses_different > 0.00001){ //todo move precision to external parameter
                             return false;
                         }
                         else{
@@ -579,8 +580,120 @@ namespace NP_DSP{
                     approximator.setpolynomsCount(data.size() / 2 * approx_order_coeff);
                     approximator.max_value = 10;
                     approximator.train();
+                }
+            };
+
+            export
+            template<Signal DataT, Signal OutT, /*SignalWrapper OptFn,*/
+                    Integrator IntegratorT, Derivator DerivatorT,
+            InstFreqDerivativeBasedKind kind>
+            struct PeriodAndExtremumsBasedExternal {
+                using DataType = DataT;
+                using OutType = OutT;
+                using AdditionalDataType = OutT;
+
+                using SampleType = DataType::SampleType;
+
+                constexpr static bool is_inst_freq_computer = true;
+                constexpr static InstFreqDerivativeBasedKind counting_kind = kind;
+
+                using IntegratorType = IntegratorT;
+                using DerivatorType = DerivatorT;
 
 
+                IntegratorType integrator;
+                DerivatorType derivator;
+
+                float approx_order_coeff;
+
+                //static_assert(OutType::is_writable == true);
+                SampleType max_error = static_cast<typename DataType::SampleType>(1000000);
+
+                PeriodAndExtremumsBasedExternal(IntegratorType integrator_in, DerivatorType derivator_in){
+                    integrator = integrator_in;
+                    derivator = derivator_in;
+                }
+
+                void compute(const DataType & data, OutType & out, AdditionalDataType & computer_buffer) {
+                    GENERAL::Nil nil;
+                    // compute extremums inst freq ->
+                    // compute period based with external opt parameter equal const 1
+                    // use fourier based approximator
+                    // train it to approximate external opt parameter to minimize loss with extremums
+
+                    std::vector<SampleType> extremums_freq_vec (data.size());
+                    SimpleVecWrapper<SampleType> extremums_freq_wrapper(extremums_freq_vec);
+                    GenericSignal<SimpleVecWrapper<SampleType>> extremums_freq(extremums_freq_wrapper);
+
+                    ExtremumsBased<DataType, OutType, ExtremumsBasedComputeInstFreqKind::Linear> extremums_based;
+                    extremums_based.compute(data, extremums_freq, nil);
+
+                    std::vector<SampleType> external_opt_parametr_vector (data.size());
+                    SimpleVecWrapper<SampleType> external_opt_parametr_wrapper(external_opt_parametr_vector);
+                    GenericSignal<SimpleVecWrapper<SampleType>> external_opt_parametr(external_opt_parametr_wrapper);
+
+                    DerivativeBased<DataType, OutType, IntegratorType, DerivatorType, kind> 
+                        inst_freq_computer(integrator, derivator);
+
+                    for (auto i = 0; i < external_opt_parametr.size(); i++) {
+                        external_opt_parametr[i] = static_cast<SampleType>(1.);
+                    }
+                    inst_freq_computer.compute(data, out, computer_buffer);
+                    
+                    auto loss = [&](auto & approximator) {
+                        approximator.is_actual = false;
+                        for (auto i = 0; i < data.size(); i++){
+                            external_opt_parametr[i] = approximator.compute(i);
+                        }
+                        double accum = 0.0;
+                        
+                        //std::string mark = "show external_opt_parametr";
+                        //IC(mark);
+                        //external_opt_parametr.show(PlottingKind::Simple);
+                        
+                        //std::vector<double> result = {};
+                        for(auto i = 0; i < extremums_freq.size(); i++) {
+                            if (out[i] != 0.0){
+                                accum += (extremums_freq[i] - out[i] * external_opt_parametr[i])
+                                    * (extremums_freq[i] - out[i] * external_opt_parametr[i]) / 1000 / out[i];
+                            }
+                            //result.push_back(out[i] * external_opt_parametr[i]);
+                        }
+
+                        //mark = "show result";
+                        //IC(mark);
+                        //matplot::plot(result);
+                        //matplot::show();
+                        IC(accum);
+                        return accum;
+                    };
+
+                    auto stopPoint = [](auto losses_different, auto & approximator) {
+                        if (losses_different > 0.000001){ //todo move precision to external parameter
+                            return false;
+                        }
+                        else{
+                            return true;
+                        }
+                    };
+
+                    auto bySampleError = [&](auto & approximator, auto i){
+                        return (extremums_freq[i] - out[i] * external_opt_parametr[i])
+                                    * (extremums_freq[i] - out[i] * external_opt_parametr[i]) / 1000 / out[i];
+                    };
+                    //APPROX::FourerSeriesBased
+                    auto approximator = APPROX::FourierSeriesBased<DataType, decltype(loss), decltype(stopPoint), APPROX::FSApproxKind::Simple, decltype(bySampleError)>
+                        (loss, external_opt_parametr, stopPoint);
+                    approximator.is_actual = false;
+                    
+                    approximator.setpolynomsCount(data.size() / 2 * approx_order_coeff);
+                    approximator.max_value = 10;
+                    approximator.train();
+                    //approximator.fineTrainIter();
+                    //approximator.train();
+                    for (auto i = 0; i < data.size(); i++){
+                        out[i] = out[i] * approximator.compute(i);
+                    }
                     //todo
                 }
             };
