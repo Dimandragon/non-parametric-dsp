@@ -73,6 +73,7 @@ namespace NP_DSP{
                 pocketfft::c2c(shape, stridef, stridef, axes, pocketfft::FORWARD,
                                data_in.data(), data_out.data(), ((T)1.0)/((T)len));
             }
+
             export
             template<typename T>
             void ifftc2c (std::vector<std::complex<T>> const & data_in, std::vector<std::complex<T>> & data_out){
@@ -92,6 +93,46 @@ namespace NP_DSP{
                 }
                 pocketfft::c2c(shape, stridef, stridef, axes, pocketfft::BACKWARD,
                     data_in.data(), data_out.data(), static_cast<T>(1));
+            }
+
+            export
+            template<typename T>
+            void fftc2c (std::vector<std::complex<T>> const & data_in, std::vector<std::complex<T>> & data_out, size_t len, size_t pad){
+                pocketfft::shape_t shape{len};
+                pocketfft::stride_t stridef(shape.size());
+                size_t tmpf = sizeof(std::complex<T>);
+                for (int i=shape.size()-1; i>=0; --i)
+                {
+                    stridef[i]=tmpf;
+                    tmpf*=shape[i];
+                }
+                pocketfft::shape_t axes;
+                for (size_t i=0; i<shape.size(); ++i)
+                {
+                    axes.push_back(i);
+                }
+                pocketfft::c2c(shape, stridef, stridef, axes, pocketfft::FORWARD,
+                               data_in.data() + pad, data_out.data() + pad, ((T)1.0)/((T)len));
+            }
+            
+            export
+            template<typename T>
+            void ifftc2c (std::vector<std::complex<T>> const & data_in, std::vector<std::complex<T>> & data_out, size_t len, size_t pad){
+                pocketfft::shape_t shape{len};
+                pocketfft::stride_t stridef(shape.size());
+                size_t tmpf = sizeof(std::complex<T>);
+                for (int i=shape.size()-1; i>=0; --i)
+                {
+                    stridef[i]=tmpf;
+                    tmpf*=shape[i];
+                }
+                pocketfft::shape_t axes;
+                for (size_t i=0; i<shape.size(); ++i)
+                {
+                    axes.push_back(i);
+                }
+                pocketfft::c2c(shape, stridef, stridef, axes, pocketfft::BACKWARD,
+                    data_in.data() + pad, data_out.data() + pad, static_cast<T>(1));
             }
 
             export
