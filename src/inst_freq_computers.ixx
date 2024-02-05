@@ -538,6 +538,7 @@ namespace NP_DSP{
                             }
                             
                         }
+                        double accum = 0.0;
                         
                         //std::string mark = "show external_opt_parametr";
                         //IC(mark);
