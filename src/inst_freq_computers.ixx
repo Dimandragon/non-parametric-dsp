@@ -559,7 +559,6 @@ namespace NP_DSP{
                         //out.show(PlottingKind::Simple);
                         
                         for(auto i = 0; i < extremums_freq.size(); i++) {
-
                             accum += add_error[i] + (extremums_freq[i] - out[i]) * (extremums_freq[i] - out[i]) / 1000; /// data[i];
                         }
                         IC(accum);
@@ -573,6 +572,11 @@ namespace NP_DSP{
                         else{
                             return true;
                         }
+                    };
+
+                    auto bySampleError = [&](auto & approximator, auto i){
+                        inst_freq_computer.compute(data, out, external_opt_parametr);
+                        return (extremums_freq[i] - out[i]) * (extremums_freq[i] - out[i]) / approximator.tile_size;
                     };
                     //APPROX::FourerSeriesBased
                     auto approximator = APPROX::FourierSeriesBased<DataType, decltype(loss), decltype(stopPoint), APPROX::FSApproxKind::Simple, decltype(bySampleError)>

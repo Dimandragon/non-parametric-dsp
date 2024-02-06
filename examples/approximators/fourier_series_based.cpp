@@ -92,7 +92,7 @@ int main(){
     NP_DSP::ONE_D::APPROX::FourierSeriesBased<SignalT, decltype(error), decltype(stopPoint), 
         NP_DSP::ONE_D::APPROX::FSApproxKind::Positive, decltype(bySampleError)> 
             approximator(error, signal1, stopPoint);
-    //approximator.bySampleLoss = &bySampleError;
+    approximator.bySampleLoss = &bySampleError;
     approximator.setpolynomsCount(52);
     approximator.tile_size = 5;
     approximator.train();

@@ -605,7 +605,7 @@ namespace NP_DSP{
                         auto check_loss = [&](std::pair<SampleType, SampleType> data){
                             auto complex_sample = UTILITY_MATH::convertFSampleT2C<SampleType>(data);
                             fourier_series[i] = complex_sample;
-                            applyMirror(i);
+                            //applyMirror(i);
                             computeTile(i);
                             SampleType loss1 = 0.;
                             if (bySampleLoss) {
@@ -621,7 +621,7 @@ namespace NP_DSP{
                                 loss1 = (*loss)(*this);
                             }
                             fourier_series[i] = {complex_sample.real(), -complex_sample.imag()};
-                            applyMirror(i);
+                            //applyMirror(i);
                             computeTile(i);
                             SampleType loss2 = 0.;
                             if (bySampleLoss) {
@@ -637,7 +637,7 @@ namespace NP_DSP{
                                 loss2 = (*loss)(*this);
                             }
                             fourier_series[i] = {-complex_sample.real(), complex_sample.imag()};
-                            applyMirror(i);
+                            //applyMirror(i);
                             computeTile(i);
                             SampleType loss3 = 0.;
                             if (bySampleLoss) {
@@ -653,7 +653,7 @@ namespace NP_DSP{
                                 loss3 = (*loss)(*this);
                             }
                             fourier_series[i] = {-complex_sample.real(), -complex_sample.imag()};
-                            applyMirror(i);
+                            //applyMirror(i);
                             computeTile(i);
                             SampleType loss4 = 0.;
                             if (bySampleLoss) {
@@ -671,19 +671,19 @@ namespace NP_DSP{
 
                             if (loss1 <= loss2 && loss1 <= loss3 && loss1 <= loss4){
                                 fourier_series[i] = complex_sample;
-                                applyMirror(i);
+                                //applyMirror(i);
                                 computeTile(i);
                                 return loss1;
                             }
                             if (loss2 <= loss1 && loss2 <= loss3 && loss2 <= loss4){
                                 fourier_series[i] = {complex_sample.real(), -complex_sample.imag()};
-                                applyMirror(i);
+                                //applyMirror(i);
                                 computeTile(i);
                                 return loss2;
                             }
                             if (loss3 <= loss2 && loss3 <= loss1 && loss3 <= loss4){
                                 fourier_series[i] = {-complex_sample.real(), complex_sample.imag()};
-                                applyMirror(i);
+                                //applyMirror(i);
                                 computeTile(i);
                                 return loss3;
                             }
