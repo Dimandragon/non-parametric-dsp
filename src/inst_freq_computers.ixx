@@ -575,7 +575,7 @@ namespace NP_DSP{
                         }
                     };
                     //APPROX::FourerSeriesBased
-                    auto approximator = APPROX::FourierSeriesBasedPositive<DataType, decltype(loss), decltype(stopPoint)>
+                    auto approximator = APPROX::FourierSeriesBased<DataType, decltype(loss), decltype(stopPoint), APPROX::FSApproxKind::Positive, decltype(loss)>
                         (loss, external_opt_parametr, stopPoint);
                         approximator.is_actual = false;
                     approximator.setpolynomsCount(data.size() / 2 * approx_order_coeff);

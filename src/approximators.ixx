@@ -566,12 +566,8 @@ namespace NP_DSP{
                         if (i % tile_size >= polynoms_count_on_tile){
                             continue;
                         }
-                        //i = 50
-                        //auto trigonometric_sample = ONE_D::UTILITY_MATH::convertFSampleC2T(fourier_series[i]);
                         std::pair<SampleType, SampleType> trigonometric_sample;
                         trigonometric_sample.first = 1.;
-                        //optimize
-                        //optimize theta
                         if constexpr (CONFIG::debug){
                             std::string mark = "comopute fs cf";
                             IC(mark);
@@ -610,12 +606,6 @@ namespace NP_DSP{
                                 fourier_series[i] = {-complex_sample.real(), -complex_sample.imag()};
                                 return loss4;
                             }
-                            //std::complex<SampleType> complex_sample = UTILITY_MATH::convertFSampleT2C<SampleType>(data);
-                            //if (data.second > 0){
-                                //complex_sample = -complex_sample;
-                            //}
-                            //fourier_series[i] = complex_sample;
-                            //return (*loss)(*this);
                         };
 
                         auto theta_min = static_cast<SampleType>(-std::numbers::pi/2.0 + 0.01);

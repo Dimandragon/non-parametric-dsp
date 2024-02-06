@@ -85,8 +85,10 @@ int main(){
         }
     };
     
-    NP_DSP::ONE_D::APPROX::FourierSeriesBased<SignalT, decltype(error), decltype(stopPoint)> approximator(error, signal1, stopPoint);
+    NP_DSP::ONE_D::APPROX::FourierSeriesBased<SignalT, decltype(error), decltype(stopPoint),
+        NP_DSP::ONE_D::APPROX::FSApproxKind::Simple, decltype(error)> approximator(error, signal1, stopPoint);
     approximator.setpolynomsCount(52);
+    approximator.tile_size = 5;
     approximator.train();
     approximator.is_actual = false;
     for (auto i = 0; i < signal1.size(); i++){
