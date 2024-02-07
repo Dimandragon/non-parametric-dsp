@@ -12,7 +12,7 @@ import npdsp_config;
 int main(){
     std::vector<double> mydata = {};
     NP_DSP::ONE_D::SimpleVecWrapper wrapper(mydata);
-    NP_DSP::ONE_D::GenericSignal signal(wrapper);
+    NP_DSP::ONE_D::GenericSignal<decltype(wrapper), true> signal(wrapper);
     for (auto i = 0; i < 100; i++) {
         mydata.push_back(static_cast<double>(i));
     }
@@ -36,7 +36,8 @@ int main(){
         //std::cout << mydata2[mydata2.size() - 1] << ' ';
     }
     NP_DSP::ONE_D::SimpleVecWrapper wrapper2(mydata2);
-    NP_DSP::ONE_D::GenericSignal signal2(wrapper2);
+    //NP_DSP::ONE_D::SimpleVecWrapper wrapper2(mydata2);
+    NP_DSP::ONE_D::GenericSignal<decltype(wrapper2), true> signal2(wrapper2);
 
     //std::cout << std::endl << signal2.findMonotone<int>(50, {0}, {1000}) << std::endl;
     

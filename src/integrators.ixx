@@ -1,4 +1,5 @@
 module;
+#include <icecream.hpp>
 
 export module integrators;
 
@@ -24,13 +25,28 @@ namespace NP_DSP{
 
                 void compute(const DataType & data, IntegralType & out, GENERAL::Nil & additional_data)
                 {
+                    std::string mark = "point0.";
+                    IC(mark);
                     typename IntegralType::SampleType integral = static_cast<IntegralType::SampleType>(0.0);
 
                     if constexpr (polygon_type == PolygonType::ByPoint) {
+                        std::string mark = "point1";
+                        IC(mark);
+                        auto last = data.size();
+                        mark = "point1.";
+                        IC(mark);
                         for (size_t i = 0; i < data.size(); i++){
+                            mark = "point1.1";
+                            IC(mark);
                             integral += static_cast<IntegralType::SampleType>(data[i]);
+                            mark = "point1.2";
+                            IC(mark);
                             out[i] = integral;
+                            mark = "point1.3";
+                            IC(mark);
                         }
+                        mark = "point1";
+                        IC(mark);
                     }
                     else if constexpr (polygon_type == PolygonType::ByAverage){
                         integral += static_cast<IntegralType::SampleType>(data[1] + data[0])/static_cast<IntegralType::SampleType>(4.0);

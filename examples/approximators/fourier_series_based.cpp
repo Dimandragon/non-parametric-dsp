@@ -44,7 +44,7 @@ int incr(int & point){
 int main(){
     int point = 0;
     IC(incr(point)); //0
-    NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>> signal1;
+    NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> signal1;
     using SignalT = decltype(signal1);
     IC(incr(point)); //1
     
@@ -76,6 +76,10 @@ int main(){
         return std::abs(accum);
     };
 
+    auto bySampleError = [&](auto & approximator, auto i){
+        return (approximator.approximated_data[i].real() - signal1[i]) * (approximator.approximated_data[i].real() - signal1[i])/ approximator.tile_size;
+    };
+
     auto stopPoint = [](auto losses_different, auto & approximator) {
         if (losses_different > 0.0001){ //todo move precision to external parameter
             return false;
@@ -86,9 +90,10 @@ int main(){
     };
     
     NP_DSP::ONE_D::APPROX::FourierSeriesBased<SignalT, decltype(error), decltype(stopPoint),
-        NP_DSP::ONE_D::APPROX::FSApproxKind::Simple, decltype(error)> approximator(error, signal1, stopPoint);
+        NP_DSP::ONE_D::APPROX::FSApproxKind::Simple, decltype(bySampleError)> approximator(error, signal1, stopPoint);
     approximator.setpolynomsCount(52);
     approximator.tile_size = 5;
+    approximator.bySampleLoss = &bySampleError;
     approximator.train();
     approximator.is_actual = false;
     for (auto i = 0; i < signal1.size(); i++){

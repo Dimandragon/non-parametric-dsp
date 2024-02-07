@@ -82,23 +82,44 @@ namespace NP_DSP{
     namespace ONE_D{
         export
         template <typename T>
-        constexpr bool is_signal_base
+        constexpr bool is_signal_base_first
                 = requires (T signal, T::IdxType idx)
         {
             requires T::is_signal_base == true;
-            //requires (T::is_writable == true || T::is_writable == false);
+            requires (T::is_writable == true || T::is_writable == false);
 
             typename T::IdxType;
             typename T::SampleType;
 
-            { delete new T };
-            { signal[idx] } -> std::convertible_to<typename T::SampleType &>;
+            //{ delete new T };
+            //{ signal[idx] } -> std::convertible_to<typename T::SampleType &>;
+            
+            
             { signal.size() } -> std::convertible_to<size_t>;
         };
 
         export
         template <typename T>
-        concept SignalBase = is_signal_base<T>;
+        constexpr bool is_signal_base_second
+                = requires (T signal, T::IdxType idx)
+        {
+            requires T::is_signal_base == true;
+            requires (T::is_writable == true || T::is_writable == false);
+
+            typename T::IdxType;
+            typename T::SampleType;
+
+            { delete new T };
+            { signal[idx] } -> std::convertible_to<typename T::SampleType>;
+            
+            { signal.size() } -> std::convertible_to<size_t>;
+        };
+
+        
+
+        export
+        template <typename T>
+        concept SignalBase = (is_signal_base_second<T> || is_signal_base_first<T>);
 
         export enum class PlottingKind {Simple, Interpolate};
 
@@ -109,7 +130,7 @@ namespace NP_DSP{
             requires T::is_signal == true;
 
             typename T::Base;
-            requires is_signal_base<typename T::Base>;
+            requires (is_signal_base_first<typename T::Base> || is_signal_base_second<typename T::Base>);
 
             typename T::IdxType;
             requires std::is_same_v<typename T::IdxType, typename T::Base::IdxType>;
@@ -118,7 +139,7 @@ namespace NP_DSP{
             requires std::is_same_v<typename T::SampleType, typename T::Base::SampleType>;
 
             { delete new T };
-            { signal[idx] } -> std::convertible_to<typename T::SampleType &>;
+            //{ signal[idx] } -> std::convertible_to<typename T::SampleType &>;
             { signal.size() } -> std::convertible_to<size_t>;
             { signal.interpolate(idx) } -> std::convertible_to<typename T::SampleType>;
             //{ signal.findInterpolateUnimode(value, idx, idx) } -> std::convertible_to<typename T::IdxType>;

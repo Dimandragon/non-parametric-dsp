@@ -8,7 +8,7 @@ import npdsp_concepts;
 import <string>;
 
 int main(){
-    NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>> signal1;
+    NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> signal1;
     using SignalT = decltype(signal1);
     SignalT signal2;
     SignalT signal3;

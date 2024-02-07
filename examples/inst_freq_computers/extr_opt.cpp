@@ -8,7 +8,7 @@ import npdsp_concepts;
 import <string>;
 
 int main(){
-    NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>> signal1;
+    NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> signal1;
     using SignalT = decltype(signal1);
     SignalT signal2;
     SignalT signal3;
@@ -26,34 +26,34 @@ int main(){
     }
     //signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
     
-    NP_DSP::ONE_D::InstFreqComputers::PeriodAndExtremumsBased
+    NP_DSP::ONE_D::InstFreqComputers::PeriodAndExtremumsBasedExternal
         <SignalT, SignalT, decltype(integrator), decltype(derivator),
-            NP_DSP::ONE_D::InstFreqComputers::InstFreqDerivativeBasedKind::Momental>
+            NP_DSP::ONE_D::InstFreqComputers::InstFreqDerivativeBasedKind::TimeAverage>
                 inst_freq_computer(integrator, derivator);
     inst_freq_computer.approx_order_coeff = 1.0;
     NP_DSP::GENERAL::Nil nil;
    
-    inst_freq_computer.compute(signal1, signal2, nil);
+    inst_freq_computer.compute(signal1, signal2, compute_buffer);
     signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
     inst_freq_computer.approx_order_coeff = 0.5;
-    inst_freq_computer.compute(signal1, signal2, nil);
+    inst_freq_computer.compute(signal1, signal2, compute_buffer);
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
     inst_freq_computer.approx_order_coeff = 0.25;
-    inst_freq_computer.compute(signal1, signal2, nil);
+    inst_freq_computer.compute(signal1, signal2, compute_buffer);
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
     inst_freq_computer.approx_order_coeff = 0.1;
-    inst_freq_computer.compute(signal1, signal2, nil);
+    inst_freq_computer.compute(signal1, signal2, compute_buffer);
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
     inst_freq_computer.approx_order_coeff = 0.05;
-    inst_freq_computer.compute(signal1, signal2, nil);
+    inst_freq_computer.compute(signal1, signal2, compute_buffer);
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
     inst_freq_computer.approx_order_coeff = 0.025;
-    inst_freq_computer.compute(signal1, signal2, nil);
+    inst_freq_computer.compute(signal1, signal2, compute_buffer);
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
     inst_freq_computer.approx_order_coeff = 0.01;
-    inst_freq_computer.compute(signal1, signal2, nil);
+    inst_freq_computer.compute(signal1, signal2, compute_buffer);
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
     

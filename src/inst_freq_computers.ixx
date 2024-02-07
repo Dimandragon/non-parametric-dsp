@@ -507,14 +507,14 @@ namespace NP_DSP{
 
                     std::vector<SampleType> extremums_freq_vec (data.size());
                     SimpleVecWrapper<SampleType> extremums_freq_wrapper(extremums_freq_vec);
-                    GenericSignal<SimpleVecWrapper<SampleType>> extremums_freq(extremums_freq_wrapper);
+                    GenericSignal<SimpleVecWrapper<SampleType>, true> extremums_freq(extremums_freq_wrapper);
 
                     ExtremumsBased<DataType, OutType, ExtremumsBasedComputeInstFreqKind::Linear> extremums_based;
                     extremums_based.compute(data, extremums_freq, nil);
 
                     std::vector<SampleType> external_opt_parametr_vector (data.size());
                     SimpleVecWrapper<SampleType> external_opt_parametr_wrapper(external_opt_parametr_vector);
-                    GenericSignal<SimpleVecWrapper<SampleType>> external_opt_parametr(external_opt_parametr_wrapper);
+                    GenericSignal<SimpleVecWrapper<SampleType>, true> external_opt_parametr(external_opt_parametr_wrapper);
 
                     DerivativeBasedWithExternalOptParametr<DataType, OutType, IntegratorType, DerivatorType, kind> 
                         inst_freq_computer(integrator, derivator);
@@ -559,11 +559,22 @@ namespace NP_DSP{
                         //out.show(PlottingKind::Simple);
                         
                         for(auto i = 0; i < extremums_freq.size(); i++) {
-
+                            
                             accum += add_error[i] + (extremums_freq[i] - out[i]) * (extremums_freq[i] - out[i]) / 1000; /// data[i];
                         }
                         IC(accum);
                         return accum;
+                    };
+
+                    auto bySampleError = [&](auto & approximator, auto i){
+                        double add_error = 0.0;
+                        external_opt_parametr[i] = approximator.approximated_data[i].real();
+                        if (external_opt_parametr[i] < 0.05){
+                            add_error += ((0.05 - external_opt_parametr[i]));
+                            external_opt_parametr[i] = 0.05;
+                        }
+                        inst_freq_computer.compute(data, out, external_opt_parametr);
+                        return add_error + (extremums_freq[i] - out[i]) * (extremums_freq[i] - out[i]) / approximator.tile_size;
                     };
 
                     auto stopPoint = [](auto losses_different, auto & approximator) {
@@ -575,9 +586,12 @@ namespace NP_DSP{
                         }
                     };
                     //APPROX::FourerSeriesBased
-                    auto approximator = APPROX::FourierSeriesBased<DataType, decltype(loss), decltype(stopPoint), APPROX::FSApproxKind::Positive, decltype(loss)>
-                        (loss, external_opt_parametr, stopPoint);
-                        approximator.is_actual = false;
+                    auto approximator = APPROX::FourierSeriesBased<DataType, decltype(loss), decltype(stopPoint), 
+                        APPROX::FSApproxKind::Positive, decltype(bySampleError)>
+                            (loss, external_opt_parametr, stopPoint);
+                    approximator.tile_size = 5;
+                    approximator.bySampleLoss = &bySampleError;       
+                    approximator.is_actual = false;
                     approximator.setpolynomsCount(data.size() / 2 * approx_order_coeff);
                     approximator.max_value = 10;
                     approximator.train();
@@ -624,14 +638,14 @@ namespace NP_DSP{
 
                     std::vector<SampleType> extremums_freq_vec (data.size());
                     SimpleVecWrapper<SampleType> extremums_freq_wrapper(extremums_freq_vec);
-                    GenericSignal<SimpleVecWrapper<SampleType>> extremums_freq(extremums_freq_wrapper);
+                    GenericSignal<SimpleVecWrapper<SampleType>, true> extremums_freq(extremums_freq_wrapper);
 
                     ExtremumsBased<DataType, OutType, ExtremumsBasedComputeInstFreqKind::Linear> extremums_based;
                     extremums_based.compute(data, extremums_freq, nil);
 
                     std::vector<SampleType> external_opt_parametr_vector (data.size());
                     SimpleVecWrapper<SampleType> external_opt_parametr_wrapper(external_opt_parametr_vector);
-                    GenericSignal<SimpleVecWrapper<SampleType>> external_opt_parametr(external_opt_parametr_wrapper);
+                    GenericSignal<SimpleVecWrapper<SampleType>, true> external_opt_parametr(external_opt_parametr_wrapper);
 
                     DerivativeBased<DataType, OutType, IntegratorType, DerivatorType, kind> 
                         inst_freq_computer(integrator, derivator);
@@ -679,8 +693,9 @@ namespace NP_DSP{
                     };
 
                     auto bySampleError = [&](auto & approximator, auto i){
+                        external_opt_parametr[i] = approximator.approximated_data[i].real();
                         return (extremums_freq[i] - out[i] * external_opt_parametr[i])
-                                    * (extremums_freq[i] - out[i] * external_opt_parametr[i]) / 1000 / out[i];
+                            * (extremums_freq[i] - out[i] * external_opt_parametr[i]) / approximator.tile_size / out[i];
                     };
                     //APPROX::FourerSeriesBased
                     auto approximator = APPROX::FourierSeriesBased<DataType, decltype(loss), decltype(stopPoint), APPROX::FSApproxKind::Simple, decltype(bySampleError)>
@@ -689,6 +704,8 @@ namespace NP_DSP{
                     
                     approximator.setpolynomsCount(data.size() / 2 * approx_order_coeff);
                     approximator.max_value = 10;
+                    approximator.tile_size = 1;
+                    approximator.bySampleLoss = &bySampleError;
                     approximator.train();
                     //approximator.fineTrainIter();
                     //approximator.train();

@@ -578,7 +578,7 @@ namespace NP_DSP{
                             std::string mark = "compute first losses";
                             IC(mark); 
                         }
-
+                        /*
                         auto check_loss = [&](std::pair<SampleType, SampleType> data){
                             auto complex_sample = UTILITY_MATH::convertFSampleT2C<SampleType>(data);
                             fourier_series[i] = complex_sample;
@@ -606,6 +606,99 @@ namespace NP_DSP{
                                 fourier_series[i] = {-complex_sample.real(), -complex_sample.imag()};
                                 return loss4;
                             }
+                        };
+                        */
+
+                       auto check_loss = [&](std::pair<SampleType, SampleType> data){
+                            auto complex_sample = UTILITY_MATH::convertFSampleT2C<SampleType>(data);
+                            fourier_series[i] = complex_sample;
+                            //applyMirror(i);
+                            computeTile(i);
+                            SampleType loss1 = 0.;
+                            if (bySampleLoss) {
+                                size_t pad = (i / tile_size) * tile_size;
+                                for (auto idx = 0; idx < tile_size; idx++){
+                                    if (idx + pad >= approximated_data.size()){
+                                        continue;
+                                    }
+                                    loss1 += (*bySampleLoss)(*this, idx + pad);
+                                }
+                            }
+                            else{
+                                loss1 = (*loss)(*this);
+                            }
+                            fourier_series[i] = {complex_sample.real(), -complex_sample.imag()};
+                            //applyMirror(i);
+                            computeTile(i);
+                            SampleType loss2 = 0.;
+                            if (bySampleLoss) {
+                                size_t pad = i / tile_size * tile_size;
+                                for (auto idx = 0; idx < tile_size; idx++){
+                                    if (idx + pad >= approximated_data.size()){
+                                        continue;
+                                    }
+                                    loss2 += (*bySampleLoss)(*this, idx + pad);
+                                }
+                            }
+                            else{
+                                loss2 = (*loss)(*this);
+                            }
+                            fourier_series[i] = {-complex_sample.real(), complex_sample.imag()};
+                            //applyMirror(i);
+                            computeTile(i);
+                            SampleType loss3 = 0.;
+                            if (bySampleLoss) {
+                                size_t pad = i / tile_size * tile_size;
+                                for (auto idx = 0; idx < tile_size; idx++){
+                                    if (idx + pad >= approximated_data.size()){
+                                        continue;
+                                    }
+                                    loss3 += (*bySampleLoss)(*this, idx + pad);
+                                }
+                            }
+                            else{
+                                loss3 = (*loss)(*this);
+                            }
+                            fourier_series[i] = {-complex_sample.real(), -complex_sample.imag()};
+                            //applyMirror(i);
+                            computeTile(i);
+                            SampleType loss4 = 0.;
+                            if (bySampleLoss) {
+                                size_t pad = i / tile_size * tile_size;
+                                for (auto idx = 0; idx < tile_size; idx++){
+                                    if (idx + pad >= approximated_data.size()){
+                                        continue;
+                                    }
+                                    loss4 += (*bySampleLoss)(*this, idx + pad);
+                                }
+                            }
+                            else{
+                                loss4 = (*loss)(*this);
+                            }
+
+                            if (loss1 <= loss2 && loss1 <= loss3 && loss1 <= loss4){
+                                fourier_series[i] = complex_sample;
+                                //applyMirror(i);
+                                computeTile(i);
+                                return loss1;
+                            }
+                            if (loss2 <= loss1 && loss2 <= loss3 && loss2 <= loss4){
+                                fourier_series[i] = {complex_sample.real(), -complex_sample.imag()};
+                                //applyMirror(i);
+                                computeTile(i);
+                                return loss2;
+                            }
+                            if (loss3 <= loss2 && loss3 <= loss1 && loss3 <= loss4){
+                                fourier_series[i] = {-complex_sample.real(), complex_sample.imag()};
+                                //applyMirror(i);
+                                computeTile(i);
+                                return loss3;
+                            }
+
+                            fourier_series[i] = {-complex_sample.real(), -complex_sample.imag()};
+                            //applyMirror(i);
+                            computeTile(i);
+                            return loss4;
                         };
 
                         auto theta_min = static_cast<SampleType>(-std::numbers::pi/2.0 + 0.01);
