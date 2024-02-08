@@ -14,9 +14,7 @@ import <string>;
 import utility_math;
 
 void createFill(auto & signal){
-    IC(signal.size());
     for (auto i = 0; i < signal.size(); i++){
-        IC(i);
         signal[i] = std::rand();
     }
 }
@@ -43,11 +41,8 @@ int incr(int & point){
 
 int main(){
     int point = 0;
-    IC(incr(point)); //0
     NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> signal1;
     using SignalT = decltype(signal1);
-    IC(incr(point)); //1
-    
     //if (len == 100) fs[51].re == fs[49].re, fs[51].im = -fs[49].im; fs[50]is uniq
     //if len == 101 its 50 and 51
     //0 and last are different
@@ -55,10 +50,8 @@ int main(){
     //if 11 then 5 and 6
     for (auto i = 0; i < 102; i++){
         signal1.base->vec->push_back(0.);
-        IC(i);
     }
     createFill(signal1);
-    IC(incr(point)); //2
 
     signal1.show(NP_DSP::ONE_D::PlottingKind::Simple, "/home/dmitry/projects/non-parametric-dsp/examples/approximators/images/signal1.svg");
     SignalT signal2;
@@ -66,13 +59,8 @@ int main(){
         approximator.is_actual = false;
         auto accum = 0.;
         for(auto i = 0; i < signal1.size(); i++){
-            //accum += NP_DSP::ONE_D::UTILITY_MATH::complexL2(approximator.computeComplex(i), {signal1[i], 0.0})*NP_DSP::ONE_D::UTILITY_MATH::complexL2(approximator.computeComplex(i), {signal1[i], 0.0});
-            //accum += std::abs(approximator.compute(i) - signal1[i]);
             accum += (approximator.compute(i) - signal1[i]) * (approximator.compute(i) - signal1[i])/signal1.size();
-            //accum += approximator.compute(i) - signal1[i];
-            //IC(std::abs(approximator.compute(i) - signal1[i]));
         }
-        //approximator.show(NP_DSP::ONE_D::PlottingKind::Simple);
         return std::abs(accum);
     };
 
@@ -91,7 +79,7 @@ int main(){
     
     NP_DSP::ONE_D::APPROX::FourierSeriesBased<SignalT, decltype(error), decltype(stopPoint),
         NP_DSP::ONE_D::APPROX::FSApproxKind::Simple, decltype(bySampleError)> approximator(error, signal1, stopPoint);
-    approximator.setpolynomsCount(52);
+    approximator.setApproxOrderRatio(1.);
     approximator.tile_size = 5;
     approximator.bySampleLoss = &bySampleError;
     approximator.train();
@@ -113,7 +101,6 @@ int main(){
         data_vec.push_back({signal1[i], 0.});
         data_fs.push_back({0., 0.});
     }
-    IC(average);
     NP_DSP::ONE_D::UTILITY_MATH::fftc2c(data_vec, data_fs);
     plotComplex(data_fs, "/home/dmitry/projects/non-parametric-dsp/examples/approximators/images/data_fs.svg");
     return 0;

@@ -29,7 +29,6 @@ namespace NP_DSP{
                     
                     out[0] = data[1] - data[0];
                     out[data.size()-1] = data[data.size()-1] - data[data.size()-2];
-                    //IC("")
                     if constexpr (different_type == FinniteDifferenceType::Backward){
                         for (auto i = 1; i < data.size() - 1; i++){
                             out[i] = static_cast<typename DerivativeType::SampleType>(data[i] - data[i-1]);

@@ -240,19 +240,15 @@ namespace NP_DSP{
                 T error4 = pairL2<T>(sample, convertFSampleC2T(result4));
                 
                 if (error1 <= error2 && error1 <= error3 && error1 <= error4){
-                    //IC(convertFSampleC2T(result1), sample);
                     return result1;
                 }
                 else if (error2 <= error1 && error2 <= error3 && error2 <= error4){
-                    //IC(convertFSampleC2T(result2), sample);
                     return result2;
                 }
                 else if (error3 <= error1 && error3 <= error2 && error3 <= error4){
-                    //IC(convertFSampleC2T(result3), sample);
                     return result3;
                 }
                 else{
-                    //IC(convertFSampleC2T(result4), sample);
                     return result4;
                 }
             }

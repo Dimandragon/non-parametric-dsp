@@ -69,45 +69,16 @@ namespace NP_DSP{
                         }
                     }
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::TimeAverage){
-
-                        if constexpr (NP_DSP::CONFIG::debug){
-                            //data.show(PlottingKind::Interpolate);
-                        }
                         derivator.compute(data, computer_buffer, nil);
-                        if constexpr (NP_DSP::CONFIG::debug){
-                            //std::string mark = "plot1";
-                            //IC(mark);
-                            //computer_buffer.show(PlottingKind::Interpolate);
-                        }
                         for (int i = 0; i < data.size(); i++){
                             computer_buffer[i] = std::atan(computer_buffer[i]);
                         }
-                        if constexpr (NP_DSP::CONFIG::debug){
-                            //std::string mark = "plot2";
-                            //IC(mark);
-                            //computer_buffer.show(PlottingKind::Interpolate);
-                        }
                         derivator.compute(computer_buffer, out, nil);
-                        if constexpr (NP_DSP::CONFIG::debug){
-                            //std::string mark = "plot3";
-                            //IC(mark);
-                            //out.show(PlottingKind::Interpolate);
-                        }
                         for (int i = 0; i < data.size(); i++){
                             out[i] = std::abs(out[i]);
                         }
-                        if constexpr (NP_DSP::CONFIG::debug){
-                            //std::string mark = "plot4";
-                            //IC(mark);
-                            //out.show(PlottingKind::Interpolate);
-                        }
                         integrator.compute(out, computer_buffer, nil);
-                        if constexpr (NP_DSP::CONFIG::debug){
-                            //std::string mark = "plot5";
-                            //IC(mark);
-                            //computer_buffer.show(PlottingKind::Interpolate);
-                        }
-                        
+
                         for (auto i = 0; i < data.size(); i++){
                             auto approx_answer = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer = approx_answer;
@@ -134,33 +105,19 @@ namespace NP_DSP{
                             out[i] = std::abs(out[i]);
                         }
                         integrator.compute(out, computer_buffer, nil);
-                        if constexpr (NP_DSP::CONFIG::debug){
-                            computer_buffer.show(PlottingKind::Interpolate);
-                        }
-                        //SampleType right_edge;// = computer_buffer.template findMonotone<double>(computer_buffer[0] + std::numbers::pi, {0}, {});
-                        //SampleType left_edge;// = computer_buffer.template findMonotone<double>(computer_buffer[0] - std::numbers::pi, {}, {0});
-                        //SampleType period; //= right_edge + left_edge;
-                        //out[0] = static_cast<OutType::SampleType>(1.0/period);
                         for (auto i = 0; i < data.size(); i++){
-                            //right_edge = computer_buffer.template findMonotone<double>(computer_buffer[i] + std::numbers::pi, {right_edge}, {});
-                            //left_edge = computer_buffer.template findMonotone<double>(computer_buffer[i] - std::numbers::pi, {left_edge}, {});
                             auto approx_answer_right = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer_right = approx_answer_right;
                             auto counter = 0;
                             while (approx_answer_right < std::numbers::pi){
                                 counter++;
                                 old_approx_answer_right = approx_answer_right;
-                                //approx_answer_right = compute_buffer.interpolate(i+counter) - compute_buffer.interpolate(i);
                                 approx_answer_right = computer_buffer.interpolate(i + counter) - computer_buffer.interpolate(i);
-                                //std::abs(computer_buffer.interpolate(i+counter)-computer_buffer.interpolate(i+counter-1));
-                                //        std::abs(computer_buffer.interpolate(i-counter)-computer_buffer.interpolate(i-counter+1));
                             }
                             auto left_loss_right_edge = std::numbers::pi - old_approx_answer_right;
                             auto right_loss_right_edge = approx_answer_right - std::numbers::pi;
                             auto sum_loss_right_edge = left_loss_right_edge + right_loss_right_edge;
                             auto right_edge = static_cast<OutType::SampleType>(counter) - right_loss_right_edge/sum_loss_right_edge;
-                            
-                            //auto right_edge = computer_buffer.template findMonotone<double>(computer_buffer[i] + std::numbers::pi, {i + counter-1}, {i + counter});
                             
                             auto approx_answer_left = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer_left = approx_answer_left;
@@ -168,10 +125,8 @@ namespace NP_DSP{
                             while (approx_answer_left < std::numbers::pi){
                                 counter++;
                                 old_approx_answer_left = approx_answer_left;
-                                //approx_answer_right = compute_buffer.interpolate(i+counter) - compute_buffer.interpolate(i);
                                 approx_answer_left = computer_buffer.interpolate(i)-computer_buffer.interpolate(i-counter);
                             }
-                            //auto left_edge = computer_buffer.template findMonotone<double>(computer_buffer[i] - std::numbers::pi, {i - counter}, {i - counter + 1});
                             auto left_loss_left_edge = std::numbers::pi - old_approx_answer_left;
                             auto right_loss_left_edge = approx_answer_left - std::numbers::pi;
                             auto sum_loss_left_edge = left_loss_left_edge + right_loss_left_edge;
@@ -212,10 +167,6 @@ namespace NP_DSP{
                             out_ref_forward_getter_lamda(i) = std::abs(out_val_getter_lamda(i)) / (std::numbers::pi * 2.0);
                         }
                         integrator.compute(signal_for_compute, computer_buffer);
-                        //if constexpr (NP_DSP::CONFIG::debug){
-                        //    computer_buffer.show(PlottingKind::Interpolate);
-                        //}
-                        //todo
 
                         auto right_edge = computer_buffer.findIncr(computer_buffer[0] + std::numbers::pi, {0}, nil);
                         auto left_edge = computer_buffer.findIncr(computer_buffer[0] - std::numbers::pi, nil, {0});
@@ -232,8 +183,8 @@ namespace NP_DSP{
             };
 
             export
-            template<Signal DataT, Signal OutT, /*SignalWrapper OptFn, OptFn opt_fn,*/
-                    Integrator IntegratorT, Derivator DerivatorT, InstFreqDerivativeBasedKind kind>
+            template<Signal DataT, Signal OutT, Integrator IntegratorT, 
+                Derivator DerivatorT, InstFreqDerivativeBasedKind kind>
             struct DerivativeBasedWithExternalOptParametr{
                 using DataType = DataT;
                 using OutType = OutT;
@@ -242,17 +193,12 @@ namespace NP_DSP{
                 constexpr static bool is_inst_freq_computer = true;
                 constexpr static InstFreqDerivativeBasedKind counting_kind = kind;
 
-                //using OptFunction = OptFn;
-                //OptFunction opt_function = opt_fn;
-
                 using IntegratorType = IntegratorT;
                 using DerivatorType = DerivatorT;
 
 
                 IntegratorType integrator;
                 DerivatorType derivator;
-
-                //static_assert(OutType::is_writable == true);
 
                 DerivativeBasedWithExternalOptParametr(IntegratorT integrator_o,
                                 DerivatorT derivator_o)
@@ -275,44 +221,15 @@ namespace NP_DSP{
                         }
                     }
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::TimeAverage){
-
-                        if constexpr (NP_DSP::CONFIG::debug){
-                            //data.show(PlottingKind::Interpolate);
-                        }
                         derivator.compute(data, out, nil);
-                        if constexpr (NP_DSP::CONFIG::debug){
-                            //std::string mark = "plot1";
-                            //IC(mark);
-                            //out.show(PlottingKind::Interpolate);
-                        }
                         for (int i = 0; i < data.size(); i++){
                             computer_buffer[i] = std::atan(out[i]) * computer_buffer[i];
                         }
-                        if constexpr (NP_DSP::CONFIG::debug){
-                            //std::string mark = "plot2";
-                            //IC(mark);
-                            //computer_buffer.show(PlottingKind::Interpolate);
-                        }
                         derivator.compute(computer_buffer, out, nil);
-                        if constexpr (NP_DSP::CONFIG::debug){
-                            //std::string mark = "plot3";
-                            //IC(mark);
-                            //out.show(PlottingKind::Interpolate);
-                        }
                         for (int i = 0; i < data.size(); i++){
                             out[i] = std::abs(out[i]);
                         }
-                        if constexpr (NP_DSP::CONFIG::debug){
-                            //std::string mark = "plot4";
-                            //IC(mark);
-                            //out.show(PlottingKind::Interpolate);
-                        }
                         integrator.compute(out, computer_buffer, nil);
-                        if constexpr (NP_DSP::CONFIG::debug){
-                            //std::string mark = "plot5";
-                            //IC(mark);
-                            //computer_buffer.show(PlottingKind::Interpolate);
-                        }
                         
                         for (auto i = 0; i < data.size(); i++){
                             auto approx_answer = static_cast<OutType::SampleType>(0.0);
@@ -468,9 +385,8 @@ namespace NP_DSP{
             };
 
             export
-            template<Signal DataT, Signal OutT, /*SignalWrapper OptFn,*/
-                    Integrator IntegratorT, Derivator DerivatorT,
-            InstFreqDerivativeBasedKind kind>
+            template<Signal DataT, Signal OutT, Integrator IntegratorT, 
+                Derivator DerivatorT, InstFreqDerivativeBasedKind kind>
             struct PeriodAndExtremumsBased {
                 using DataType = DataT;
                 using OutType = OutT;
@@ -488,9 +404,9 @@ namespace NP_DSP{
                 IntegratorType integrator;
                 DerivatorType derivator;
 
-                float approx_order_coeff;
+                double approx_order_coeff = 1.0;
+                int tile_size = 128;
 
-                //static_assert(OutType::is_writable == true);
                 SampleType max_error = static_cast<typename DataType::SampleType>(1000000);
 
                 PeriodAndExtremumsBased(IntegratorType integrator_in, DerivatorType derivator_in){
@@ -539,30 +455,16 @@ namespace NP_DSP{
                             
                         }
                         double accum = 0.0;
-                        
-                        //std::string mark = "show external_opt_parametr";
-                        //IC(mark);
-                        //external_opt_parametr.show(PlottingKind::Simple);
-                        
 
                         inst_freq_computer.compute(data, out, external_opt_parametr);
-                        
-                        //mark = "show extr freq";
-                        //IC(mark);
-                        
-                        //extremums_freq.show(PlottingKind::Simple);
-                        
-
-                        
-                        //mark = "show out";
-                        //IC(mark);
-                        //out.show(PlottingKind::Simple);
                         
                         for(auto i = 0; i < extremums_freq.size(); i++) {
                             
                             accum += add_error[i] + (extremums_freq[i] - out[i]) * (extremums_freq[i] - out[i]) / 1000; /// data[i];
                         }
-                        IC(accum);
+                        if constexpr (CONFIG::debug){
+                            IC(accum);
+                        }
                         return accum;
                     };
 
@@ -578,30 +480,28 @@ namespace NP_DSP{
                     };
 
                     auto stopPoint = [](auto losses_different, auto & approximator) {
-                        if (losses_different > 0.00001){ //todo move precision to external parameter
+                        if (losses_different > 0.00001){
                             return false;
                         }
                         else{
                             return true;
                         }
                     };
-                    //APPROX::FourerSeriesBased
                     auto approximator = APPROX::FourierSeriesBased<DataType, decltype(loss), decltype(stopPoint), 
                         APPROX::FSApproxKind::Positive, decltype(bySampleError)>
                             (loss, external_opt_parametr, stopPoint);
-                    approximator.tile_size = 5;
+                    approximator.tile_size = tile_size;
                     approximator.bySampleLoss = &bySampleError;       
                     approximator.is_actual = false;
-                    approximator.setpolynomsCount(data.size() / 2 * approx_order_coeff);
+                    approximator.setApproxOrderRatio(approx_order_coeff);
                     approximator.max_value = 10;
                     approximator.train();
                 }
             };
 
             export
-            template<Signal DataT, Signal OutT, /*SignalWrapper OptFn,*/
-                    Integrator IntegratorT, Derivator DerivatorT,
-            InstFreqDerivativeBasedKind kind>
+            template<Signal DataT, Signal OutT, Integrator IntegratorT, 
+                Derivator DerivatorT, InstFreqDerivativeBasedKind kind>
             struct PeriodAndExtremumsBasedExternal {
                 using DataType = DataT;
                 using OutType = OutT;
@@ -619,9 +519,9 @@ namespace NP_DSP{
                 IntegratorType integrator;
                 DerivatorType derivator;
 
-                float approx_order_coeff;
+                double approx_order_coeff = 1.0;
+                int tile_size = 128;
 
-                //static_assert(OutType::is_writable == true);
                 SampleType max_error = static_cast<typename DataType::SampleType>(1000000);
 
                 PeriodAndExtremumsBasedExternal(IntegratorType integrator_in, DerivatorType derivator_in){
@@ -662,24 +562,15 @@ namespace NP_DSP{
                         }
                         double accum = 0.0;
                         
-                        //std::string mark = "show external_opt_parametr";
-                        //IC(mark);
-                        //external_opt_parametr.show(PlottingKind::Simple);
-                        
-                        //std::vector<double> result = {};
                         for(auto i = 0; i < extremums_freq.size(); i++) {
                             if (out[i] != 0.0){
                                 accum += (extremums_freq[i] - out[i] * external_opt_parametr[i])
                                     * (extremums_freq[i] - out[i] * external_opt_parametr[i]) / 1000 / out[i];
                             }
-                            //result.push_back(out[i] * external_opt_parametr[i]);
                         }
-
-                        //mark = "show result";
-                        //IC(mark);
-                        //matplot::plot(result);
-                        //matplot::show();
-                        IC(accum);
+                        if constexpr (CONFIG::debug){
+                            IC(accum);
+                        }
                         return accum;
                     };
 
@@ -697,22 +588,18 @@ namespace NP_DSP{
                         return (extremums_freq[i] - out[i] * external_opt_parametr[i])
                             * (extremums_freq[i] - out[i] * external_opt_parametr[i]) / approximator.tile_size / out[i];
                     };
-                    //APPROX::FourerSeriesBased
                     auto approximator = APPROX::FourierSeriesBased<DataType, decltype(loss), decltype(stopPoint), APPROX::FSApproxKind::Simple, decltype(bySampleError)>
                         (loss, external_opt_parametr, stopPoint);
                     approximator.is_actual = false;
                     
-                    approximator.setpolynomsCount(data.size() / 2 * approx_order_coeff);
+                    approximator.setApproxOrderRatio(approx_order_coeff);
                     approximator.max_value = 10;
-                    approximator.tile_size = 1;
+                    approximator.tile_size = tile_size;
                     approximator.bySampleLoss = &bySampleError;
                     approximator.train();
-                    //approximator.fineTrainIter();
-                    //approximator.train();
                     for (auto i = 0; i < data.size(); i++){
                         out[i] = out[i] * approximator.compute(i);
                     }
-                    //todo
                 }
             };
         }

@@ -30,15 +30,11 @@ int main(){
     NP_DSP::ONE_D::InstFreqComputers::ExtremumsBased
         <SignalT, SignalT, 
             NP_DSP::ONE_D::InstFreqComputers::ExtremumsBasedComputeInstFreqKind::Linear>
-                inst_freq_computer1;
+                inst_freq_computer;
     
     signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
-    inst_freq_computer1.compute(signal1, signal2, {});
+    inst_freq_computer.compute(signal1, signal2, {});
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
-
-    for (int i = 0; i < signal2.size(); i++){
-        signal2[i] = signal2[i];
-    }
     
     NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<decltype(signal1), decltype(signal3), 
         decltype(signal2), NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased, 
@@ -51,8 +47,43 @@ int main(){
     NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<decltype(signal1), decltype(signal3), 
         decltype(signal2), NP_DSP::ONE_D::FILTERS::FilteringType::ValueBased, 
             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average> 
-                filter2 (signal2, integrator);
+                filter1 (signal2, integrator);
 
-    filter2.compute(signal1, signal3, nil);
+    filter1.compute(signal1, signal3, nil);
+    signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
+
+/*
+    NP_DSP::ONE_D::InstFreqComputers::DerivativeBased<SignalT, SignalT, decltype(integrator), decltype(derivator), NP_DSP::ONE_D::InstFreqComputers::InstFreqDerivativeBasedKind::Momental> 
+        inst_freq_computer1(integrator, derivator);
+    inst_freq_computer1.compute(signal1, signal2, compute_buffer);
+    
+    filter.compute(signal1, signal3, nil);
+    signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
+
+    filter1.compute(signal1, signal3, nil);
+    signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
+*/
+    NP_DSP::ONE_D::InstFreqComputers::DerivativeBased<SignalT, SignalT, 
+        decltype(integrator), decltype(derivator), 
+            NP_DSP::ONE_D::InstFreqComputers::InstFreqDerivativeBasedKind::TimeAverage> 
+                inst_freq_computer2(integrator, derivator);
+    inst_freq_computer2.compute(signal1, signal2, compute_buffer);
+    
+    filter.compute(signal1, signal3, nil);
+    signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
+
+    filter1.compute(signal1, signal3, nil);
+    signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
+
+    NP_DSP::ONE_D::InstFreqComputers::DerivativeBased<SignalT, SignalT, 
+        decltype(integrator), decltype(derivator), 
+            NP_DSP::ONE_D::InstFreqComputers::InstFreqDerivativeBasedKind::DeriveAverage> 
+                inst_freq_computer3(integrator, derivator);
+    inst_freq_computer3.compute(signal1, signal2, compute_buffer);
+    
+    filter.compute(signal1, signal3, nil);
+    signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
+
+    filter1.compute(signal1, signal3, nil);
     signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
 }
