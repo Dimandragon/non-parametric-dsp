@@ -237,7 +237,8 @@ namespace NP_DSP{
         export
         template<typename T>
         constexpr bool is_inst_freq_computer =
-                requires (T inst_freq_computer, const T::DataType & data, T::OutType & inst_freq, T::AdditionalDataType & additional_data)
+                requires (T inst_freq_computer, const T::DataType & data, 
+                T::OutType & inst_freq, T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::OutType;
@@ -364,6 +365,29 @@ namespace NP_DSP{
         export
         template<typename T>
         concept ModeExtractor = is_mode_extracor<T>;
+
+        export 
+        template <typename T>
+        constexpr bool is_phase_computer
+                = requires (T phase_computer, const T::DataType & data,
+                    T::OutType & inst_freq, T::AdditionalDataType & additional_data)
+        {
+            typename T::DataType;
+            typename T::OutType;
+            typename T::AdditionalDataType;
+            requires T::is_phase_computer == true;
+            
+            requires is_signal<typename T::DataType>;
+            requires is_signal<typename T::InstFreqType>;
+            requires (T::OutType::is_writable == true);
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
+            
+            phase_computer.compute(data, inst_freq, additional_data);
+        };
+
+        export
+        template<typename T>
+        concept PhaseComputer = is_phase_computer<T>;
 
         export
         template <typename T>
