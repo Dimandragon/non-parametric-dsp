@@ -672,7 +672,7 @@ namespace NP_DSP{
                         auto max_ampl = 1.;
                         if constexpr (kind == FSApproxKind::Positive){
                             if (i % tile_size != 0){
-                                auto thr_sample = UTILITY_MATH::convertFSampleC2T<SampleType>(fourier_series[0]);
+                                auto thr_sample = UTILITY_MATH::convertFSampleC2T<SampleType>(fourier_series[i/tile_size * tile_size]);
                             
                                 max_ampl = thr_sample.first * std::cos(thr_sample.second);
                             }
@@ -770,7 +770,7 @@ namespace NP_DSP{
                         SampleType ampl_left = 0.0;
                         SampleType ampl_right = max_value;
                         if constexpr (kind == FSApproxKind::Positive){
-                            if (i!=0){
+                            if (i % tile_size != 0){
                                 ampl_right = max_ampl;
                             }
                         }
