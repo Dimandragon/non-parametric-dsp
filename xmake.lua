@@ -3,7 +3,7 @@ add_rules("mode.debug", "mode.release")
 set_languages("c++23")
 
 
---xmake f --cxx=clang++ --cc=clang
+--xmake f --cxx=clang++ --cc=clang -m debug --debugger=lldb-16
 --xmake project -k compile_commands
 
 target("icecream")
@@ -42,9 +42,10 @@ target("pocketfft")
 
 target("non-parametric_dsp")
     set_kind("static")
-    add_files("src/npdsp_concepts.ixx", "src/signals.ixx", "src/derivators.ixx"
-           , "src/integrators.ixx", "src/filters.ixx", "src/inst_freq_computers.ixx",
-           "src/mode_grabbers.ixx", "src/utility_math.ixx", "src/approximators.ixx", "src/config.ixx")
+    add_files("src/npdsp_concepts.ixx", "src/signals.ixx", "src/derivators.ixx",
+            "src/integrators.ixx", "src/filters.ixx", "src/inst_freq_computers.ixx",
+            "src/mode_grabbers.ixx", "src/utility_math.ixx", "src/approximators.ixx", 
+            "src/config.ixx", "src/phase_computers.ixx")
     add_deps("pocketfft")
     add_deps("matplot++_external")
     add_deps("icecream")
@@ -130,6 +131,19 @@ target("filtering_non_opt_perod_based")
     add_deps("matplot++_external")
     add_deps("non-parametric_dsp")
     add_deps("icecream")
+
+target("extremums_based_phase_computer")
+    set_kind("binary")
+    add_files("examples/phase_computers/extremums_based.cpp")
+    add_deps("matplot++_external")
+    add_deps("non-parametric_dsp")
+    add_deps("icecream")
+
+target("phase_based_inst_freq_computer")
+    set_kind("binary")
+    add_files("examples/inst_freq_computers/phase_based.cpp")
+    add_deps("matplot++_external")
+    add_deps("non-parametric_dsp")
 --target("opengl_plotting_test")
     --set_kind("binary")
     --add_files("examples/plotting/opengl_test.cpp")

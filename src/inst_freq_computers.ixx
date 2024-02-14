@@ -18,6 +18,7 @@ import approximators;
 import <optional>;
 import npdsp_config;
 import <complex>;
+import phase_computers;
 
 namespace NP_DSP{
     namespace ONE_D{
@@ -26,8 +27,8 @@ namespace NP_DSP{
             enum class InstFreqDerivativeBasedKind {Momental, TimeAverage, DeriveAverage, DeriveDouble};
 
             export
-            template<Signal DataT, Signal OutT, /*SignalWrapper OptFn, OptFn opt_fn,*/
-                    Integrator IntegratorT, Derivator DerivatorT, InstFreqDerivativeBasedKind kind>
+            template<Signal DataT, Signal OutT, Integrator IntegratorT, 
+                Derivator DerivatorT, InstFreqDerivativeBasedKind kind>
             struct DerivativeBased{
                 using DataType = DataT;
                 using OutType = OutT;
@@ -137,46 +138,255 @@ namespace NP_DSP{
                         }
                     }
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveDouble){
-                        derivator.compute(data, computer_buffer, nil);
-                        for (int i = 0; i < data.size(); i++){
-                            computer_buffer[i] = std::atan(computer_buffer[i]);
-                        }
-                        auto out_ref_forward_getter_lamda = [&out](OutType::IdxType idx){
-                            auto & ref = out[idx];
-                            auto & out_ref = ref.forward;
-                            return out_ref;
-                        };
-                        auto out_ref_backward_getter_lamda = [&out](OutType::IdxType idx){
-                            auto & ref = out[idx];
-                            auto & out_ref = ref.backward;
-                            return out_ref;
-                        };
-                        auto out_val_getter_lamda = [&out](OutType::IdxType idx){
-                            return out[idx].forward;
-                        };
-                        auto get_size_lamda = [out](){
-                            return out.size();
-                        };
-                        auto signal_base = ExpressionWrapper<typename OutType::SampleType,
-                            typename OutType::IdxType, decltype(out_val_getter_lamda), decltype(out_ref_forward_getter_lamda),
-                            decltype(get_size_lamda), true>(out_val_getter_lamda, out_ref_forward_getter_lamda, get_size_lamda);
-                        auto signal_for_compute = GenericSignal(signal_base);
+                        //todo
+                    }
+                }
+            };
 
-                        derivator.compute(computer_buffer, signal_for_compute, nil);
-                        for (int i = 0; i < data.size(); i++){
-                            out_ref_forward_getter_lamda(i) = std::abs(out_val_getter_lamda(i)) / (std::numbers::pi * 2.0);
-                        }
-                        integrator.compute(signal_for_compute, computer_buffer);
+            export
+            template<Signal DataT, Signal OutT, Integrator IntegratorT, 
+                Derivator DerivatorT, InstFreqDerivativeBasedKind kind>
+            struct ComputedOnPhase{
+                using DataType = DataT;
+                using OutType = OutT;
+                using AdditionalDataType = GENERAL::Nil;
 
-                        auto right_edge = computer_buffer.findIncr(computer_buffer[0] + std::numbers::pi, {0}, nil);
-                        auto left_edge = computer_buffer.findIncr(computer_buffer[0] - std::numbers::pi, nil, {0});
-                        out_ref_forward_getter_lamda(0) = static_cast<OutType::SampleType>(1.0/left_edge);
-                        out_ref_backward_getter_lamda(0) = static_cast<OutType::SampleType>(1.0/right_edge);
-                        for (auto i = 1; i < data.size(); i++){
-                            right_edge = computer_buffer.findIncr(computer_buffer[i] + std::numbers::pi, {right_edge}, nil);
-                            left_edge = computer_buffer.findIncr(computer_buffer[i] - std::numbers::pi, {left_edge}, nil);
-                            out_ref_forward_getter_lamda(0) = static_cast<OutType::SampleType>(1.0/left_edge);
-                            out_ref_backward_getter_lamda(0) = static_cast<OutType::SampleType>(1.0/right_edge);
+                constexpr static bool is_inst_freq_computer = true;
+                constexpr static InstFreqDerivativeBasedKind counting_kind = kind;
+
+                //using OptFunction = OptFn;
+                //OptFunction opt_function = opt_fn;
+
+                using IntegratorType = IntegratorT;
+                using DerivatorType = DerivatorT;
+
+
+                IntegratorType integrator;
+                DerivatorType derivator;
+
+                //static_assert(OutType::is_writable == true);
+
+                ComputedOnPhase(IntegratorT integrator_o,
+                                DerivatorT derivator_o)
+                {
+                    integrator = integrator_o;
+                    derivator = derivator_o;
+                }
+
+                void compute(const DataType & phase, OutType & out, GENERAL::Nil & nil)
+                {
+                    if constexpr (counting_kind == InstFreqDerivativeBasedKind::Momental){
+                        derivator.compute(phase, out, nil);
+                        for (int i = 0; i < phase.size(); i++){
+                            out[i] = out[i] / (std::numbers::pi * 2.0);
+                        }
+                    }
+                    else if constexpr (counting_kind == InstFreqDerivativeBasedKind::TimeAverage){
+                        for (auto i = 0; i < phase.size(); i++){
+                            auto approx_answer = static_cast<OutType::SampleType>(0.0);
+                            auto old_approx_answer = approx_answer;
+                            auto counter = 0;
+                            while (approx_answer < 2.0 * std::numbers::pi){
+                                counter++;
+                                old_approx_answer = approx_answer;
+                                approx_answer = phase.interpolate(i+counter) - phase.interpolate(i - counter);
+                            }
+                            auto left_loss = std::numbers::pi * 2.0 - old_approx_answer;
+                            auto right_loss = approx_answer - std::numbers::pi * 2.0;
+                            auto sum_loss = left_loss + right_loss;
+                            auto period = (static_cast<OutType::SampleType>(counter) - right_loss/sum_loss) * 2;
+                            out[i] = static_cast<OutType::SampleType>(1.0/period);
+                        }
+                    }
+                    else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveAverage){
+                        for (auto i = 0; i < phase.size(); i++){
+                            auto approx_answer_right = static_cast<OutType::SampleType>(0.0);
+                            auto old_approx_answer_right = approx_answer_right;
+                            auto counter = 0;
+                            while (approx_answer_right < std::numbers::pi){
+                                counter++;
+                                old_approx_answer_right = approx_answer_right;
+                                approx_answer_right = phase.interpolate(i + counter) - phase.interpolate(i);
+                            }
+                            auto left_loss_right_edge = std::numbers::pi - old_approx_answer_right;
+                            auto right_loss_right_edge = approx_answer_right - std::numbers::pi;
+                            auto sum_loss_right_edge = left_loss_right_edge + right_loss_right_edge;
+                            auto right_edge = static_cast<OutType::SampleType>(counter) - right_loss_right_edge/sum_loss_right_edge;
+                            
+                            auto approx_answer_left = static_cast<OutType::SampleType>(0.0);
+                            auto old_approx_answer_left = approx_answer_left;
+                            counter = 0;
+                            while (approx_answer_left < std::numbers::pi){
+                                counter++;
+                                old_approx_answer_left = approx_answer_left;
+                                approx_answer_left = phase.interpolate(i)-phase.interpolate(i-counter);
+                            }
+                            auto left_loss_left_edge = std::numbers::pi - old_approx_answer_left;
+                            auto right_loss_left_edge = approx_answer_left - std::numbers::pi;
+                            auto sum_loss_left_edge = left_loss_left_edge + right_loss_left_edge;
+                            auto left_edge = static_cast<OutType::SampleType>(counter) - right_loss_left_edge/sum_loss_left_edge; 
+
+                            auto period = right_edge + left_edge;
+                            out[i] = static_cast<OutType::SampleType>(1.0/period);
+                        }
+                    }
+                    else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveDouble){
+                        for (auto i = 0; i < phase.size(); i++){
+                            auto approx_answer_right = static_cast<OutType::SampleType>(0.0);
+                            auto old_approx_answer_right = approx_answer_right;
+                            auto counter = 0;
+                            while (approx_answer_right < std::numbers::pi){
+                                counter++;
+                                old_approx_answer_right = approx_answer_right;
+                                approx_answer_right = phase.interpolate(i + counter) - phase.interpolate(i);
+                            }
+                            auto left_loss_right_edge = std::numbers::pi - old_approx_answer_right;
+                            auto right_loss_right_edge = approx_answer_right - std::numbers::pi;
+                            auto sum_loss_right_edge = left_loss_right_edge + right_loss_right_edge;
+                            auto right_edge = static_cast<OutType::SampleType>(counter) - right_loss_right_edge/sum_loss_right_edge;
+                            
+                            auto approx_answer_left = static_cast<OutType::SampleType>(0.0);
+                            auto old_approx_answer_left = approx_answer_left;
+                            counter = 0;
+                            while (approx_answer_left < std::numbers::pi){
+                                counter++;
+                                old_approx_answer_left = approx_answer_left;
+                                approx_answer_left = phase.interpolate(i)-phase.interpolate(i-counter);
+                            }
+                            auto left_loss_left_edge = std::numbers::pi - old_approx_answer_left;
+                            auto right_loss_left_edge = approx_answer_left - std::numbers::pi;
+                            auto sum_loss_left_edge = left_loss_left_edge + right_loss_left_edge;
+                            auto left_edge = static_cast<OutType::SampleType>(counter) - right_loss_left_edge/sum_loss_left_edge; 
+
+                            out[i].first = static_cast<OutType::SampleType>(0.5/left_edge);
+                            out[i].second = static_cast<OutType::SampleType>(0.5/right_edge);
+                        }
+                    }
+                }
+            };
+
+            export
+            template<Signal DataT, Signal OutT, Integrator IntegratorT, 
+                Derivator DerivatorT, InstFreqDerivativeBasedKind kind>
+            struct PhaseBased { //TODO
+                using DataType = DataT;
+                using OutType = OutT;
+                using AdditionalDataType = OutType;
+
+                constexpr static bool is_inst_freq_computer = true;
+                constexpr static InstFreqDerivativeBasedKind counting_kind = kind;
+
+                //using OptFunction = OptFn;
+                //OptFunction opt_function = opt_fn;
+
+                using IntegratorType = IntegratorT;
+                using DerivatorType = DerivatorT;
+
+
+                IntegratorType integrator;
+                DerivatorType derivator;
+
+                //static_assert(OutType::is_writable == true);
+
+                PhaseBased(IntegratorT integrator_o,
+                                DerivatorT derivator_o)
+                {
+                    integrator = integrator_o;
+                    derivator = derivator_o;
+                }
+
+                void compute(const DataType & data, OutType & out, AdditionalDataType & computer_buffer)
+                {
+                    GENERAL::Nil nil;
+                    auto phase_computer = 
+                            ONE_D::PHASE_COMPUTERS::ArctgScaledToExtremums<DataType, AdditionalDataType, OutType,
+                                IntegratorType, DerivatorType>(integrator, derivator);
+                        phase_computer.compute(data, computer_buffer, out);
+                    if constexpr (counting_kind == InstFreqDerivativeBasedKind::Momental){
+                        derivator.compute(computer_buffer, out, nil);
+                        for (int i = 0; i < data.size(); i++){
+                            out[i] = out[i] / (std::numbers::pi * 2.0);
+                        }
+                    }
+                    else if constexpr (counting_kind == InstFreqDerivativeBasedKind::TimeAverage){
+                        for (auto i = 0; i < data.size(); i++){
+                            auto approx_answer = static_cast<OutType::SampleType>(0.0);
+                            auto old_approx_answer = approx_answer;
+                            auto counter = 0;
+                            while (approx_answer < 2.0 * std::numbers::pi){
+                                counter++;
+                                old_approx_answer = approx_answer;
+                                approx_answer = computer_buffer.interpolate(i+counter) - computer_buffer.interpolate(i - counter);
+                            }
+                            auto left_loss = std::numbers::pi * 2.0 - old_approx_answer;
+                            auto right_loss = approx_answer - std::numbers::pi * 2.0;
+                            auto sum_loss = left_loss + right_loss;
+                            auto period = (static_cast<OutType::SampleType>(counter) - right_loss/sum_loss) * 2;
+                            out[i] = static_cast<OutType::SampleType>(1.0/period);
+                        }
+                    }
+                    else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveAverage){
+                        for (auto i = 0; i < data.size(); i++){
+                            auto approx_answer_right = static_cast<OutType::SampleType>(0.0);
+                            auto old_approx_answer_right = approx_answer_right;
+                            auto counter = 0;
+                            while (approx_answer_right < std::numbers::pi){
+                                counter++;
+                                old_approx_answer_right = approx_answer_right;
+                                approx_answer_right = computer_buffer.interpolate(i + counter) - computer_buffer.interpolate(i);
+                            }
+                            auto left_loss_right_edge = std::numbers::pi - old_approx_answer_right;
+                            auto right_loss_right_edge = approx_answer_right - std::numbers::pi;
+                            auto sum_loss_right_edge = left_loss_right_edge + right_loss_right_edge;
+                            auto right_edge = static_cast<OutType::SampleType>(counter) - right_loss_right_edge/sum_loss_right_edge;
+                            
+                            auto approx_answer_left = static_cast<OutType::SampleType>(0.0);
+                            auto old_approx_answer_left = approx_answer_left;
+                            counter = 0;
+                            while (approx_answer_left < std::numbers::pi){
+                                counter++;
+                                old_approx_answer_left = approx_answer_left;
+                                approx_answer_left = computer_buffer.interpolate(i)-computer_buffer.interpolate(i-counter);
+                            }
+                            auto left_loss_left_edge = std::numbers::pi - old_approx_answer_left;
+                            auto right_loss_left_edge = approx_answer_left - std::numbers::pi;
+                            auto sum_loss_left_edge = left_loss_left_edge + right_loss_left_edge;
+                            auto left_edge = static_cast<OutType::SampleType>(counter) - right_loss_left_edge/sum_loss_left_edge; 
+
+                            auto period = right_edge + left_edge;
+                            out[i] = static_cast<OutType::SampleType>(1.0/period);
+                        }
+                    }
+                    else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveDouble){
+                        for (auto i = 0; i < data.size(); i++){
+                            auto approx_answer_right = static_cast<OutType::SampleType>(0.0);
+                            auto old_approx_answer_right = approx_answer_right;
+                            auto counter = 0;
+                            while (approx_answer_right < std::numbers::pi){
+                                counter++;
+                                old_approx_answer_right = approx_answer_right;
+                                approx_answer_right = computer_buffer.interpolate(i + counter) - computer_buffer.interpolate(i);
+                            }
+                            auto left_loss_right_edge = std::numbers::pi - old_approx_answer_right;
+                            auto right_loss_right_edge = approx_answer_right - std::numbers::pi;
+                            auto sum_loss_right_edge = left_loss_right_edge + right_loss_right_edge;
+                            auto right_edge = static_cast<OutType::SampleType>(counter) - right_loss_right_edge/sum_loss_right_edge;
+                            
+                            auto approx_answer_left = static_cast<OutType::SampleType>(0.0);
+                            auto old_approx_answer_left = approx_answer_left;
+                            counter = 0;
+                            while (approx_answer_left < std::numbers::pi){
+                                counter++;
+                                old_approx_answer_left = approx_answer_left;
+                                approx_answer_left = computer_buffer.interpolate(i)-computer_buffer.interpolate(i-counter);
+                            }
+                            auto left_loss_left_edge = std::numbers::pi - old_approx_answer_left;
+                            auto right_loss_left_edge = approx_answer_left - std::numbers::pi;
+                            auto sum_loss_left_edge = left_loss_left_edge + right_loss_left_edge;
+                            auto left_edge = static_cast<OutType::SampleType>(counter) - right_loss_left_edge/sum_loss_left_edge; 
+
+                            out[i].first = static_cast<OutType::SampleType>(0.5/left_edge);
+                            out[i].second = static_cast<OutType::SampleType>(0.5/right_edge);
                         }
                     }
                 }
@@ -307,9 +517,9 @@ namespace NP_DSP{
                 constexpr static bool is_inst_freq_computer = true;
 
                 void compute(const DataType & data, OutType & out, GENERAL::Nil nil){
-                    std::vector<typename DataType::IdxType> extremums;
-                    extremums.push_back(static_cast<typename DataType::IdxType>(0));
-                    for (auto i = 1; i < data.size()-1; i++){
+                    std::vector<int> extremums;
+                    extremums.push_back(0);
+                    for (int i = 1; i < data.size()-1; i++){
                         if ((data[i] >= data[i-1] &&
                             data[i] > data[i+1]) ||
                             (data[i] > data[i-1] &&
@@ -322,7 +532,8 @@ namespace NP_DSP{
                             extremums.push_back(i);
                         }
                     }
-                    extremums.push_back(static_cast<typename DataType::IdxType>(data.size()-1));
+                    extremums.push_back(static_cast<int>(data.size()-1));
+
                     if(extremums.size() > 2){
                         extremums[0] = extremums[1] * 2 - extremums[2];
                         auto last = extremums.size() - 1;
@@ -339,6 +550,7 @@ namespace NP_DSP{
                         extremums[0] = - extremums[1];
                         extremums[last] = data.size() + data.size() - extremums[last-1];
                     }
+
                     
                     if constexpr (kind == ExtremumsBasedComputeInstFreqKind::Simple){
                         auto left = extremums[0];

@@ -19,7 +19,7 @@ int main(){
         //signal1.base->vec->push_back(std::sin(static_cast<double>(i) / 5000. * static_cast<double>(i)));
         signal1.base->vec->push_back(std::sin(static_cast<double>(i) / 10));
         signal2.base->vec->push_back(0);
-        signal3.base->vec->push_back(0.5 / std::numbers::pi / 10.);
+        //signal3.base->vec->push_back(0.5 / std::numbers::pi / 10.);
         //signal3.base->vec->push_back(0.5 / std::numbers::pi);
         //compute_buffer.base->vec->push_back(0);
     }
@@ -33,7 +33,7 @@ int main(){
     inst_freq_computer1.compute(signal1, signal2, {});
     
     signal1.show(NP_DSP::ONE_D::PlottingKind::Simple, "/home/dmitry/projects/non-parametric-dsp/examples/inst_freq_computers/images/signal1.svg");
-    signal3.show(NP_DSP::ONE_D::PlottingKind::Simple, "/home/dmitry/projects/non-parametric-dsp/examples/inst_freq_computers/images/signal3.svg");
+    //signal3.show(NP_DSP::ONE_D::PlottingKind::Simple, "/home/dmitry/projects/non-parametric-dsp/examples/inst_freq_computers/images/signal3.svg");
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple, "/home/dmitry/projects/non-parametric-dsp/examples/inst_freq_computers/images/signal2_1.svg");
 
     NP_DSP::ONE_D::InstFreqComputers::ExtremumsBased
