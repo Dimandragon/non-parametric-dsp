@@ -421,7 +421,7 @@ namespace NP_DSP{
 
             requires T::is_inst_freq_computer == true;
             requires is_signal<typename T::DataType>;
-            requires is_signal<typename T::InstFreqType>;
+            requires is_signal<typename T::OutType>;
             requires is_signal_wrapper<typename T::AdditionalDataType>;
 
             inst_freq_computer.compute(data, inst_freq, additional_data);
@@ -430,6 +430,28 @@ namespace NP_DSP{
         export
         template<typename T>
         concept InstFreqComputer = is_inst_freq_computer<T>;
+
+        export
+        template<typename T>
+        constexpr bool is_inst_ampl_computer =
+                requires (T inst_ampl_computer, const T::DataType & data, T::OutType & inst_ampl,
+                T::AdditionalDataType & additional_data)
+        {
+            typename T::DataType;
+            typename T::OutType;
+            typename T::AdditionalDataType;
+
+            requires T::is_inst_freq_computer == true;
+            requires is_signal<typename T::DataType>;
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
+
+            inst_ampl_computer.compute(data, inst_ampl, additional_data);
+        };
+
+        export
+        template<typename T>
+        concept InstAmplComputer = is_inst_ampl_computer<T>;
+
 
         export
         template<typename T>

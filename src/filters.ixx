@@ -113,7 +113,8 @@ namespace NP_DSP{
 
             export
             template<Signal DataT, Signal OutT, Signal InstFreqT, FilteringType filtering_type_k,
-                    Integrator IntegratorT, Derivator DerivatorT, InstFreqComputers::InstFreqDerivativeBasedKind inst_freq_k>
+                    Integrator IntegratorT, Derivator DerivatorT, InstFreqComputerKind inst_freq_computer_k>
+                    //INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind inst_freq_k>
             struct OptPeriodBasedFilter{
                 using DataType = DataT;
                 using OutType = OutT;
@@ -133,25 +134,63 @@ namespace NP_DSP{
                         AdditionalDataType, filtering_type_k, 
                             IntegratorT, InstFreqKind::Average> * filter;
                 
-                auto * inst_freq_computer(){
-                    if constexpr ()
+                auto * & inst_freq_computer(){
+                    if constexpr (inst_freq_computer_k == InstFreqComputerKind::extremums_based){
+                        static NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBased
+                            <DataT, InstFreqT, 
+                                NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBasedComputeInstFreqKind::Linear> 
+                                    * inst_freq_computer;
+                        return inst_freq_computer;
+                    }
+                    else if constexpr (inst_freq_computer_k == InstFreqComputerKind::arctg_extr_opt_momental){
+                        static NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<DataT, InstFreqT, OutT, IntegratorT, 
+                            DerivatorT, INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::Momental> 
+                                * inst_freq_computer;
+                        return inst_freq_computer;
+                    }
+                    else if constexpr (inst_freq_computer_k == InstFreqComputerKind::arctg_extr_opt_time_average){
+                        static NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<DataT, InstFreqT, OutT, IntegratorT, 
+                            DerivatorT, INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage> 
+                                * inst_freq_computer;
+                        return inst_freq_computer;
+                    }
+                    else if constexpr (inst_freq_computer_k == InstFreqComputerKind::arctg_extr_opt_derive_average){
+                        static NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<DataT, InstFreqT, OutT, IntegratorT, 
+                            DerivatorT, INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveAverage> 
+                                * inst_freq_computer;
+                        return inst_freq_computer;
+                    }
+                }
+
+                auto * & inst_freq_computer_for_mode(){
+                    if constexpr (inst_freq_computer_k == InstFreqComputerKind::extremums_based){
+                        static NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBased
+                            <BuffT, BuffT, 
+                                NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBasedComputeInstFreqKind::Linear> 
+                                    * inst_freq_computer_for_mode;
+                        return inst_freq_computer_for_mode;
+                    }
+                    else if constexpr (inst_freq_computer_k == InstFreqComputerKind::arctg_extr_opt_momental){
+                        NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<BuffT, BuffT, OutT, IntegratorT, 
+                            DerivatorT, INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::Momental> 
+                                * inst_freq_computer_for_mode;
+                    }
+                    else if constexpr (inst_freq_computer_k == InstFreqComputerKind::arctg_extr_opt_time_average){
+                        NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<BuffT, BuffT, OutT, IntegratorT, 
+                            DerivatorT, INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage> 
+                                * inst_freq_computer_for_mode;
+                    }
+                    else if constexpr (inst_freq_computer_k == InstFreqComputerKind::arctg_extr_opt_derive_average){
+                        NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<BuffT, BuffT, OutT, IntegratorT, 
+                            DerivatorT, INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveAverage> 
+                                * inst_freq_computer_for_mode;
+                    }
                 }
                 /*
-                NP_DSP::ONE_D::InstFreqComputers::PhaseBased<DataT, InstFreqT, OutT, IntegratorT, 
-                    DerivatorT, inst_freq_k> * inst_freq_computer;
                 
-                NP_DSP::ONE_D::InstFreqComputers::PhaseBased<BuffT, BuffT, OutT, IntegratorT, 
-                    DerivatorT, inst_freq_k> * inst_freq_computer_for_mode;
+                
+                
                 */
-                NP_DSP::ONE_D::InstFreqComputers::ExtremumsBased
-                    <DataT, InstFreqT, 
-                        NP_DSP::ONE_D::InstFreqComputers::ExtremumsBasedComputeInstFreqKind::Linear> 
-                            * inst_freq_computer;
-
-                NP_DSP::ONE_D::InstFreqComputers::ExtremumsBased
-                    <BuffT, BuffT, 
-                        NP_DSP::ONE_D::InstFreqComputers::ExtremumsBasedComputeInstFreqKind::Linear> 
-                            * inst_freq_computer_for_mode;
 
                 GENERAL::Nil nil;
                 
@@ -163,24 +202,47 @@ namespace NP_DSP{
                         <DataType, OutType, AdditionalDataType, filtering_type_k, 
                             IntegratorT, InstFreqKind::Average> (integrator);
                     
-                    /*inst_freq_computer = new NP_DSP::ONE_D::InstFreqComputers::PhaseBased<DataT, InstFreqT, 
+                    /*inst_freq_computer = new NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<DataT, InstFreqT, 
                         OutT, IntegratorT, DerivatorT, inst_freq_k> (integrator, derivator); 
 
-                    inst_freq_computer_for_mode = new NP_DSP::ONE_D::InstFreqComputers::PhaseBased<BuffT, BuffT, OutT, IntegratorT, 
+                    inst_freq_computer_for_mode = new NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<BuffT, BuffT, OutT, IntegratorT, 
                         DerivatorT, inst_freq_k> (integrator, derivator); */
-                    inst_freq_computer = new NP_DSP::ONE_D::InstFreqComputers::ExtremumsBased
-                        <DataT, InstFreqT, 
-                            NP_DSP::ONE_D::InstFreqComputers::ExtremumsBasedComputeInstFreqKind::Linear> ;
+                    if constexpr(inst_freq_computer_k == InstFreqComputerKind::extremums_based){
+                        inst_freq_computer() = new NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBased
+                            <DataT, InstFreqT, 
+                                NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBasedComputeInstFreqKind::Linear> ;
 
-                    inst_freq_computer_for_mode = new NP_DSP::ONE_D::InstFreqComputers::ExtremumsBased
-                        <BuffT, BuffT, 
-                            NP_DSP::ONE_D::InstFreqComputers::ExtremumsBasedComputeInstFreqKind::Linear> ;
+                        inst_freq_computer_for_mode() = new NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBased
+                            <BuffT, BuffT, 
+                                NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBasedComputeInstFreqKind::Linear> ;
+                    }
+                    else if constexpr (inst_freq_computer_k == InstFreqComputerKind::arctg_extr_opt_momental){
+                        inst_freq_computer() = new NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<DataT, InstFreqT, OutT, IntegratorT, 
+                            DerivatorT, INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::Momental> ;
+                        
+                        inst_freq_computer_for_mode() = new NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<BuffT, BuffT, OutT, IntegratorT, 
+                            DerivatorT, INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::Momental> ;
+                    }
+                    else if constexpr (inst_freq_computer_k == InstFreqComputerKind::arctg_extr_opt_time_average){
+                        inst_freq_computer() = new NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<DataT, InstFreqT, OutT, IntegratorT, 
+                            DerivatorT, INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage> ;
+                        
+                        inst_freq_computer_for_mode() = new NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<BuffT, BuffT, OutT, IntegratorT, 
+                            DerivatorT, INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage> ;
+                    }
+                    else if constexpr (inst_freq_computer_k == InstFreqComputerKind::arctg_extr_opt_derive_average){
+                        inst_freq_computer() = new NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<DataT, InstFreqT, OutT, IntegratorT, 
+                            DerivatorT, INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveAverage> ;
+                        
+                        inst_freq_computer_for_mode() = new NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<BuffT, BuffT, OutT, IntegratorT, 
+                            DerivatorT, INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveAverage> ;
+                    }
                 }
 
                 ~OptPeriodBasedFilter(){
                     delete filter;
-                    delete inst_freq_computer;
-                    delete inst_freq_computer_for_mode;
+                    delete inst_freq_computer();
+                    delete inst_freq_computer_for_mode();
                 }
 
                 void computeIter(const DataType & data, OutType & out, InstFreqType & inst_freq_buffer){
@@ -208,7 +270,7 @@ namespace NP_DSP{
                     mode.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
                     //inst_freq_computer_for_mode->compute(mode, inst_freq_buffer2, out);
-                    inst_freq_computer_for_mode->compute(mode, inst_freq_buffer2, nil);
+                    inst_freq_computer_for_mode()->compute(mode, inst_freq_buffer2, nil);
 
                     double error = UTILITY_MATH::signalsL2Distance
                         <double, InstFreqType, decltype(inst_freq_buffer2)>
@@ -234,7 +296,7 @@ namespace NP_DSP{
 
                 void compute(const DataType & data, OutType & out, InstFreqType & inst_freq_buffer) {
                     //inst_freq_computer->compute(data, inst_freq_buffer, out);
-                    inst_freq_computer->compute(data, inst_freq_buffer, nil);
+                    inst_freq_computer()->compute(data, inst_freq_buffer, nil);
                     filter->compute(data, out, inst_freq_buffer);
 
                     //after computing filtering
@@ -258,7 +320,7 @@ namespace NP_DSP{
                     
 
                     //inst_freq_computer_for_mode->compute(mode, inst_freq_buffer2, out);
-                    inst_freq_computer_for_mode->compute(mode, inst_freq_buffer2, nil);
+                    inst_freq_computer_for_mode()->compute(mode, inst_freq_buffer2, nil);
 
                     double error = UTILITY_MATH::signalsL2Distance
                         <double, InstFreqType, decltype(inst_freq_buffer2)>
@@ -283,7 +345,7 @@ namespace NP_DSP{
 /*
             export
             template<Signal DataT, Signal OutT, Signal InstFreqT, FilteringType filtering_type_k,
-                    Integrator IntegratorT, Derivator DerivatorT, InstFreqComputers::InstFreqDerivativeBasedKind inst_freq_k>
+                    Integrator IntegratorT, Derivator DerivatorT, INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind inst_freq_k>
             struct OptFSPeriodBasedFilter{
                 using DataType = DataT;
                 using OutType = OutT;
@@ -303,10 +365,10 @@ namespace NP_DSP{
                         AdditionalDataType, filtering_type_k, 
                             IntegratorT, InstFreqKind::Average> * filter;
                 
-                NP_DSP::ONE_D::InstFreqComputers::PhaseBased<DataT, InstFreqT, OutT, IntegratorT, 
+                NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<DataT, InstFreqT, OutT, IntegratorT, 
                     DerivatorT, inst_freq_k> * inst_freq_computer;
                 
-                NP_DSP::ONE_D::InstFreqComputers::PhaseBased<BuffT, BuffT, OutT, IntegratorT, 
+                NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<BuffT, BuffT, OutT, IntegratorT, 
                     DerivatorT, inst_freq_k> * inst_freq_computer_for_mode;
 
                 OptPeriodBasedFilter(IntegratorT integrator, DerivatorT derivator){
@@ -316,10 +378,10 @@ namespace NP_DSP{
                     filter = new NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter
                         <DataType, OutType, AdditionalDataType, filtering_type_k, 
                             IntegratorT, InstFreqKind::Average> (integrator);
-                    inst_freq_computer = new NP_DSP::ONE_D::InstFreqComputers::PhaseBased<DataT, InstFreqT, 
+                    inst_freq_computer = new NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<DataT, InstFreqT, 
                         OutT, IntegratorT, DerivatorT, inst_freq_k> (integrator, derivator); 
 
-                    inst_freq_computer_for_mode = new NP_DSP::ONE_D::InstFreqComputers::PhaseBased<BuffT, BuffT, OutT, IntegratorT, 
+                    inst_freq_computer_for_mode = new NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<BuffT, BuffT, OutT, IntegratorT, 
                         DerivatorT, inst_freq_k> (integrator, derivator); 
                 }
 

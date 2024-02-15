@@ -23,7 +23,7 @@ import utility_math;
 
 namespace NP_DSP{
     namespace ONE_D{
-        namespace InstFreqComputers{
+        namespace INST_FREQ_COMPUTERS{
             export
             enum class InstFreqDerivativeBasedKind {Momental, TimeAverage, DeriveAverage, DeriveDouble};
 

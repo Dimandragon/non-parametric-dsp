@@ -24,9 +24,9 @@ int main(){
         //compute_buffer.base->vec->push_back(0);
     }
     
-    NP_DSP::ONE_D::InstFreqComputers::ExtremumsBased
+    NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBased
         <SignalT, SignalT, 
-            NP_DSP::ONE_D::InstFreqComputers::ExtremumsBasedComputeInstFreqKind::Linear>
+            NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBasedComputeInstFreqKind::Linear>
                 inst_freq_computer1;
     
 
@@ -36,9 +36,9 @@ int main(){
     //signal3.show(NP_DSP::ONE_D::PlottingKind::Simple, "/home/dmitry/projects/non-parametric-dsp/examples/inst_freq_computers/images/signal3.svg");
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple, "/home/dmitry/projects/non-parametric-dsp/examples/inst_freq_computers/images/signal2_1.svg");
 
-    NP_DSP::ONE_D::InstFreqComputers::ExtremumsBased
+    NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBased
         <SignalT, SignalT, 
-            NP_DSP::ONE_D::InstFreqComputers::ExtremumsBasedComputeInstFreqKind::Simple>
+            NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBasedComputeInstFreqKind::Simple>
                 inst_freq_computer2;
     inst_freq_computer2.compute(signal1, signal2, {});
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple, "/home/dmitry/projects/non-parametric-dsp/examples/inst_freq_computers/images/signal2_2.svg");

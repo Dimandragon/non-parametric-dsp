@@ -45,7 +45,7 @@ target("non-parametric_dsp")
     add_files("src/npdsp_concepts.ixx", "src/signals.ixx", "src/derivators.ixx",
             "src/integrators.ixx", "src/filters.ixx", "src/inst_freq_computers.ixx",
             "src/mode_grabbers.ixx", "src/utility_math.ixx", "src/approximators.ixx", 
-            "src/config.ixx", "src/phase_computers.ixx")
+            "src/config.ixx", "src/phase_computers.ixx", "src/inst_ampl_computers.ixx")
     add_deps("pocketfft")
     add_deps("matplot++_external")
     add_deps("icecream")
@@ -151,6 +151,14 @@ target("filtering_opt")
     add_deps("matplot++_external")
     add_deps("non-parametric_dsp")
     add_deps("icecream")
+
+target("inst_ampl_computeng_inst_freq_and_der_based")
+    set_kind("binary")
+    add_files("examples/inst_ampl_computers/derivative_and_inst_freqs_based.cpp")
+    add_deps("matplot++_external")
+    add_deps("non-parametric_dsp")
+    add_deps("icecream")
+
 --target("opengl_plotting_test")
     --set_kind("binary")
     --add_files("examples/plotting/opengl_test.cpp")

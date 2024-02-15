@@ -29,7 +29,7 @@ int main(){
     
     NP_DSP::ONE_D::FILTERS::OptPeriodBasedFilter<decltype(signal1), decltype(signal2), 
         decltype(signal3), NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased, 
-            decltype(integrator), decltype(derivator), NP_DSP::ONE_D::InstFreqComputers::InstFreqDerivativeBasedKind::TimeAverage> 
+            decltype(integrator), decltype(derivator), NP_DSP::ONE_D::FILTERS::InstFreqComputerKind::extremums_based> 
                 filter(integrator, derivator);
 
     filter.compute(signal1, signal2, signal3);

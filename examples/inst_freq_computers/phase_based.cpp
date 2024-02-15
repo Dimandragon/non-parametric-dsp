@@ -26,9 +26,9 @@ int main(){
     }
     //signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
     
-    NP_DSP::ONE_D::InstFreqComputers::PhaseBased
+    NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased
         <SignalT, SignalT, SignalT, decltype(integrator), decltype(derivator),
-            NP_DSP::ONE_D::InstFreqComputers::InstFreqDerivativeBasedKind::TimeAverage>
+            NP_DSP::ONE_D::INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage>
                 inst_freq_computer(integrator, derivator);
    
     inst_freq_computer.compute(signal1, signal2, compute_buffer);
@@ -37,23 +37,23 @@ int main(){
 
     
 
-    NP_DSP::ONE_D::InstFreqComputers::PhaseBased<SignalT, SignalT, SignalT, decltype(integrator), decltype(derivator), 
-        NP_DSP::ONE_D::InstFreqComputers::InstFreqDerivativeBasedKind::DeriveAverage> 
+    NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<SignalT, SignalT, SignalT, decltype(integrator), decltype(derivator), 
+        NP_DSP::ONE_D::INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveAverage> 
         inst_freq_computer2(integrator, derivator);
     inst_freq_computer2.compute(signal1, signal2, compute_buffer);
     //signal1.show(NP_DSP::ONE_D::PlottingKind::Simple, "/home/dmitry/projects/non-parametric-dsp/examples/inst_freq_computers/images/signal1_1.svg");
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
-    NP_DSP::ONE_D::InstFreqComputers::PhaseBased<SignalT, SignalT, SignalT, decltype(integrator), decltype(derivator), 
-        NP_DSP::ONE_D::InstFreqComputers::InstFreqDerivativeBasedKind::Momental> 
+    NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<SignalT, SignalT, SignalT, decltype(integrator), decltype(derivator), 
+        NP_DSP::ONE_D::INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::Momental> 
         inst_freq_computer3(integrator, derivator);
     inst_freq_computer3.compute(signal1, signal2, compute_buffer);
     //signal1.show(NP_DSP::ONE_D::PlottingKind::Simple, "/home/dmitry/projects/non-parametric-dsp/examples/inst_freq_computers/images/signal1_1.svg");
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
     
-    NP_DSP::ONE_D::InstFreqComputers::ExtremumsBased
+    NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBased
         <SignalT, SignalT, 
-            NP_DSP::ONE_D::InstFreqComputers::ExtremumsBasedComputeInstFreqKind::Linear>
+            NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBasedComputeInstFreqKind::Linear>
                 inst_freq_computer1;
     
 
