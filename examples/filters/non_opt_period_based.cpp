@@ -39,17 +39,17 @@ int main(){
     NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<decltype(signal1), decltype(signal3), 
         decltype(signal2), NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased, 
             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average> 
-                filter (signal2, integrator);
+                filter (integrator);
     
-    filter.compute(signal1, signal3, nil);
+    filter.compute(signal1, signal3, signal2);
     signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
     NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<decltype(signal1), decltype(signal3), 
         decltype(signal2), NP_DSP::ONE_D::FILTERS::FilteringType::ValueBased, 
             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average> 
-                filter1 (signal2, integrator);
+                filter1 (integrator);
 
-    filter1.compute(signal1, signal3, nil);
+    filter1.compute(signal1, signal3, signal2);
     signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
 /*
@@ -69,10 +69,10 @@ int main(){
                 inst_freq_computer2(integrator, derivator);
     inst_freq_computer2.compute(signal1, signal2, compute_buffer);
     
-    filter.compute(signal1, signal3, nil);
+    filter.compute(signal1, signal3, signal2);
     signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
-    filter1.compute(signal1, signal3, nil);
+    filter1.compute(signal1, signal3, signal2);
     signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
     NP_DSP::ONE_D::InstFreqComputers::DerivativeBased<SignalT, SignalT, 
@@ -81,9 +81,9 @@ int main(){
                 inst_freq_computer3(integrator, derivator);
     inst_freq_computer3.compute(signal1, signal2, compute_buffer);
     
-    filter.compute(signal1, signal3, nil);
+    filter.compute(signal1, signal3, signal2);
     signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
-    filter1.compute(signal1, signal3, nil);
+    filter1.compute(signal1, signal3, signal2);
     signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
 }

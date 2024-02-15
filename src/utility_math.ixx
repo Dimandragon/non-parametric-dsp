@@ -20,7 +20,8 @@ namespace NP_DSP{
             T complexL2(std::complex<T> a, std::complex<T> b){
                 return (a.imag()-b.imag())*(a.imag()-b.imag()) + (a.real()-b.real())*(a.real()-b.real());
             }
-
+            
+            export
             template <typename T>
             T pairL2(std::pair<T, T> a, std::pair<T, T> b){
                 return (a.first-b.first)*(a.first-b.first) + (a.second-b.second)*(a.second-b.second);
@@ -29,6 +30,16 @@ namespace NP_DSP{
             auto sec(auto z_r)
             {
                 return 1 / std::cos(z_r);
+            }
+
+            export
+            template <typename T, Signal data1T, Signal data2T>
+            T signalsL2Distance(const data1T & data1, const data2T & data2){
+                double error = 0.0;
+                for (int i = 0; i < data1.size(); i++){
+                    error+= std::sqrt((data1[i] - data2[i]) * (data1[i] - data2[i]));
+                }   
+                return error;
             }
 
             export

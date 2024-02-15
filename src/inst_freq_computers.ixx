@@ -19,6 +19,7 @@ import <optional>;
 import npdsp_config;
 import <complex>;
 import phase_computers;
+import utility_math;
 
 namespace NP_DSP{
     namespace ONE_D{
@@ -260,18 +261,20 @@ namespace NP_DSP{
 
                             out[i].first = static_cast<OutType::SampleType>(0.5/left_edge);
                             out[i].second = static_cast<OutType::SampleType>(0.5/right_edge);
+
+                            
                         }
                     }
                 }
             };
 
             export
-            template<Signal DataT, Signal OutT, Integrator IntegratorT, 
+            template<Signal DataT, Signal OutT, Signal ComputeBufferT, Integrator IntegratorT, 
                 Derivator DerivatorT, InstFreqDerivativeBasedKind kind>
             struct PhaseBased { //TODO
                 using DataType = DataT;
                 using OutType = OutT;
-                using AdditionalDataType = OutType;
+                using AdditionalDataType = ComputeBufferT;
 
                 constexpr static bool is_inst_freq_computer = true;
                 constexpr static InstFreqDerivativeBasedKind counting_kind = kind;
