@@ -25,7 +25,7 @@ namespace NP_DSP{
     namespace ONE_D{
         namespace INST_FREQ_COMPUTERS{
             export
-            enum class InstFreqDerivativeBasedKind {Momental, TimeAverage, DeriveAverage, DeriveDouble};
+            using InstFreqDerivativeBasedKind = PHASE_COMPUTERS::InstFreqDerivativeBasedKind;
 
             export
             template<Signal DataT, Signal OutT, Integrator IntegratorT, 
@@ -270,8 +270,8 @@ namespace NP_DSP{
 
             export
             template<Signal DataT, Signal OutT, Signal ComputeBufferT, Integrator IntegratorT, 
-                Derivator DerivatorT, InstFreqDerivativeBasedKind kind>
-            struct PhaseBased { //TODO
+                Derivator DerivatorT, InstFreqDerivativeBasedKind kind, PhaseComputer PhaseComputerT>
+            struct PhaseBased {
                 using DataType = DataT;
                 using OutType = OutT;
                 using AdditionalDataType = ComputeBufferT;
@@ -284,27 +284,35 @@ namespace NP_DSP{
 
                 using IntegratorType = IntegratorT;
                 using DerivatorType = DerivatorT;
+                using PhaseComputerType = PhaseComputerT;
 
-
+                PhaseComputerType * phase_computer;
                 IntegratorType integrator;
                 DerivatorType derivator;
 
                 //static_assert(OutType::is_writable == true);
 
                 PhaseBased(IntegratorT integrator_o,
-                                DerivatorT derivator_o)
+                                DerivatorT derivator_o, PhaseComputerT & phase_computer_o)
                 {
                     integrator = integrator_o;
                     derivator = derivator_o;
+                    phase_computer = &phase_computer_o;
                 }
 
                 void compute(const DataType & data, OutType & out, AdditionalDataType & computer_buffer)
                 {
                     GENERAL::Nil nil;
-                    auto phase_computer = 
-                            ONE_D::PHASE_COMPUTERS::ArctgScaledToExtremums<DataType, AdditionalDataType, OutType,
-                                IntegratorType, DerivatorType>(integrator, derivator);
-                        phase_computer.compute(data, computer_buffer, out);
+                    //auto phase_computer = 
+                    //        ONE_D::PHASE_COMPUTERS::ArctgScaledToExtremums<DataType, AdditionalDataType, OutType,
+                    //            IntegratorType, DerivatorType>(integrator, derivator);
+                    if constexpr(std::convertible_to<typename PhaseComputerT::AdditionalDataType, GENERAL::Nil>){
+                        phase_computer->compute(data, computer_buffer, nil);
+                    }
+                    else{
+                        phase_computer->compute(data, computer_buffer, out);
+                    }
+
                     if constexpr (counting_kind == InstFreqDerivativeBasedKind::Momental){
                         derivator.compute(computer_buffer, out, nil);
                         for (int i = 0; i < data.size(); i++){

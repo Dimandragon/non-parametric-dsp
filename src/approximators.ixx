@@ -417,7 +417,7 @@ namespace NP_DSP{
                             auto left_diff = loss_left-loss_central;
                             auto right_diff = loss_right-loss_central;
                             if(left_diff > 0 && right_diff <=0) {
-                                if constexpr (NP_DSP::CONFIG::debug){
+                                if constexpr (CONFIG::debug){
                                     std::string point_mark = "ampl 1 branch";
                                     IC(point_mark);
                                 }
@@ -428,7 +428,7 @@ namespace NP_DSP{
                                 loss_central = check_loss(trigonometric_sample);
                             }
                             else if (left_diff <= 0 && right_diff > 0) {
-                                if constexpr (NP_DSP::CONFIG::debug){
+                                if constexpr (CONFIG::debug){
                                     std::string point_mark = "ampl 2 branch";
                                     IC(point_mark);
                                 }
@@ -439,7 +439,7 @@ namespace NP_DSP{
                                 loss_central = check_loss(trigonometric_sample);
                             }
                             else if (left_diff > right_diff) {
-                                if constexpr (NP_DSP::CONFIG::debug){
+                                if constexpr (CONFIG::debug){
                                     std::string point_mark = "ampl 3 branch";
                                     IC(point_mark);
                                 }
@@ -448,7 +448,7 @@ namespace NP_DSP{
                                 trigonometric_sample.first = ampl_left_avg;
                                 auto new_loss_left = check_loss(trigonometric_sample);
                                 if (new_loss_left < loss_left && new_loss_left > central_loss) {
-                                    if constexpr (NP_DSP::CONFIG::debug){
+                                    if constexpr (CONFIG::debug){
                                         std::string point_mark = "ampl 3.1 branch";
                                         IC(point_mark);
                                     }
@@ -459,7 +459,7 @@ namespace NP_DSP{
                                     loss_central = check_loss(trigonometric_sample);
                                 }
                                 else {
-                                    if constexpr (NP_DSP::CONFIG::debug){
+                                    if constexpr (CONFIG::debug){
                                         std::string point_mark = "ampl 3.2 branch";
                                         IC(point_mark);
                                     }
@@ -472,7 +472,7 @@ namespace NP_DSP{
                                 }
                             }
                             else if (left_diff <= right_diff) {
-                                if constexpr (NP_DSP::CONFIG::debug){
+                                if constexpr (CONFIG::debug){
                                     std::string point_mark = "ampl 4 branch";
                                     IC(point_mark);
                                 }
@@ -491,7 +491,7 @@ namespace NP_DSP{
                                     loss_central = check_loss(trigonometric_sample);
                                 }
                                 else {
-                                    if constexpr (NP_DSP::CONFIG::debug){
+                                    if constexpr (CONFIG::debug){
                                         std::string point_mark = "ampl 4.2 branch";
                                         IC(point_mark);
                                     }
@@ -523,7 +523,7 @@ namespace NP_DSP{
                                 }
                                 else{
                                     if constexpr (CONFIG::debug){
-                                        IC(right_diff == (loss_right-loss_central));
+                                        IC(right_diff == loss_right-loss_central);
                                         IC(left_diff, loss_left-loss_central, right_diff, loss_right-loss_central);
                                     }
                                 }

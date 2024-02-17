@@ -347,24 +347,24 @@ namespace NP_DSP{
 
         export
         template <typename T>
-        constexpr bool is_mode_extracor = requires (T mode_extractor, const T::DataType & data, T::ModeType & out,
+        constexpr bool is_modes_extracor = requires (T modes_extractor, const T::DataType & data, T::ModeType & out,
                 T::AdditionalDataType & additional_data)
         {
             typename T::DataType;
             typename T::ModeType;
             typename T::AdditionalDataType;
 
-            requires (T::is_mode_extracor == true);
+            requires (T::is_modes_extracor == true);
             requires is_signal<typename T::DataType>;
             requires is_signal<typename T::ModeType>;
             requires is_signal_wrapper<typename T::AdditionalDataType>;
 
-            mode_extractor.compute(data, out, additional_data);
+            modes_extractor.compute(data, out, additional_data);
         };
 
         export
         template<typename T>
-        concept ModeExtractor = is_mode_extracor<T>;
+        concept ModeExtractor = is_modes_extracor<T>;
 
         export 
         template <typename T>
@@ -378,8 +378,7 @@ namespace NP_DSP{
             requires T::is_phase_computer == true;
             
             requires is_signal<typename T::DataType>;
-            requires is_signal<typename T::InstFreqType>;
-            requires (T::OutType::is_writable == true);
+            requires is_signal<typename T::OutType>;
             requires is_signal_wrapper<typename T::AdditionalDataType>;
             
             phase_computer.compute(data, inst_freq, additional_data);
