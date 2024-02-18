@@ -480,7 +480,7 @@ namespace NP_DSP{
                                 trigonometric_sample.first = ampl_right_avg;
                                 auto new_loss_right = check_loss(trigonometric_sample);
                                 if (new_loss_right < loss_right && new_loss_right > loss_central) {
-                                    if constexpr (NP_DSP::CONFIG::debug){
+                                    if constexpr (CONFIG::debug){
                                         std::string point_mark = "ampl 4.1 branch";
                                         IC(point_mark);
                                     }

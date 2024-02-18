@@ -82,7 +82,7 @@ namespace NP_DSP{
                     axes.push_back(i);
                 }
                 pocketfft::c2c(shape, stridef, stridef, axes, pocketfft::FORWARD,
-                               data_in.data(), data_out.data(), ((T)1.0)/((T)len));
+                               data_in.data(), data_out.data(), (T)1.0/(T)len);
             }
 
             export
@@ -104,6 +104,115 @@ namespace NP_DSP{
                 }
                 pocketfft::c2c(shape, stridef, stridef, axes, pocketfft::BACKWARD,
                     data_in.data(), data_out.data(), static_cast<T>(1));
+            }
+
+            export
+            template<Signal DataT, Signal OutT, typename T>
+            void fftc2c (const DataT & in, OutT & out){
+                //using T = typename OutT::SampleType;
+                auto len = in.size();
+                pocketfft::shape_t shape{len};
+                pocketfft::stride_t stridef(shape.size());
+                size_t tmpf = sizeof(std::complex<T>);
+                for (int i=shape.size()-1; i>=0; --i)
+                {
+                    stridef[i]=tmpf;
+                    tmpf*=shape[i];
+                }
+                pocketfft::shape_t axes;
+                for (size_t i=0; i<shape.size(); ++i)
+                {
+                    axes.push_back(i);
+                }
+                std::vector<std::complex<T>> data_in;
+                std::vector<std::complex<T>> data_out;
+                for (int i = 0; i < len; i++) {
+                    data_in.push_back(in[i]);
+                    data_out.push_back({0., 0.});
+                }
+                pocketfft::c2c(shape, stridef, stridef, axes, pocketfft::FORWARD,
+                               data_in.data(), data_out.data(), 1.0/len);
+
+                for (int i = 0; i < len; i++) {
+                    out[i] = data_out[i];
+                }
+            }
+
+            export
+            template<Signal DataT, Signal OutT, typename T>
+            void ifftc2c (const DataT & in, OutT & out){
+                auto len = in.size();
+                pocketfft::shape_t shape{len};
+                pocketfft::stride_t stridef(shape.size());
+                size_t tmpf = sizeof(std::complex<T>);
+                for (int i=shape.size()-1; i>=0; --i)
+                {
+                    stridef[i]=tmpf;
+                    tmpf*=shape[i];
+                }
+                pocketfft::shape_t axes;
+                for (size_t i=0; i<shape.size(); ++i)
+                {
+                    axes.push_back(i);
+                }
+                std::vector<std::complex<T>> data_in;
+                std::vector<std::complex<T>> data_out;
+                for (int i = 0; i < len; i++) {
+                    data_in.push_back(in[i]);
+                    data_out.push_back({0., 0.});
+                }
+                pocketfft::c2c(shape, stridef, stridef, axes, pocketfft::BACKWARD,
+                    data_in.data(), data_out.data(), static_cast<T>(1));
+                for (int i = 0; i < len; i++) {
+                    out[i] = data_out[i];
+                }
+            }
+
+            export
+            template<Signal DataT1, Signal DataT2, Signal OutT>
+            void fastConvolution(DataT1 & in1, DataT2 & in2, OutT & out) {
+                using T = typename OutT::SampleType;
+                std::vector<std::complex<T>> data_in1;
+                std::vector<std::complex<T>> data_in2;
+                std::vector<std::complex<T>> sp1;
+                std::vector<std::complex<T>> sp2;
+                std::vector<std::complex<T>> data_out;
+
+                size_t len = in1.size();
+                if (in2.size() > len) {
+                    len = in2.size();
+                }
+
+                for (int i = 0; i < in1.size(); i++) {
+                    data_in1.push_back({in1[i], 0.0});
+                }
+                for (int i = 0; i < in2.size(); i++) {
+                    data_in2.push_back({in2[i], 0.0});
+                }
+                for (int i = in1.size(); i < len; i++) {
+                    data_in1.push_back({0.0, 0.0});
+                }
+                for (int i = in2.size(); i < len; i++) {
+                    data_in2.push_back({0.0, 0.0});
+                }
+                for (int i = 0; i < len; i++) {
+                    sp1.push_back({0.0, 0.0});
+                    sp2.push_back({0.0, 0.0});
+                    data_out.push_back({0.0, 0.0});
+                }
+
+                fftc2c(data_in1, sp1);
+                fftc2c(data_in2, sp2);
+
+                for (int i = 0; i < len; i++) {
+                    sp1[i] = sp1[i] * sp2[i] * static_cast<double>(len);
+                }
+
+                ifftc2c(sp1, data_out);
+
+                for (int i = 0; i < len; i++) {
+                    out[i] = data_out[i].real();
+                }
             }
 
             export
@@ -145,6 +254,7 @@ namespace NP_DSP{
                 pocketfft::c2c(shape, stridef, stridef, axes, pocketfft::BACKWARD,
                     data_in.data() + pad, data_out.data() + pad, static_cast<T>(1));
             }
+
 
             export
             template <typename TIndex, SignalBase Base, typename TValue>
