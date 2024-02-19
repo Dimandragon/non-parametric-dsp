@@ -27,7 +27,7 @@ namespace NP_DSP{
             private:
                 using InstFreqDerivativeBasedKind = INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind;
             public:
-                constexpr static InstFreqDerivativeBasedKind kind = kind;
+                constexpr static InstFreqDerivativeBasedKind kind = kind_e;
 
                 InstFreqT * inst_freq;
                 IntegratorT integrator;
@@ -48,24 +48,25 @@ namespace NP_DSP{
                 }
 
                 void compute(const DataType & data, OutType & out, AdditionalDataType & computer_buffer){
-                    derivator.compute(data, out);
+                    GENERAL::Nil nil;
+                    derivator.compute(data, out, nil);
                     for (int i = 0; i < out.size(); i++){
                         out[i] = std::abs(out[i]) / 4;
                     }
-                    
+
                     if constexpr (kind == InstFreqDerivativeBasedKind::Momental
                         || kind == InstFreqDerivativeBasedKind::TimeAverage
                         || kind == InstFreqDerivativeBasedKind::DeriveAverage){
-                        integrator.compute(out, computer_buffer);
+                        integrator.compute(out, computer_buffer, nil);
                         for (int i = 0; i < out.size(); i++){
-                            out[i] = computer_buffer.interpolate(i + 0.5 / (*inst_freq)[i]) - 
+                            out[i] = computer_buffer.interpolate(i + 0.5 / (*inst_freq)[i]) -
                                 computer_buffer.interpolate(i - 0.5 / (*inst_freq)[i]);
                         }
-                    }
+                        }
                     else if constexpr (kind == InstFreqDerivativeBasedKind::DeriveDouble){
-                        integrator.compute(out, computer_buffer);
+                        integrator.compute(out, computer_buffer, nil);
                         for (int i = 0; i < out.size(); i++){
-                            out[i] = computer_buffer.interpolate(i + 0.5 / (*inst_freq)[i].second) - 
+                            out[i] = computer_buffer.interpolate(i + 0.5 / (*inst_freq)[i].second) -
                                 computer_buffer.interpolate(i - 0.5 / (*inst_freq)[i].first);
                         }
                     }
@@ -87,8 +88,8 @@ namespace NP_DSP{
             public:
                 constexpr static InstFreqDerivativeBasedKind kind = kind_e;
 
-                NP_DSP::ONE_D::GenericSignal
-                    <NP_DSP::ONE_D::SimpleVecWrapper<typename InstFreqComputerType::OutType::SampleType>, true> inst_freq;
+                GenericSignal
+                    <SimpleVecWrapper<typename InstFreqComputerType::OutType::SampleType>, true> inst_freq;
 
                 IntegratorT integrator;
                 DerivatorT derivator;
