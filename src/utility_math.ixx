@@ -33,11 +33,12 @@ namespace NP_DSP{
             }
 
             export
-            template <typename T, Signal data1T, Signal data2T>
+            template <typename T, typename data1T, typename data2T>
             T signalsL2Distance(const data1T & data1, const data2T & data2){
                 double error = 0.0;
+                error = 0.0;
                 for (int i = 0; i < data1.size(); i++){
-                    error+= std::sqrt((data1[i] - data2[i]) * (data1[i] - data2[i]));
+                    error = error +  std::sqrt((data1[i] - data2[i]) * (data1[i] - data2[i]));
                 }   
                 return error;
             }

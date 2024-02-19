@@ -191,7 +191,7 @@ namespace NP_DSP{
                         out[i] = std::abs(computer_buffer[i]);
                     }
                     integrator.compute(out, computer_buffer, nil);
-                    computer_buffer.show(NP_DSP::ONE_D::PlottingKind::Simple);
+                    //computer_buffer.show(NP_DSP::ONE_D::PlottingKind::Simple);
                     std::vector<double> errors_cache;
 
                     auto loss = [&](auto & approximator){
@@ -353,7 +353,7 @@ namespace NP_DSP{
                     }
                     integrator.compute(computer_buffer, out, nil);
                     if constexpr (CONFIG::debug){
-                        out.show(NP_DSP::ONE_D::PlottingKind::Simple);
+                        //out.show(NP_DSP::ONE_D::PlottingKind::Simple);
                     }
                     
                     //norm 

@@ -479,7 +479,7 @@ namespace NP_DSP{
                         }
                         integrator.compute(out, computer_buffer, nil);
                         if constexpr (NP_DSP::CONFIG::debug){
-                            computer_buffer.show(PlottingKind::Interpolate);
+                            //computer_buffer.show(PlottingKind::Interpolate);
                         }
                         for (auto i = 0; i < data.size(); i++){
                             auto approx_answer_right = static_cast<OutType::SampleType>(0.0);

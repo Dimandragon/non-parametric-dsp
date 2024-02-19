@@ -1,5 +1,9 @@
 module;
 
+#include <icecream.hpp>
+
+export module modes_extractors;
+
 import npdsp_concepts;
 import signals;
 import <vector>;
@@ -9,11 +13,6 @@ import inst_freq_computers;
 import filters;
 import integrators;
 import derivators;
-
-export module modes_extractors;
-
-
-
 
 namespace NP_DSP{
     namespace ONE_D{
@@ -40,7 +39,10 @@ namespace NP_DSP{
 
                 INST_FREQ_COMPUTERS::ComputedOnPhase<DataType, DataType, decltype(integrator),
                     decltype(derivator), INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage>
-                        inst_freq_computer;
+                        inst_freq_computer =
+                            INST_FREQ_COMPUTERS::ComputedOnPhase<DataType, DataType, decltype(integrator),
+                                decltype(derivator), INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage>
+                                    (integrator, derivator);
 
                 INST_AMPL_COMPUTERS::DerivativeBasedUsingExternalInstFreq<DataType, DataType, DataType,
                     DataType, decltype(integrator), decltype(derivator),
@@ -49,7 +51,10 @@ namespace NP_DSP{
 
                 FILTERS::OptPeriodBasedFilter<DataType, DataType, DataType, FILTERS::FilteringType::DerivativeBased,
                     decltype(integrator), decltype(derivator), FILTERS::InstFreqComputerKind::phase_based_time_average,
-                        FILTERS::PhaseComputingKind::extremums_based_non_opt> filter;
+                        FILTERS::PhaseComputingKind::extremums_based_non_opt>
+                            filter = FILTERS::OptPeriodBasedFilter<DataType, DataType, DataType, FILTERS::FilteringType::DerivativeBased,
+                                decltype(integrator), decltype(derivator), FILTERS::InstFreqComputerKind::phase_based_time_average,
+                                    FILTERS::PhaseComputingKind::extremums_based_non_opt>(integrator, derivator);
 
                 ~MainExtractor(){
                     for (int i = 0; i < modes.size(); i++){
@@ -87,6 +92,7 @@ namespace NP_DSP{
                 }
 
                 bool stop(size_t iter_number){
+                    IC(iter_number, (*phases[iter_number])[data.size()-1]);
                     if ((*phases[iter_number])[data.size()-1] < std::numbers::pi * 2){
                         return true;
                     }
@@ -98,28 +104,28 @@ namespace NP_DSP{
                 void compute(){
                     size_t iter_number = 0;
                     for(;;){
-                        if (iter_number > modes.size() - 1) {
+                        if (iter_number + 1 > modes.size()) {
                             auto * modes_new = new GenericSignal<SimpleVecWrapper<double>, true>;
                             modes.push_back(modes_new);
                             for (int i = 0; i < data.size(); i++) {
                                 modes[iter_number]->base->vec->push_back(0.0);
                             }
                         }
-                        if (iter_number > inst_freqs.size() - 1) {
+                        if (iter_number + 1 > inst_freqs.size()) {
                             auto * inst_freqs_new = new GenericSignal<SimpleVecWrapper<double>, true>;
                             inst_freqs.push_back(inst_freqs_new);
                             for (int i = 0; i < data.size(); i++) {
                                 inst_freqs[iter_number]->base->vec->push_back(0.0);
                             }
                         }
-                        if (iter_number > inst_ampls.size() - 1) {
+                        if (iter_number + 1 > inst_ampls.size()) {
                             auto * inst_ampls_new = new GenericSignal<SimpleVecWrapper<double>, true>;
                             inst_ampls.push_back(inst_ampls_new);
                             for (int i = 0; i < data.size(); i++) {
                                 inst_ampls[iter_number]->base->vec->push_back(0.0);
                             }
                         }
-                        if (iter_number > phases.size() - 1) {
+                        if (iter_number + 1 > phases.size()) {
                             auto * phase_new = new GenericSignal<SimpleVecWrapper<double>, true>;
                             phases.push_back(phase_new);
                             for (int i = 0; i < data.size(); i++) {

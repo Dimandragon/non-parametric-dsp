@@ -13,6 +13,9 @@ import inst_freq_computers;
 import utility_math;
 import <concepts>;
 import phase_computers;
+import <vector>;
+
+
 
 namespace NP_DSP{
     namespace ONE_D{
@@ -39,7 +42,7 @@ namespace NP_DSP{
                     this->integrator = integrator;
                 }
 
-                void compute(const DataType & data, OutType & out, InstFreqType & inst_freq){
+                void compute(const DataType & data, OutType & out, const InstFreqType & inst_freq){
                     if constexpr (filtering_type_k == FilteringType::DerivativeBased){
                         if constexpr (inst_freq_kind == InstFreqKind::Average){
                             auto size_expr = [&](){
@@ -58,8 +61,8 @@ namespace NP_DSP{
 
                             GenericSignal<decltype(expr_wrapper), false> expr_signal(expr_wrapper);
                             
-                            NP_DSP::ONE_D::INTEGRATORS::Riman<decltype(expr_signal), OutType, 
-                                NP_DSP::ONE_D::INTEGRATORS::PolygonType::ByPoint> integrator_new;
+                            INTEGRATORS::Riman<decltype(expr_signal), OutType,
+                            INTEGRATORS::PolygonType::ByPoint> integrator_new;
                             
                             //todo fix its big crucher
                             integrator_new.compute(expr_signal, out, nil);
@@ -131,8 +134,13 @@ namespace NP_DSP{
                 GenericSignal<SimpleVecWrapper<double>, true> mode;
                 GenericSignal<SimpleVecWrapper<double>, true> inst_freq_buffer2;
 
-                double error_threshold = 0.0001;
+                double error_threshold = 0.1;
                 using BuffT = decltype(mode);
+                size_t iter_number = 0;
+                size_t good_iter_number = 0;
+
+                std::vector<double> inst_freq_cache;
+                double error_old;
 
                 //constexpr static InstFreqKind inst_freq_kind = inst_freq_k;
                 constexpr static bool is_filter = true;
@@ -351,6 +359,7 @@ namespace NP_DSP{
                 }
 
                 void computeIter(const DataType & data, OutType & out, InstFreqType & inst_freq_buffer){
+                    iter_number++;
                     filter->compute(data, out, inst_freq_buffer);
 
                     //after computing filtering
@@ -371,10 +380,9 @@ namespace NP_DSP{
                             inst_freq_buffer2.base->vec->push_back(0);
                         }
                     }
-                    out.show(PlottingKind::Simple);
-                    mode.show(PlottingKind::Simple);
+                    //out.show(PlottingKind::Simple);
+                    //mode.show(PlottingKind::Simple);
 
-                    //inst_freq_computer_for_mode->compute(mode, inst_freq_buffer2, out);
                     if constexpr (isSameAddNil()){
                         inst_freq_computer_for_mode().compute(mode, inst_freq_buffer2, nil);
                     }
@@ -385,25 +393,50 @@ namespace NP_DSP{
                     double error = UTILITY_MATH::signalsL2Distance
                         <double, InstFreqType, decltype(inst_freq_buffer2)>
                             (inst_freq_buffer, inst_freq_buffer2);
-                    IC(error);
-                    
-                   
 
-                    inst_freq_buffer.show(PlottingKind::Simple);
-                    inst_freq_buffer2.show(PlottingKind::Simple);
+                    //double error_old_new = UTILITY_MATH::signalsL2Distance
+                        //<double, InstFreqType, decltype(inst_freq_cache)>
+                            //(inst_freq_buffer, inst_freq_cache);
+                    //IC(error, error_old);
+                    if (error_old < error) {
+                        for (int i = 0; i < inst_freq_buffer.size(); i++) {
+                            inst_freq_buffer[i] = inst_freq_cache[i];
+                        }
+                        computeIter(data, out, inst_freq_buffer);
+                        return;
+                        error = error_old;
+                    }
+                    else {
+                        IC(error, iter_number);
+                        error_old = error;
+                    }
+
                     if (error < error_threshold){
                         for (int i = 0; i < data.size(); i++){
                             out[i] = data[i] - mode[i];
                         }
                         return;
                     }
-                    for (int i = 0; i < inst_freq_buffer.size(); i++){ //= i + std::rand() % (inst_freq_buffer.size()/5)){
-                        inst_freq_buffer[i] = inst_freq_buffer[i] *
-                            (inst_freq_buffer2[i] + inst_freq_buffer[i] * 10.)
-                                / 11.0 / inst_freq_buffer[i];
+
+                    //inst_freq_buffer.show(PlottingKind::Simple);
+                    //inst_freq_buffer2.show(PlottingKind::Simple);
+
+                    inst_freq_cache.clear();
+                    for(int i = 0; i < inst_freq_buffer.size(); i++) {
+                        inst_freq_cache.push_back(inst_freq_buffer[i]);
+                    }
+
+                    for (int i = 0; i < inst_freq_buffer.size(); i += std::rand() % (inst_freq_buffer.size()/5)){ //= i + std::rand() % (inst_freq_buffer.size()/5)){
+                        double coeff = (std::rand() % 500) / 10.0;
+                        inst_freq_buffer[i] =
+
+                            (inst_freq_buffer2[i] + inst_freq_buffer[i] * coeff)
+                                / (coeff + 1.0);
                         //inst_freq_buffer.show();
                     }
+
                     computeIter(data, out, inst_freq_buffer);
+                    return;
                 }
 
                 void compute(const DataType & data, OutType & out, InstFreqType & inst_freq_buffer) {
@@ -448,21 +481,28 @@ namespace NP_DSP{
                     double error = UTILITY_MATH::signalsL2Distance
                         <double, InstFreqType, decltype(inst_freq_buffer2)>
                             (inst_freq_buffer, inst_freq_buffer2);
-                    IC(error);
+                    error_old = error;
+                    //IC(error);
                     
-                    mode.show(PlottingKind::Simple);
-                    inst_freq_buffer.show(PlottingKind::Simple);
+                    //mode.show(PlottingKind::Simple);
+                    //inst_freq_buffer.show(PlottingKind::Simple);
                     if (error < error_threshold){
                         for (int i = 0; i < data.size(); i++){
                             out[i] = data[i] - mode[i];
                         }
                         return;
                     }
-                    for (int i = 0; i < inst_freq_buffer.size(); i++){
-                        inst_freq_buffer[i] = inst_freq_buffer[i] * inst_freq_buffer2[i] / inst_freq_buffer[i];
+                    inst_freq_cache.clear();
+                    for(int i = 0; i < inst_freq_buffer.size(); i++) {
+                        inst_freq_cache.push_back(inst_freq_buffer[i]);
+                    }
+                    for (int i = 0; i < inst_freq_buffer.size(); i += std::rand() % (inst_freq_buffer.size()/5)){ //= i + std::rand() % (inst_freq_buffer.size()/5)){
+                        inst_freq_buffer[i] =
+                            (inst_freq_buffer2[i] + inst_freq_buffer[i] * 10.) / 11.0;
                         //inst_freq_buffer.show();
                     }
                     computeIter(data, out, inst_freq_buffer);
+                    return;
                 }
             };
 /*
