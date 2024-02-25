@@ -7,6 +7,7 @@ import <vector>;
 import npdsp_concepts;
 import <string>;
 import filters;
+import phase_computers;
 
 int main(){
     NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> signal1;
@@ -20,7 +21,7 @@ int main(){
     for (auto i = 0; i < 5000; i++){
         signal1.base->vec->push_back(std::sin(static_cast<double>(i) / 50) * 100000 +
             std::sin(static_cast<double>(i) / 200) +
-            std::sin(static_cast<double>(i) / 100) * 1000) ;
+            std::sin(static_cast<double>(i) / 400) * 1000) ;
         //signal1.base->vec->push_back(std::sin(static_cast<double>(i) * 2.) * 1000);
         signal2.base->vec->push_back(0);
         signal3.base->vec->push_back(0);
@@ -30,17 +31,17 @@ int main(){
     NP_DSP::GENERAL::Nil nil;
     
     NP_DSP::ONE_D::FILTERS::OptPeriodBasedFilter<decltype(signal1), decltype(signal2), 
-        decltype(signal3), NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased, 
+        decltype(signal3), NP_DSP::ONE_D::PHASE_COMPUTERS::ExtremumsKind::DerArctg, NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased,
             decltype(integrator), decltype(derivator), NP_DSP::ONE_D::FILTERS::InstFreqComputerKind::extremums_based,
                 NP_DSP::ONE_D::FILTERS::PhaseComputingKind::extremums_based_non_opt>
                     filter(integrator, derivator);
 
     filter.compute(signal1, signal2, signal3);
-
+    signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
     NP_DSP::ONE_D::FILTERS::OptPeriodBasedFilter<decltype(signal1), decltype(signal2),
-        decltype(signal3), NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased,
+        decltype(signal3), NP_DSP::ONE_D::PHASE_COMPUTERS::ExtremumsKind::DerArctg, NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased,
             decltype(integrator), decltype(derivator), NP_DSP::ONE_D::FILTERS::InstFreqComputerKind::phase_based_time_average,
                 NP_DSP::ONE_D::FILTERS::PhaseComputingKind::extremums_based_non_opt>
                     filter2(integrator, derivator);

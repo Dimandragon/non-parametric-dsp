@@ -13,10 +13,12 @@ int main(){
     std::vector<double> mydata = {};
     NP_DSP::ONE_D::SimpleVecWrapper wrapper(mydata);
     NP_DSP::ONE_D::GenericSignal<decltype(wrapper), true> signal(wrapper);
+    signal.kind = NP_DSP::ONE_D::SignalKind::Harmonic;
     for (auto i = 0; i < 100; i++) {
-        mydata.push_back(static_cast<double>(i));
+        //mydata.push_back(static_cast<double>(i));
+        mydata.push_back(std::rand());
     }
-
+    signal.show(NP_DSP::ONE_D::PlottingKind::Simple);
     std::vector<double> mydata2 = {};
     
     int j = -(signal.size()*5);

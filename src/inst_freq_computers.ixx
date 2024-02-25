@@ -18,7 +18,7 @@ import approximators;
 import <optional>;
 import npdsp_config;
 import <complex>;
-import phase_computers;
+export import phase_computers;
 import utility_math;
 
 namespace NP_DSP{
@@ -47,6 +47,8 @@ namespace NP_DSP{
 
                 IntegratorType integrator;
                 DerivatorType derivator;
+
+                double variability = 1.0;
 
                 //static_assert(OutType::is_writable == true);
 
@@ -85,16 +87,16 @@ namespace NP_DSP{
                             auto approx_answer = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer = approx_answer;
                             auto counter = 0;
-                            while (approx_answer < 2.0 * std::numbers::pi){
+                            while (approx_answer < 2.0 * std::numbers::pi * variability){
                                 counter++;
                                 old_approx_answer = approx_answer;
                                 approx_answer = computer_buffer.interpolate(i+counter) - computer_buffer.interpolate(i - counter);
                             }
-                            auto left_loss = std::numbers::pi * 2.0 - old_approx_answer;
-                            auto right_loss = approx_answer - std::numbers::pi * 2.0;
+                            auto left_loss = std::numbers::pi * 2.0 * variability - old_approx_answer;
+                            auto right_loss = approx_answer - std::numbers::pi * 2.0 * variability;
                             auto sum_loss = left_loss + right_loss;
                             auto period = (static_cast<OutType::SampleType>(counter) - right_loss/sum_loss) * 2;
-                            out[i] = static_cast<OutType::SampleType>(1.0/period);
+                            out[i] = static_cast<OutType::SampleType>(1.0/period) * variability;
                         }
                     }
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveAverage){
@@ -111,31 +113,31 @@ namespace NP_DSP{
                             auto approx_answer_right = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer_right = approx_answer_right;
                             auto counter = 0;
-                            while (approx_answer_right < std::numbers::pi){
+                            while (approx_answer_right < std::numbers::pi * variability){
                                 counter++;
                                 old_approx_answer_right = approx_answer_right;
                                 approx_answer_right = computer_buffer.interpolate(i + counter) - computer_buffer.interpolate(i);
                             }
-                            auto left_loss_right_edge = std::numbers::pi - old_approx_answer_right;
-                            auto right_loss_right_edge = approx_answer_right - std::numbers::pi;
+                            auto left_loss_right_edge = std::numbers::pi * variability - old_approx_answer_right;
+                            auto right_loss_right_edge = approx_answer_right - std::numbers::pi * variability;
                             auto sum_loss_right_edge = left_loss_right_edge + right_loss_right_edge;
                             auto right_edge = static_cast<OutType::SampleType>(counter) - right_loss_right_edge/sum_loss_right_edge;
                             
                             auto approx_answer_left = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer_left = approx_answer_left;
                             counter = 0;
-                            while (approx_answer_left < std::numbers::pi){
+                            while (approx_answer_left < std::numbers::pi * variability){
                                 counter++;
                                 old_approx_answer_left = approx_answer_left;
                                 approx_answer_left = computer_buffer.interpolate(i)-computer_buffer.interpolate(i-counter);
                             }
-                            auto left_loss_left_edge = std::numbers::pi - old_approx_answer_left;
-                            auto right_loss_left_edge = approx_answer_left - std::numbers::pi;
+                            auto left_loss_left_edge = std::numbers::pi * variability- old_approx_answer_left;
+                            auto right_loss_left_edge = approx_answer_left - std::numbers::pi * variability;
                             auto sum_loss_left_edge = left_loss_left_edge + right_loss_left_edge;
                             auto left_edge = static_cast<OutType::SampleType>(counter) - right_loss_left_edge/sum_loss_left_edge; 
 
                             auto period = right_edge + left_edge;
-                            out[i] = static_cast<OutType::SampleType>(1.0/period);
+                            out[i] = static_cast<OutType::SampleType>(1.0/period) * variability;
                         }
                     }
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveDouble){
@@ -164,6 +166,7 @@ namespace NP_DSP{
 
                 IntegratorType integrator;
                 DerivatorType derivator;
+                double variability = 1.0;
 
                 //static_assert(OutType::is_writable == true);
 
@@ -187,16 +190,16 @@ namespace NP_DSP{
                             auto approx_answer = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer = approx_answer;
                             auto counter = 0;
-                            while (approx_answer < 2.0 * std::numbers::pi){
+                            while (approx_answer < 2.0 * std::numbers::pi  * variability){
                                 counter++;
                                 old_approx_answer = approx_answer;
                                 approx_answer = phase.interpolate(i+counter) - phase.interpolate(i - counter);
                             }
-                            auto left_loss = std::numbers::pi * 2.0 - old_approx_answer;
-                            auto right_loss = approx_answer - std::numbers::pi * 2.0;
+                            auto left_loss = std::numbers::pi * 2.0 * variability - old_approx_answer;
+                            auto right_loss = approx_answer - std::numbers::pi * 2.0 * variability;
                             auto sum_loss = left_loss + right_loss;
                             auto period = (static_cast<OutType::SampleType>(counter) - right_loss/sum_loss) * 2;
-                            out[i] = static_cast<OutType::SampleType>(1.0/period);
+                            out[i] = static_cast<OutType::SampleType>(1.0/period) * variability;
                         }
                     }
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveAverage){
@@ -204,65 +207,63 @@ namespace NP_DSP{
                             auto approx_answer_right = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer_right = approx_answer_right;
                             auto counter = 0;
-                            while (approx_answer_right < std::numbers::pi){
+                            while (approx_answer_right < std::numbers::pi * variability){
                                 counter++;
                                 old_approx_answer_right = approx_answer_right;
                                 approx_answer_right = phase.interpolate(i + counter) - phase.interpolate(i);
                             }
-                            auto left_loss_right_edge = std::numbers::pi - old_approx_answer_right;
-                            auto right_loss_right_edge = approx_answer_right - std::numbers::pi;
+                            auto left_loss_right_edge = std::numbers::pi * variability - old_approx_answer_right;
+                            auto right_loss_right_edge = approx_answer_right - std::numbers::pi * variability;
                             auto sum_loss_right_edge = left_loss_right_edge + right_loss_right_edge;
                             auto right_edge = static_cast<OutType::SampleType>(counter) - right_loss_right_edge/sum_loss_right_edge;
                             
                             auto approx_answer_left = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer_left = approx_answer_left;
                             counter = 0;
-                            while (approx_answer_left < std::numbers::pi){
+                            while (approx_answer_left < std::numbers::pi * variability){
                                 counter++;
                                 old_approx_answer_left = approx_answer_left;
                                 approx_answer_left = phase.interpolate(i)-phase.interpolate(i-counter);
                             }
-                            auto left_loss_left_edge = std::numbers::pi - old_approx_answer_left;
-                            auto right_loss_left_edge = approx_answer_left - std::numbers::pi;
+                            auto left_loss_left_edge = std::numbers::pi * variability - old_approx_answer_left;
+                            auto right_loss_left_edge = approx_answer_left - std::numbers::pi * variability;
                             auto sum_loss_left_edge = left_loss_left_edge + right_loss_left_edge;
                             auto left_edge = static_cast<OutType::SampleType>(counter) - right_loss_left_edge/sum_loss_left_edge; 
 
                             auto period = right_edge + left_edge;
-                            out[i] = static_cast<OutType::SampleType>(1.0/period);
+                            out[i] = static_cast<OutType::SampleType>(1.0/period) * variability;
                         }
                     }
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveDouble){
                         for (auto i = 0; i < phase.size(); i++){
-                            auto approx_answer_right = static_cast<OutType::SampleType>(0.0);
+                            auto approx_answer_right = 0.0;
                             auto old_approx_answer_right = approx_answer_right;
                             auto counter = 0;
-                            while (approx_answer_right < std::numbers::pi){
+                            while (approx_answer_right < std::numbers::pi * variability){
                                 counter++;
                                 old_approx_answer_right = approx_answer_right;
                                 approx_answer_right = phase.interpolate(i + counter) - phase.interpolate(i);
                             }
-                            auto left_loss_right_edge = std::numbers::pi - old_approx_answer_right;
-                            auto right_loss_right_edge = approx_answer_right - std::numbers::pi;
+                            auto left_loss_right_edge = std::numbers::pi * variability - old_approx_answer_right;
+                            auto right_loss_right_edge = approx_answer_right - std::numbers::pi * variability;
                             auto sum_loss_right_edge = left_loss_right_edge + right_loss_right_edge;
-                            auto right_edge = static_cast<OutType::SampleType>(counter) - right_loss_right_edge/sum_loss_right_edge;
+                            auto right_edge = static_cast<double>(counter) - right_loss_right_edge/sum_loss_right_edge;
                             
-                            auto approx_answer_left = static_cast<OutType::SampleType>(0.0);
+                            auto approx_answer_left = 0.0;
                             auto old_approx_answer_left = approx_answer_left;
                             counter = 0;
-                            while (approx_answer_left < std::numbers::pi){
+                            while (approx_answer_left < std::numbers::pi * variability){
                                 counter++;
                                 old_approx_answer_left = approx_answer_left;
                                 approx_answer_left = phase.interpolate(i)-phase.interpolate(i-counter);
                             }
-                            auto left_loss_left_edge = std::numbers::pi - old_approx_answer_left;
-                            auto right_loss_left_edge = approx_answer_left - std::numbers::pi;
+                            auto left_loss_left_edge = std::numbers::pi * variability - old_approx_answer_left;
+                            auto right_loss_left_edge = approx_answer_left - std::numbers::pi * variability;
                             auto sum_loss_left_edge = left_loss_left_edge + right_loss_left_edge;
-                            auto left_edge = static_cast<OutType::SampleType>(counter) - right_loss_left_edge/sum_loss_left_edge; 
+                            auto left_edge = static_cast<double>(counter) - right_loss_left_edge/sum_loss_left_edge;
 
-                            out[i].first = static_cast<OutType::SampleType>(0.5/left_edge);
-                            out[i].second = static_cast<OutType::SampleType>(0.5/right_edge);
-
-                            
+                            out[i].first = 0.5/left_edge * variability;
+                            out[i].second = 0.5/right_edge * variability;
                         }
                     }
                 }
@@ -289,6 +290,8 @@ namespace NP_DSP{
                 PhaseComputerType * phase_computer;
                 IntegratorType integrator;
                 DerivatorType derivator;
+
+                double variability = 1.0;
 
                 //static_assert(OutType::is_writable == true);
 
@@ -324,16 +327,16 @@ namespace NP_DSP{
                             auto approx_answer = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer = approx_answer;
                             auto counter = 0;
-                            while (approx_answer < 2.0 * std::numbers::pi){
+                            while (approx_answer < 2.0 * std::numbers::pi * variability){
                                 counter++;
                                 old_approx_answer = approx_answer;
                                 approx_answer = computer_buffer.interpolate(i+counter) - computer_buffer.interpolate(i - counter);
                             }
-                            auto left_loss = std::numbers::pi * 2.0 - old_approx_answer;
-                            auto right_loss = approx_answer - std::numbers::pi * 2.0;
+                            auto left_loss = std::numbers::pi * 2.0 * variability - old_approx_answer;
+                            auto right_loss = approx_answer - std::numbers::pi * 2.0 * variability;
                             auto sum_loss = left_loss + right_loss;
                             auto period = (static_cast<OutType::SampleType>(counter) - right_loss/sum_loss) * 2;
-                            out[i] = static_cast<OutType::SampleType>(1.0/period);
+                            out[i] = static_cast<OutType::SampleType>(1.0/period) * variability;
                         }
                     }
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveAverage){
@@ -341,31 +344,31 @@ namespace NP_DSP{
                             auto approx_answer_right = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer_right = approx_answer_right;
                             auto counter = 0;
-                            while (approx_answer_right < std::numbers::pi){
+                            while (approx_answer_right < std::numbers::pi * variability){
                                 counter++;
                                 old_approx_answer_right = approx_answer_right;
                                 approx_answer_right = computer_buffer.interpolate(i + counter) - computer_buffer.interpolate(i);
                             }
-                            auto left_loss_right_edge = std::numbers::pi - old_approx_answer_right;
-                            auto right_loss_right_edge = approx_answer_right - std::numbers::pi;
+                            auto left_loss_right_edge = std::numbers::pi * variability - old_approx_answer_right;
+                            auto right_loss_right_edge = approx_answer_right - std::numbers::pi * variability;
                             auto sum_loss_right_edge = left_loss_right_edge + right_loss_right_edge;
                             auto right_edge = static_cast<OutType::SampleType>(counter) - right_loss_right_edge/sum_loss_right_edge;
                             
                             auto approx_answer_left = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer_left = approx_answer_left;
                             counter = 0;
-                            while (approx_answer_left < std::numbers::pi){
+                            while (approx_answer_left < std::numbers::pi * variability){
                                 counter++;
                                 old_approx_answer_left = approx_answer_left;
                                 approx_answer_left = computer_buffer.interpolate(i)-computer_buffer.interpolate(i-counter);
                             }
-                            auto left_loss_left_edge = std::numbers::pi - old_approx_answer_left;
-                            auto right_loss_left_edge = approx_answer_left - std::numbers::pi;
+                            auto left_loss_left_edge = std::numbers::pi * variability - old_approx_answer_left;
+                            auto right_loss_left_edge = approx_answer_left - std::numbers::pi * variability;
                             auto sum_loss_left_edge = left_loss_left_edge + right_loss_left_edge;
                             auto left_edge = static_cast<OutType::SampleType>(counter) - right_loss_left_edge/sum_loss_left_edge; 
 
                             auto period = right_edge + left_edge;
-                            out[i] = static_cast<OutType::SampleType>(1.0/period);
+                            out[i] = static_cast<OutType::SampleType>(1.0/period) * variability;
                         }
                     }
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveDouble){
@@ -373,31 +376,31 @@ namespace NP_DSP{
                             auto approx_answer_right = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer_right = approx_answer_right;
                             auto counter = 0;
-                            while (approx_answer_right < std::numbers::pi){
+                            while (approx_answer_right < std::numbers::pi * variability){
                                 counter++;
                                 old_approx_answer_right = approx_answer_right;
                                 approx_answer_right = computer_buffer.interpolate(i + counter) - computer_buffer.interpolate(i);
                             }
-                            auto left_loss_right_edge = std::numbers::pi - old_approx_answer_right;
-                            auto right_loss_right_edge = approx_answer_right - std::numbers::pi;
+                            auto left_loss_right_edge = std::numbers::pi * variability - old_approx_answer_right;
+                            auto right_loss_right_edge = approx_answer_right - std::numbers::pi * variability;
                             auto sum_loss_right_edge = left_loss_right_edge + right_loss_right_edge;
                             auto right_edge = static_cast<OutType::SampleType>(counter) - right_loss_right_edge/sum_loss_right_edge;
                             
                             auto approx_answer_left = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer_left = approx_answer_left;
                             counter = 0;
-                            while (approx_answer_left < std::numbers::pi){
+                            while (approx_answer_left < std::numbers::pi * variability){
                                 counter++;
                                 old_approx_answer_left = approx_answer_left;
                                 approx_answer_left = computer_buffer.interpolate(i)-computer_buffer.interpolate(i-counter);
                             }
-                            auto left_loss_left_edge = std::numbers::pi - old_approx_answer_left;
-                            auto right_loss_left_edge = approx_answer_left - std::numbers::pi;
+                            auto left_loss_left_edge = std::numbers::pi * variability - old_approx_answer_left;
+                            auto right_loss_left_edge = approx_answer_left - std::numbers::pi * variability;
                             auto sum_loss_left_edge = left_loss_left_edge + right_loss_left_edge;
                             auto left_edge = static_cast<OutType::SampleType>(counter) - right_loss_left_edge/sum_loss_left_edge; 
 
-                            out[i].first = static_cast<OutType::SampleType>(0.5/left_edge);
-                            out[i].second = static_cast<OutType::SampleType>(0.5/right_edge);
+                            out[i].first = static_cast<OutType::SampleType>(0.5/left_edge) * variability;
+                            out[i].second = static_cast<OutType::SampleType>(0.5/right_edge) * variability;
                         }
                     }
                 }
@@ -420,6 +423,8 @@ namespace NP_DSP{
 
                 IntegratorType integrator;
                 DerivatorType derivator;
+
+                double variability = 1.0;
 
                 DerivativeBasedWithExternalOptParametr(IntegratorT integrator_o,
                                 DerivatorT derivator_o)
@@ -456,16 +461,16 @@ namespace NP_DSP{
                             auto approx_answer = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer = approx_answer;
                             auto counter = 0;
-                            while (approx_answer < 2.0 * std::numbers::pi){
+                            while (approx_answer < 2.0 * std::numbers::pi * variability){
                                 counter++;
                                 old_approx_answer = approx_answer;
                                 approx_answer = computer_buffer.interpolate(i+counter) - computer_buffer.interpolate(i - counter);
                             }
-                            auto left_loss = std::numbers::pi * 2.0 - old_approx_answer;
-                            auto right_loss = approx_answer - std::numbers::pi * 2.0;
+                            auto left_loss = std::numbers::pi * 2.0 * variability - old_approx_answer;
+                            auto right_loss = approx_answer - std::numbers::pi * 2.0 * variability;
                             auto sum_loss = left_loss + right_loss;
                             auto period = (static_cast<OutType::SampleType>(counter) - right_loss/sum_loss) * 2;
-                            out[i] = static_cast<OutType::SampleType>(1.0/period);
+                            out[i] = static_cast<OutType::SampleType>(1.0/period) * variability;
                         }
                     }
                     else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveAverage){
@@ -485,31 +490,31 @@ namespace NP_DSP{
                             auto approx_answer_right = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer_right = approx_answer_right;
                             auto counter = 0;
-                            while (approx_answer_right < std::numbers::pi){
+                            while (approx_answer_right < std::numbers::pi * variability){
                                 counter++;
                                 old_approx_answer_right = approx_answer_right;
                                 approx_answer_right = computer_buffer.interpolate(i + counter) - computer_buffer.interpolate(i);
                             }
-                            auto left_loss_right_edge = std::numbers::pi - old_approx_answer_right;
-                            auto right_loss_right_edge = approx_answer_right - std::numbers::pi;
+                            auto left_loss_right_edge = std::numbers::pi * variability - old_approx_answer_right;
+                            auto right_loss_right_edge = approx_answer_right - std::numbers::pi * variability;
                             auto sum_loss_right_edge = left_loss_right_edge + right_loss_right_edge;
                             auto right_edge = static_cast<OutType::SampleType>(counter) - right_loss_right_edge/sum_loss_right_edge;
                             
                             auto approx_answer_left = static_cast<OutType::SampleType>(0.0);
                             auto old_approx_answer_left = approx_answer_left;
                             counter = 0;
-                            while (approx_answer_left < std::numbers::pi){
+                            while (approx_answer_left < std::numbers::pi * variability){
                                 counter++;
                                 old_approx_answer_left = approx_answer_left;
                                 approx_answer_left = computer_buffer.interpolate(i)-computer_buffer.interpolate(i-counter);
                             }
-                            auto left_loss_left_edge = std::numbers::pi - old_approx_answer_left;
-                            auto right_loss_left_edge = approx_answer_left - std::numbers::pi;
+                            auto left_loss_left_edge = std::numbers::pi * variability - old_approx_answer_left;
+                            auto right_loss_left_edge = approx_answer_left - std::numbers::pi * variability;
                             auto sum_loss_left_edge = left_loss_left_edge + right_loss_left_edge;
                             auto left_edge = static_cast<OutType::SampleType>(counter) - right_loss_left_edge/sum_loss_left_edge; 
 
                             auto period = right_edge + left_edge;
-                            out[i] = static_cast<OutType::SampleType>(1.0/period);
+                            out[i] = static_cast<OutType::SampleType>(1.0/period) * variability;
                         }
                     }
                 }
@@ -630,6 +635,8 @@ namespace NP_DSP{
                 double approx_order_coeff = 1.0;
                 int tile_size = 128;
 
+                double variability = 0.0;
+
                 SampleType max_error = static_cast<typename DataType::SampleType>(1000000);
 
                 PeriodAndExtremumsBased(IntegratorType integrator_in, DerivatorType derivator_in){
@@ -657,6 +664,7 @@ namespace NP_DSP{
 
                     DerivativeBasedWithExternalOptParametr<DataType, OutType, IntegratorType, DerivatorType, kind> 
                         inst_freq_computer(integrator, derivator);
+                    inst_freq_computer.variability = variability;
 
                     for (auto i = 0; i < external_opt_parametr.size(); i++) {
                         external_opt_parametr[i] = static_cast<SampleType>(1.);
@@ -744,6 +752,7 @@ namespace NP_DSP{
 
                 double approx_order_coeff = 1.0;
                 int tile_size = 128;
+                double variability = 0.0;
 
                 SampleType max_error = static_cast<typename DataType::SampleType>(1000000);
 
@@ -772,6 +781,8 @@ namespace NP_DSP{
 
                     DerivativeBased<DataType, OutType, IntegratorType, DerivatorType, kind> 
                         inst_freq_computer(integrator, derivator);
+
+                    inst_freq_computer.variability = variability;
 
                     for (auto i = 0; i < external_opt_parametr.size(); i++) {
                         external_opt_parametr[i] = static_cast<SampleType>(1.);

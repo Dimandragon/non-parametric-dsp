@@ -21,32 +21,49 @@ namespace NP_DSP{
             export
             enum class InstFreqDerivativeBasedKind {Momental, TimeAverage, DeriveAverage, DeriveDouble};
 
+            export
+            enum class ExtremumsKind {Simple, DerArctg};
+
             export 
-            template <Signal DataT, Signal OutT>
+            template <Signal DataT, Signal OutT, ExtremumsKind kind_e, Derivator DerivatorT>
             struct ExtremumsBasedNonOpt {
                 using DataType = DataT;
                 using OutType = OutT;
                 using AdditionalDataType = GENERAL::Nil;
 
+                DerivatorT derivator;
+
                 constexpr static bool is_phase_computer = true;
 
                 void compute(const DataType & data, OutType & out, AdditionalDataType & nil){
+                    if constexpr (kind_e == ExtremumsKind::DerArctg) {
+                        derivator.compute(data, out, nil);
+                        for (int i = 0; i < data.size(); i++) {
+                            out[i] = std::atan(out[i]);
+                        }
+                    }
+                    else if constexpr (kind_e == ExtremumsKind::Simple) {
+                        for (int i = 0; i < data.size(); i++) {
+                            out[i] = data[i];
+                        }
+                    }
+
                     std::vector<int> extremums;
                     extremums.push_back(0);
-                    for (int i = 1; i < data.size()-1; i++){
-                        if ((data[i] >= data[i-1] &&
-                            data[i] > data[i+1]) ||
-                            (data[i] > data[i-1] &&
-                            data[i] >= data[i+1]) ||
-                            (data[i] <= data[i-1] &&
-                             data[i] < data[i+1]) ||
-                            (data[i] < data[i-1] &&
-                             data[i] <= data[i+1]))
+                    for (int i = 1; i < out.size()-1; i++){
+                        if ((out[i] >= out[i-1] &&
+                            out[i] > out[i+1]) ||
+                            (out[i] > out[i-1] &&
+                            out[i] >= out[i+1]) ||
+                            (out[i] <= out[i-1] &&
+                             out[i] < out[i+1]) ||
+                            (out[i] < out[i-1] &&
+                             out[i] <= out[i+1]))
                         {
                             extremums.push_back(i);
                         }
                     }
-                    extremums.push_back(static_cast<int>(data.size()-1));
+                    extremums.push_back(static_cast<int>(out.size()-1));
 
                     if(extremums.size() > 2){
                         extremums[0] = extremums[1] * 2 - extremums[2];
@@ -56,13 +73,13 @@ namespace NP_DSP{
                             extremums[0] = - extremums[1];
                         }
                         if (extremums[last] < extremums.size() - 1){
-                            extremums[last] = data.size() + data.size() - extremums[last-1];
+                            extremums[last] = out.size() + out.size() - extremums[last-1];
                         }
                     }
                     else{
                         auto last = extremums.size() - 1;
                         extremums[0] = - extremums[1];
-                        extremums[last] = data.size() + data.size() - extremums[last-1];
+                        extremums[last] = out.size() + out.size() - extremums[last-1];
                     }
 
                     std::vector<std::pair<int, double>> support;
@@ -81,8 +98,8 @@ namespace NP_DSP{
                         support[i].second = support[i].second - pad;
                     }
 
-                    support[support.size() - 1] = {data.size() - 1, UTILITY_MATH::linearInterpolate<int, double>
-                        (support[support.size() - 2], support[support.size() - 1], data.size()-1)};
+                    support[support.size() - 1] = {out.size() - 1, UTILITY_MATH::linearInterpolate<int, double>
+                        (support[support.size() - 2], support[support.size() - 1], out.size()-1)};
 
                     if constexpr (CONFIG::debug){
                         IC(support);
@@ -101,7 +118,7 @@ namespace NP_DSP{
 
             export
             template <Signal DataT, Signal OutT, Signal AdditionalDataT,
-                Integrator IntegratorT, Derivator DerivatorT>
+                ExtremumsKind kind_e, Integrator IntegratorT, Derivator DerivatorT>
             struct ExtremumsBasedUsingFS{
                 using DataType = DataT;
                 using OutType = OutT;
@@ -132,26 +149,36 @@ namespace NP_DSP{
                     // reduce f(position) * a(position) - support)^2 
                     // + for each x reduce
                     //if f(x) * a(x) > f(x-1) * a(x-1) then (f(x) * a(x) - f(x-1) * a(x-1))^2 else 0
+                    GENERAL::Nil nil;
+                    if constexpr (kind_e == ExtremumsKind::DerArctg) {
+                        derivator.compute(data, out, nil);
+                        for (int i = 0; i < data.size(); i++) {
+                            out[i] = std::atan(out[i]);
+                        }
+                    }
+                    else if constexpr (kind_e == ExtremumsKind::Simple) {
+                        for (int i = 0; i < data.size(); i++) {
+                            out[i] = data[i];
+                        }
+                    }
 
                     std::vector<int> extremums;
                     extremums.push_back(0);
-                    for (int i = 1; i < data.size()-1; i++){
-                        if ((data[i] >= data[i-1] &&
-                            data[i] > data[i+1]) ||
-                            (data[i] > data[i-1] &&
-                            data[i] >= data[i+1]) ||
-                            (data[i] <= data[i-1] &&
-                             data[i] < data[i+1]) ||
-                            (data[i] < data[i-1] &&
-                             data[i] <= data[i+1]))
+                    for (int i = 1; i < out.size()-1; i++){
+                        if ((out[i] >= out[i-1] &&
+                            out[i] > out[i+1]) ||
+                            (out[i] > out[i-1] &&
+                            out[i] >= out[i+1]) ||
+                            (out[i] <= out[i-1] &&
+                             out[i] < out[i+1]) ||
+                            (out[i] < out[i-1] &&
+                             out[i] <= out[i+1]))
                         {
                             extremums.push_back(i);
                         }
                     }
-                    extremums.push_back(static_cast<int>(data.size()-1));
-                    if constexpr (CONFIG::debug){
-                        IC(extremums);
-                    }
+                    extremums.push_back(static_cast<int>(out.size()-1));
+
                     if(extremums.size() > 2){
                         extremums[0] = extremums[1] * 2 - extremums[2];
                         auto last = extremums.size() - 1;
@@ -160,27 +187,37 @@ namespace NP_DSP{
                             extremums[0] = - extremums[1];
                         }
                         if (extremums[last] < extremums.size() - 1){
-                            extremums[last] = data.size() + data.size() - extremums[last-1];
+                            extremums[last] = out.size() + out.size() - extremums[last-1];
                         }
                     }
                     else{
                         auto last = extremums.size() - 1;
                         extremums[0] = - extremums[1];
-                        extremums[last] = data.size() + data.size() - extremums[last-1];
-                    }
-                    if constexpr (CONFIG::debug){
-                        IC(extremums);
+                        extremums[last] = out.size() + out.size() - extremums[last-1];
                     }
 
-                    std::vector<std::pair<size_t, float>> support;
+                    std::vector<std::pair<int, double>> support;
                     for (auto i = 0; i < extremums.size(); i++){
                         support.push_back({extremums[i], i * std::numbers::pi});
                     }
+
                     if constexpr (CONFIG::debug){
                         IC(support);
                     }
-                    
-                    GENERAL::Nil nil;
+
+                    support[0] = {0, UTILITY_MATH::linearInterpolate<int, double>
+                        (support[0], support[1], 0)};
+                    auto pad = support[0].second;
+                    for (auto i = 0; i < support.size(); i++){
+                        support[i].second = support[i].second - pad;
+                    }
+
+                    support[support.size() - 1] = {out.size() - 1, UTILITY_MATH::linearInterpolate<int, double>
+                        (support[support.size() - 2], support[support.size() - 1], out.size()-1)};
+
+                    if constexpr (CONFIG::debug){
+                        IC(support);
+                    }
 
                     derivator.compute(data, computer_buffer, nil);
                     for (int i = 0; i < data.size(); i++){
@@ -270,7 +307,7 @@ namespace NP_DSP{
 
             export
             template <Signal DataT, Signal OutT, Signal AdditionalDataT,
-                Integrator IntegratorT, Derivator DerivatorT>
+                ExtremumsKind kind_e, Integrator IntegratorT, Derivator DerivatorT>
             struct ArctgScaledToExtremums{
                 using DataType = DataT;
                 using OutType = OutT;
@@ -298,22 +335,35 @@ namespace NP_DSP{
                     //where first is extremum position and second is value = idx * std::numbers::pi
                     //compute f(x) = integral(|arctg'(data')|)
 
+                    GENERAL::Nil nil;
+                    if constexpr (kind_e == ExtremumsKind::DerArctg) {
+                        derivator.compute(data, out, nil);
+                        for (int i = 0; i < data.size(); i++) {
+                            out[i] = std::atan(out[i]);
+                        }
+                    }
+                    else if constexpr (kind_e == ExtremumsKind::Simple) {
+                        for (int i = 0; i < data.size(); i++) {
+                            out[i] = data[i];
+                        }
+                    }
+
                     std::vector<int> extremums;
                     extremums.push_back(0);
-                    for (int i = 1; i < data.size()-1; i++){
-                        if ((data[i] >= data[i-1] &&
-                            data[i] > data[i+1]) ||
-                            (data[i] > data[i-1] &&
-                            data[i] >= data[i+1]) ||
-                            (data[i] <= data[i-1] &&
-                             data[i] < data[i+1]) ||
-                            (data[i] < data[i-1] &&
-                             data[i] <= data[i+1]))
+                    for (int i = 1; i < out.size()-1; i++){
+                        if ((out[i] >= out[i-1] &&
+                            out[i] > out[i+1]) ||
+                            (out[i] > out[i-1] &&
+                            out[i] >= out[i+1]) ||
+                            (out[i] <= out[i-1] &&
+                             out[i] < out[i+1]) ||
+                            (out[i] < out[i-1] &&
+                             out[i] <= out[i+1]))
                         {
                             extremums.push_back(i);
                         }
                     }
-                    extremums.push_back(static_cast<int>(data.size()-1));
+                    extremums.push_back(static_cast<int>(out.size()-1));
 
                     if(extremums.size() > 2){
                         extremums[0] = extremums[1] * 2 - extremums[2];
@@ -323,25 +373,37 @@ namespace NP_DSP{
                             extremums[0] = - extremums[1];
                         }
                         if (extremums[last] < extremums.size() - 1){
-                            extremums[last] = data.size() + data.size() - extremums[last-1];
+                            extremums[last] = out.size() + out.size() - extremums[last-1];
                         }
                     }
                     else{
                         auto last = extremums.size() - 1;
                         extremums[0] = - extremums[1];
-                        extremums[last] = data.size() + data.size() - extremums[last-1];
+                        extremums[last] = out.size() + out.size() - extremums[last-1];
                     }
 
                     std::vector<std::pair<int, double>> support;
                     for (auto i = 0; i < extremums.size(); i++){
                         support.push_back({extremums[i], i * std::numbers::pi});
                     }
-                    
+
                     if constexpr (CONFIG::debug){
                         IC(support);
                     }
 
-                    GENERAL::Nil nil;
+                    support[0] = {0, UTILITY_MATH::linearInterpolate<int, double>
+                        (support[0], support[1], 0)};
+                    auto pad = support[0].second;
+                    for (auto i = 0; i < support.size(); i++){
+                        support[i].second = support[i].second - pad;
+                    }
+
+                    support[support.size() - 1] = {out.size() - 1, UTILITY_MATH::linearInterpolate<int, double>
+                        (support[support.size() - 2], support[support.size() - 1], out.size()-1)};
+
+                    if constexpr (CONFIG::debug){
+                        IC(support);
+                    }
 
                     derivator.compute(data, computer_buffer, nil);
                     for (int i = 0; i < data.size(); i++){
@@ -356,20 +418,7 @@ namespace NP_DSP{
                         //out.show(NP_DSP::ONE_D::PlottingKind::Simple);
                     }
                     
-                    //norm 
-                    support[0] = {0, UTILITY_MATH::linearInterpolate<int, double>
-                        (support[0], support[1], 0)};
-                    auto pad = support[0].second;
-                    for (auto i = 0; i < support.size(); i++){
-                        support[i].second = support[i].second - pad;
-                    }
-
-                    support[support.size() - 1] = {data.size() - 1, UTILITY_MATH::linearInterpolate<int, double>
-                        (support[support.size() - 2], support[support.size() - 1], data.size()-1)};
-
-                    if constexpr (CONFIG::debug){
-                        IC(support);
-                    }
+                    //norm
 
                     std::vector<std::pair<int, double>> div_support;
                     
@@ -420,7 +469,6 @@ namespace NP_DSP{
                 using AdditionalDataType = AdditionalDataT;
                 using IntegratorType = IntegratorT;
                 using DerivatorType = DerivatorT;
-
 
                 IntegratorType integrator;
                 DerivatorType derivator;

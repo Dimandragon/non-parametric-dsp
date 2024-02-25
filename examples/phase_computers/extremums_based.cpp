@@ -27,7 +27,8 @@ int main(){
 
     auto phase_computer = 
         NP_DSP::ONE_D::PHASE_COMPUTERS::ArctgScaledToExtremums<SignalT, SignalT, SignalT,
-        decltype(integrator), decltype(derivator)>(integrator, derivator);
+            NP_DSP::ONE_D::PHASE_COMPUTERS::ExtremumsKind::DerArctg, decltype(integrator),
+                decltype(derivator)>(integrator, derivator);
     phase_computer.tile_size = 25;
 
     phase_computer.compute(signal1, signal2, signal3);

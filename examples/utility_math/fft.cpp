@@ -42,7 +42,6 @@ int main(){
     signal_plotting.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
     NP_DSP::ONE_D::UTILITY_MATH::ifftc2c<decltype(signal2), decltype(signal1), double>(signal2, signal1);
-
     for (int i = 0; i < 64; i++) {
         signal_plotting[i] = signal1[i].real();
     }

@@ -37,15 +37,15 @@ int main(){
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
     
     NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<decltype(signal1), decltype(signal3), 
-        decltype(signal2), NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased, 
-            decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average> 
+        decltype(signal2), NP_DSP::ONE_D::FILTERS::FilteringType::Median,
+            decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average>
                 filter (integrator);
     
     filter.compute(signal1, signal3, signal2);
     signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
     NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<decltype(signal1), decltype(signal3), 
-        decltype(signal2), NP_DSP::ONE_D::FILTERS::FilteringType::ValueBased, 
+        decltype(signal2), NP_DSP::ONE_D::FILTERS::FilteringType::Median,
             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average> 
                 filter1 (integrator);
 
@@ -65,7 +65,7 @@ int main(){
 */
     NP_DSP::ONE_D::INST_FREQ_COMPUTERS::DerivativeBased<SignalT, SignalT, 
         decltype(integrator), decltype(derivator), 
-            NP_DSP::ONE_D::INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage> 
+            NP_DSP::ONE_D::INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage>
                 inst_freq_computer2(integrator, derivator);
     inst_freq_computer2.compute(signal1, signal2, compute_buffer);
     

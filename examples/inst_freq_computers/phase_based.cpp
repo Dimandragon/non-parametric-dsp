@@ -27,7 +27,7 @@ int main(){
     }
     //signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
     NP_DSP::ONE_D::PHASE_COMPUTERS::ArctgScaledToExtremums<SignalT, SignalT, SignalT,
-        decltype(integrator), decltype(derivator)> phase_computer(integrator, derivator);
+        NP_DSP::ONE_D::PHASE_COMPUTERS::ExtremumsKind::DerArctg, decltype(integrator), decltype(derivator)> phase_computer(integrator, derivator);
 
     NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased
         <SignalT, SignalT, SignalT, decltype(integrator), decltype(derivator),
@@ -64,7 +64,8 @@ int main(){
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
     NP_DSP::ONE_D::PHASE_COMPUTERS::ExtremumsBasedNonOpt
-        <SignalT, SignalT> phase_computer2;
+        <SignalT, SignalT, NP_DSP::ONE_D::PHASE_COMPUTERS::ExtremumsKind::DerArctg, decltype(derivator)>
+            phase_computer2;
 
     NP_DSP::GENERAL::Nil nil;
     
