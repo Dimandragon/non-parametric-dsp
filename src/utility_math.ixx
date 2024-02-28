@@ -49,7 +49,7 @@ namespace NP_DSP{
                 auto dx = point2.first - point1.first;
                 auto dy = point2.second - point1.second;
                 if (dx == 0){
-                    return (point1.second + point2.second) / 2;
+                    return (point1.second + point2.second) / 2.0;
                 }
                 return point1.second + dy*(x_in-point1.first)/dx;
             }
@@ -108,8 +108,8 @@ namespace NP_DSP{
             }
 
             export
-            template<Signal DataT, Signal OutT, typename T>
-            void fftc2c (const DataT & in, OutT & out){
+            template<typename T>
+            void fftc2c (const Signal<std::complex<T>> & in, Signal<std::complex<T>> & out){
                 //using T = typename OutT::SampleType;
                 auto len = in.size();
                 pocketfft::shape_t shape{len};
@@ -140,8 +140,8 @@ namespace NP_DSP{
             }
 
             export
-            template<Signal DataT, Signal OutT, typename T>
-            void ifftc2c (const DataT & in, OutT & out){
+            template<typename T>
+            void ifftc2c (const Signal<std::complex<T>> & in, Signal<std::complex<T>> & out){
                 auto len = in.size();
                 pocketfft::shape_t shape{len};
                 pocketfft::stride_t stridef(shape.size());
@@ -170,9 +170,8 @@ namespace NP_DSP{
             }
 
             export
-            template<Signal DataT1, Signal DataT2, Signal OutT>
-            void fastConvolution(DataT1 & in1, DataT2 & in2, OutT & out) {
-                using T = typename OutT::SampleType;
+            template<typename T>
+            void fastConvolution(Signal<T> & in1, Signal<T> & in2, Signal<T> & out) {
                 std::vector<std::complex<T>> data_in1;
                 std::vector<std::complex<T>> data_in2;
                 std::vector<std::complex<T>> sp1;
@@ -256,7 +255,7 @@ namespace NP_DSP{
                     data_in.data() + pad, data_out.data() + pad, static_cast<T>(1));
             }
 
-
+            /*
             export
             template <typename TIndex, SignalBase Base, typename TValue>
             std::pair<TIndex, TIndex> interpoationSearch(Base data, TIndex idx1, TIndex idx2, TValue value) {
@@ -291,9 +290,9 @@ namespace NP_DSP{
                     }
                 }
                 return {idx1, idx2};
-            }
+            }*/
 
-            export
+            /*export
             template <typename TIndex, typename TValue, typename IdxLambdaT>
             std::pair<TIndex, TIndex> interpoationSearch(TIndex idx1, TIndex idx2, TValue value, IdxLambdaT idx_lambda) {
                 //todo interpolate or values limits
@@ -329,7 +328,7 @@ namespace NP_DSP{
                     }
                 }
                 return {idx1, idx2};
-            }
+            }*/
 
             export
             template <typename T>

@@ -9,16 +9,20 @@ import <complex>;
 import <cstdlib>;
 
 int main(){
-    NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> signal1;
-    NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> signal2;
-    NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> signal3;
+    auto signal1 = NP_DSP::ONE_D::GenericSignal<double, true>
+        (NP_DSP::GENERAL::Tag<NP_DSP::ONE_D::SimpleVecWrapper<double>>{});
+    using SignalT = decltype(signal1);
+    auto signal2 = NP_DSP::ONE_D::GenericSignal<double, true>
+        (NP_DSP::GENERAL::Tag<NP_DSP::ONE_D::SimpleVecWrapper<double>>{});
+    auto signal3 = NP_DSP::ONE_D::GenericSignal<double, true>
+        (NP_DSP::GENERAL::Tag<NP_DSP::ONE_D::SimpleVecWrapper<double>>{});
 
     for (int i = 0; i < 50; i++) {
-        signal1.base->vec->push_back(std::rand());
-        signal3.base->vec->push_back(0.0);
+        static_cast<NP_DSP::ONE_D::SimpleVecWrapper<double> *>(signal1.base)->vec->push_back(std::rand());
+        static_cast<NP_DSP::ONE_D::SimpleVecWrapper<double> *>(signal3.base)->vec->push_back(0.0);
     }
     for (int i = 0; i < 10; i++) {
-        signal2.base->vec->push_back(0.1);
+        static_cast<NP_DSP::ONE_D::SimpleVecWrapper<double> *>(signal2.base)->vec->push_back(0.1);
     }
 
     signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);

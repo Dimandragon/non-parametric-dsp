@@ -25,7 +25,7 @@ namespace NP_DSP{
 
             export 
             struct MainExtractor{
-                using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
+                using DataType = GenericSignal<double, true>;
                 DataType data;
                 std::vector<DataType *> modes;
                 std::vector<DataType *> inst_freqs;

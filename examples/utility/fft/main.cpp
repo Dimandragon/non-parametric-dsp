@@ -27,7 +27,7 @@ template<typename T> void crand(std::vector<std::complex<T>> &v)
 template<typename T> void vec_sin(std::vector<std::complex<T>> &v)
 {
     for (int i = 0; i < v.size(); i++)
-        v[i] = std::complex<T>(sinf(((float)i)) - 1.0, 0.f);
+        v[i] = std::complex<T>(std::sin((float)i) - 1.0, 0.f);
 }
 
 template<typename T> void crand(std::vector<T> &v)

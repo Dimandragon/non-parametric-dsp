@@ -8,6 +8,9 @@ import <type_traits>;
 import <cstddef>;
 import <optional>;
 import <string>;
+import <utility>;
+import <vector>;
+import <matplot/matplot.h>;
 
 namespace NP_DSP{
     namespace GENERAL
@@ -16,490 +19,431 @@ namespace NP_DSP{
         struct Nil{};
 
         export
-        template <typename T>
-        constexpr bool is_signal_base =
-                requires (T signal, typename T::IdxType idx, std::size_t dim_number)
-        {
-            requires (T::is_writable == true || T::is_writable == false);
-            requires T::is_signal == true;
-            requires T::dims_count == std::tuple_size_v<typename T::IdxType>;
-            typename T::IdxType;
-            typename T::SampleType;
-
-            { delete new T };
-            { signal[idx] } -> std::convertible_to<typename T::SampleType &>;
-            { signal.dimSize(dim_number) } -> std::convertible_to<size_t>;
-        };
-
-        export
-        template <typename T>
-        concept SignalBase = is_signal_base<T>;
-
-        export enum class PlottingKind {Simple, Interpolate};
-
-        export
-        template <typename T>
-        constexpr bool is_signal = requires (T signal, T::IdxType idx, size_t dim_number,
-                std::optional<typename T::IdxType> idx1, std::optional<typename T::IdxType> idx2,
-                T::SampelType  value, PlottingKind kind, const std::string & filename, const std::string & format)
-        {
-            requires T::is_signal == true;
-
-            typename T::Base;
-            requires is_signal_base<typename T::Base>;
-
-            typename T::IdxType;
-            requires std::is_same_v<typename T::IdxType, typename T::Base::IdxType>;
-
-            typename T::SampleType;
-            requires std::is_same_v<typename T::SampleType, typename T::Base::IdxType>;
-
-            { delete new T };
-            { signal[idx] } -> std::convertible_to<typename T::SampleType &>;
-            { signal.dimSize(dim_number) } -> std::convertible_to<size_t>;
-            { signal.interpolate(idx) } -> std::convertible_to<typename T::SampleType>;
-            { signal.findInterpolate(value, idx1, idx2) } -> std::convertible_to<typename T::IdxType>;
-            { signal.findMonotone(value, idx1, idx2)} -> std::convertible_to<typename T::IdxType>;
-            signal.show(kind, filename);
-            signal.show(kind, filename, format);
-        };
-
-        export
         template<typename T>
-        concept Signal = is_signal<T>;
-
-        export
-        template <typename T>
-        constexpr bool is_signal_wrapper = requires{
-            requires is_signal<T> || std::is_same_v<GENERAL::Nil, T>;
+        struct Tag {
+            using type = T;
         };
 
+        template <typename T>
+        constexpr bool is_any_type = true;
+
         export
         template <typename T>
-        concept SignalWrapper = is_signal_wrapper<T>;
+        constexpr bool is_complex = requires(T data)
+        {
+            data.real();
+            data.imag();
+        };
     }
 
     namespace ONE_D{
-        export
-        template <typename T>
-        constexpr bool is_signal_base_first
-                = requires (T signal, T::IdxType idx)
-        {
-            requires T::is_signal_base == true;
-            requires (T::is_writable == true || T::is_writable == false);
-
-            typename T::IdxType;
-            typename T::SampleType;
-
-            //{ delete new T };
-            //{ signal[idx] } -> std::convertible_to<typename T::SampleType &>;
-            
-            
-            { signal.size() } -> std::convertible_to<size_t>;
-        };
-
-        export
-        template <typename T>
-        constexpr bool is_signal_base_second
-                = requires (T signal, T::IdxType idx)
-        {
-            requires T::is_signal_base == true;
-            requires (T::is_writable == true || T::is_writable == false);
-
-            typename T::IdxType;
-            typename T::SampleType;
-
-            { delete new T };
-            { signal[idx] } -> std::convertible_to<typename T::SampleType>;
-            
-            { signal.size() } -> std::convertible_to<size_t>;
-        };
-
-        
-
-        export
-        template <typename T>
-        concept SignalBase = (is_signal_base_second<T> || is_signal_base_first<T>);
-
         export enum class PlottingKind {Simple, Interpolate};
 
         export
         template <typename T>
-        constexpr bool is_signal = requires(T signal, T::IdxType idx, std::optional<typename T::IdxType> idx1,
-        T::SampleType value, PlottingKind kind, const std::string & filename, const std::string & format) {
-            requires T::is_signal == true;
+        class SignalBase{
+        public:
+            using SampleType = T;
+            using IdxType = std::size_t;
+            constexpr static bool is_signal_base = true;
 
-            typename T::Base;
-            requires (is_signal_base_first<typename T::Base> || is_signal_base_second<typename T::Base>);
+            virtual T & operator[](size_t idx) = 0;
+            virtual T operator[](size_t idx) const = 0;
+            virtual size_t size() const = 0;
+            SignalBase(){}
+            virtual ~SignalBase(){}
+            void operator=(const SignalBase &) = delete;
+            SignalBase(const SignalBase & other){std::unreachable();}
+        };
 
-            typename T::IdxType;
-            requires std::is_same_v<typename T::IdxType, typename T::Base::IdxType>;
-
-            typename T::SampleType;
-            requires std::is_same_v<typename T::SampleType, typename T::Base::SampleType>;
-
-            { delete new T };
-            //{ signal[idx] } -> std::convertible_to<typename T::SampleType &>;
-            { signal.size() } -> std::convertible_to<size_t>;
-            { signal.interpolate(idx) } -> std::convertible_to<typename T::SampleType>;
-            //{ signal.findInterpolateUnimode(value, idx, idx) } -> std::convertible_to<typename T::IdxType>;
-            { signal.findMonotone(value, idx1, idx1)} -> std::convertible_to<typename T::IdxType>;
-            { signal.show(kind, filename) };
-            { signal.show(kind, filename, format) };
-        };  
-
-        export
-        template<typename T>
-        concept Signal = is_signal<T>;
-
+        export enum class SignalKind {Monotone, Stohastic, Harmonic, Smooth};
 
         export
         template <typename T>
-        constexpr bool is_signal_wrapper = requires{
-            requires is_signal<T> || std::is_same_v<GENERAL::Nil, T>;
+        class Signal {
+        public:
+            constexpr static bool is_signal = true;
+            using IdxType = size_t;
+            using SampleType = T;
+
+            SignalBase<T> * base = nullptr;
+            bool has_ovnership = false;
+
+            /*inline*/
+             T & operator[](size_t idx) {
+                return (*base)[idx];
+            }
+
+            /*inline*/
+            T operator[](size_t idx) const {
+                return (*static_cast<const SignalBase<T> *>(base))[idx];
+            }
+
+            /*inline*/
+            size_t size() const {
+                return base->size();
+            }
+
+            //template<std::convertible_to<SignalBase<T>> BaseT>
+            Signal() {
+            }
+
+            template <typename BaseT>
+            Signal(GENERAL::Tag<BaseT>){
+                base = new BaseT;
+                has_ovnership = true;
+            }
+
+            Signal(SignalBase<T> * base) { this->base = base;  }
+
+            virtual ~Signal() { if (has_ovnership) delete base; }
+            void operator=(const Signal &) = delete;
+
+            virtual T interpolate(double idx, SignalKind kind) const = 0;
+
+            virtual void show(PlottingKind kind){
+                if constexpr (GENERAL::is_complex<T>) {
+                    if (kind == PlottingKind::Interpolate){
+                        std::vector<double> plotting_data = {};
+                        int i = -size();
+                        while(i < static_cast<int>(size() * 2)){
+                            ++i;
+                            plotting_data.push_back(interpolate(static_cast<double>(i), SignalKind::Stohastic).real());
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::hold(matplot::on);
+                        plotting_data.clear();
+                        while(i < static_cast<int>(size() * 2)){
+                            ++i;
+                            plotting_data.push_back(interpolate(static_cast<double>(i), SignalKind::Stohastic).imag());
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::hold(matplot::off);
+                        matplot::show();
+                    }
+                    else if (kind == PlottingKind::Simple){
+                        std::vector<double> plotting_data = {};
+                        for (auto i = 0; i < base->size(); ++i){
+                            auto sample = (*base)[i];
+                            plotting_data.push_back(sample.real());
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::hold(matplot::on);
+                        plotting_data.clear();
+                        for (auto i = 0; i < base->size(); ++i){
+                            auto sample = (*base)[i];
+                            plotting_data.push_back(sample.imag());
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::hold(matplot::off);
+                        matplot::show();
+                    }
+                }
+                else{
+                    if (kind == PlottingKind::Interpolate){
+                        std::vector<SampleType> plotting_data = {};
+                        int i = -size();
+                        while(i < static_cast<int>(size() * 2)){
+                            ++i;
+                            plotting_data.push_back(interpolate(static_cast<double>(i), SignalKind::Stohastic));
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::show();
+                    }
+                    else if (kind == PlottingKind::Simple){
+                        std::vector<SampleType> plotting_data = {};
+                        for (auto i = 0; i < base->size(); ++i){
+                            auto sample = (*base)[i];
+                            plotting_data.push_back(sample);
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::show();
+                    }
+                }
+            }
+
+            void show() {
+                show(PlottingKind::Simple);
+            }
+
+            virtual void show(PlottingKind kind, const std::string & filename, const std::string & format) const {
+                if constexpr (GENERAL::is_complex<T>) {
+                    if (kind == PlottingKind::Interpolate){
+                        std::vector<double> plotting_data = {};
+                        int i = -size();
+                        while(i < static_cast<int>(size() * 2)){
+                            ++i;
+                            plotting_data.push_back(interpolate(static_cast<double>(i), SignalKind::Stohastic).real());
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::hold(matplot::on);
+                        plotting_data.clear();
+                        while(i < static_cast<int>(size() * 2)){
+                            ++i;
+                            plotting_data.push_back(interpolate(static_cast<double>(i), SignalKind::Stohastic).imag());
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::hold(matplot::off);
+                        matplot::show();
+                        matplot::save(filename, format);
+                    }
+                    else if (kind == PlottingKind::Simple){
+                        std::vector<double> plotting_data = {};
+                        for (auto i = 0; i < base->size(); ++i){
+                            auto sample = (*base)[i];
+                            plotting_data.push_back(sample.real());
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::hold(matplot::on);
+                        plotting_data.clear();
+                        for (auto i = 0; i < base->size(); ++i){
+                            auto sample = (*base)[i];
+                            plotting_data.push_back(sample.imag());
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::hold(matplot::off);
+                        matplot::show();
+                        matplot::save(filename, format);
+                    }
+                }
+                else{
+                    if (kind == PlottingKind::Interpolate){
+                        std::vector<SampleType> plotting_data = {};
+                        int i = -size();
+                        while(i < static_cast<int>(size() * 2)){
+                            ++i;
+                            plotting_data.push_back(interpolate(static_cast<double>(i), SignalKind::Stohastic));
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::show();
+                        matplot::save(filename, format);
+                    }
+                    else if (kind == PlottingKind::Simple){
+                        std::vector<SampleType> plotting_data = {};
+                        for (auto i = 0; i < base->size(); ++i){
+                            auto sample = (*base)[i];
+                            plotting_data.push_back(sample);
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::show();
+                        matplot::save(filename, format);
+                    }
+                }
+            }
+
+            virtual void show(PlottingKind kind, const std::string & filename) const {
+                if constexpr (GENERAL::is_complex<T>) {
+                    if (kind == PlottingKind::Interpolate){
+                        std::vector<double> plotting_data = {};
+                        int i = -size();
+                        while(i < static_cast<int>(size() * 2)){
+                            ++i;
+                            plotting_data.push_back(interpolate(static_cast<double>(i), SignalKind::Stohastic).real());
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::hold(matplot::on);
+                        plotting_data.clear();
+                        while(i < static_cast<int>(size() * 2)){
+                            ++i;
+                            plotting_data.push_back(interpolate(static_cast<double>(i), SignalKind::Stohastic).imag());
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::hold(matplot::off);
+                        matplot::show();
+                        matplot::save(filename);
+                    }
+                    else if (kind == PlottingKind::Simple){
+                        std::vector<double> plotting_data = {};
+                        for (auto i = 0; i < base->size(); ++i){
+                            auto sample = (*base)[i];
+                            plotting_data.push_back(sample.real());
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::hold(matplot::on);
+                        plotting_data.clear();
+                        for (auto i = 0; i < base->size(); ++i){
+                            auto sample = (*base)[i];
+                            plotting_data.push_back(sample.imag());
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::hold(matplot::off);
+                        matplot::show();
+                        matplot::save(filename);
+                    }
+                }
+                else{
+                    if (kind == PlottingKind::Interpolate){
+                        std::vector<SampleType> plotting_data = {};
+                        int i = -size();
+                        while(i < static_cast<int>(size() * 2)){
+                            ++i;
+                            plotting_data.push_back(interpolate(static_cast<double>(i), SignalKind::Stohastic));
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::show();
+                        matplot::save(filename);
+                    }
+                    else if (kind == PlottingKind::Simple){
+                        std::vector<SampleType> plotting_data = {};
+                        for (auto i = 0; i < base->size(); ++i){
+                            auto sample = (*base)[i];
+                            plotting_data.push_back(sample);
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::show();
+                        matplot::save(filename);
+                    }
+                }
+            }
+
         };
 
         export
-        template <typename T>
-        concept SignalWrapper = is_signal_wrapper<T>;
-    }
-
-    namespace GENERAL{
-        export
-        template <typename T>
-        constexpr bool is_rotator =
-                requires (T rotator, const T::DataType & data, T::OutType & out, T::RotorType rotor, T::AdditionalDataType & additional_data)
-        {
-            typename T::DataType;
-            typename T::OutType;
-            typename T::RotorType;
-            typename T::AdditionalDataType;
-
-            requires  (std::tuple_size<typename T::RotorType>::value == (std::tuple_size<typename T::DataType::IdxType>::value - 1));
-            requires (T::is_rotator == true);
-            requires is_signal<typename T::DataType>;
-            requires ! ONE_D::is_signal<typename T::DataType>;
-            requires ONE_D::is_signal<typename T::OutType>;
-            requires (T::OutType::is_writable == true);
-            requires is_signal_wrapper<typename T::AdditionalDataType>;
-
-            rotator.compute(data, out, rotor, additional_data);
-        };
-
-        export
-        template <typename T>
-        concept Rotator = is_rotator<T>;
-
-        export
-        template <typename T>
-        constexpr bool is_mode_extracor =
-                requires (T mode_extractor, const T::DataType & data, T::ModeType & out, T::AdditionalDataType & additional_data)
-        {
-            typename T::DataType;
-            typename T::ModeType;
-            typename T::AdditionalDataType;
-
-            requires (T::is_mode_extracor == true);
-            requires is_signal<typename T::DataType>;
-            requires is_signal<typename T::ModeType>;
-            requires is_signal_wrapper<typename T::AdditionalDataType>;
-            requires (T::ModeType::is_writable == true);
-
-            mode_extractor.compute(data, out, additional_data);
-        };
-
-        export
-        template<typename T>
-        concept ModeExtractor = is_mode_extracor<T>;
-
-        export
-        template <typename T>
-        constexpr bool is_mode_graber =
-                requires(T mode_graber, T::DataType & data, const T::ModeType & mode, T::AdditionalDataType & additional_data)
-        {
-            typename T::DataType;
-            typename T::ModeType;
-            typename T::AdditionalDataType;
-
-            requires T::is_mode_graber == true;
-            requires is_signal<typename T::DataType>;
-            requires is_signal<typename T::ModeType>;
-            requires (T::DataType::is_writable == true);
-            requires is_signal_wrapper<typename T::AdditionalDataType>;
-
-            mode_graber.compute(data, mode, additional_data);
-        };
-
-        export
-        template<typename T>
-        concept ModeGraber = is_mode_graber<T>;
-
-        export
-        template<typename T>
-        constexpr bool is_inst_freq_computer =
-                requires (T inst_freq_computer, const T::DataType & data, 
-                T::OutType & inst_freq, T::AdditionalDataType & additional_data)
-        {
-            typename T::DataType;
-            typename T::OutType;
-            typename T::AdditionalDataType;
-
-            requires T::is_inst_freq_computer == true;
-            requires is_signal<typename T::DataType>;
-            requires is_signal<typename T::InstFreqType>;
-            requires (T::OutType::is_writable == true);
-            requires is_signal_wrapper<typename T::AdditionalDataType>;
-
-            inst_freq_computer.compute(data, inst_freq, additional_data);
-        };
-
-        export
-        template<typename T>
-        constexpr bool is_filter = requires (T filter, const T::DataType & data, T::OutType & out, T::AdditionalDataType & additional_data)
-        {
-            typename T::DataType;
-            typename T::OutType;
-            typename T::InstFreqType;
-            typename T::AdditionalDataType;
-
-            requires T::is_filter == true;
-            requires is_signal<typename T::DataType>;
-            requires is_signal<typename T::OutType>;
-            requires is_signal<typename T::InstFreqType>;
-            requires is_signal_wrapper<typename T::AdditionalDataType>;
-
-            filter.compute(data, out, additional_data);
-        };
-
-        export
-        template<typename T>
-        concept Filter = is_filter<T>;
-
-        export
-        template<typename T>
-        constexpr bool is_ortogonal_component_solver =
-                requires(T solver, const T::DataType & data, T::InstFreqType & inst_freq, T::InstAmplType & inst_ampl,
-                        T::DataType & ort_component, bool is_inst_freq_ready, T::AdditionalDataType & additional_data)
-        {
-            typename T::DataType;
-            typename T::InstFreqType;
-            typename T::InstAmplType;
-            typename T::AdditionalDataType;
-
-            requires T::is_ortogonal_component_solver == true;
-            requires is_signal<typename T::DataType>;
-            requires is_signal<typename T::InstFreqType>;
-            requires is_signal<typename T::InstAmplType>;
-            requires is_signal_wrapper<typename T::AdditionalDataType>;
-
-            solver.compute(data, inst_freq, inst_ampl, ort_component, is_inst_freq_ready, additional_data);
-        };
-
-        export
-        template<typename T>
-        concept OrtogonalComponentSolver = is_ortogonal_component_solver<T>;
-    }
-
-    namespace ONE_D
-    {
-        export
-        template <typename T>
-        constexpr bool is_derivator = requires(T derivator, const T::DataType & data, T::DerivativeType & out,
-                T::AdditionalDataType & additional_data)
+        template <typename T, typename SampleType>
+        constexpr bool is_derivator = requires(T derivator, const Signal<SampleType> & data, Signal<SampleType> & out,
+                Signal<SampleType> * additional_data)
         {
             requires T::is_derivator == true;
             typename T::DataType;
             typename T::DerivativeType;
             typename T::AdditionalDataType;
 
-            requires is_signal<typename T::DataType>;
-            requires is_signal<typename T::DerivativeType>;
-            requires is_signal_wrapper<typename T::AdditionalDataType>;
-
             derivator.compute(data, out, additional_data);
         };
 
         export
-        template <typename T>
-        concept Derivator = is_derivator<T>;
+        template <typename T, typename SampleType>
+        concept Derivator = is_derivator<T, SampleType>;
 
         export
-        template <typename T>
-        constexpr bool is_integrator = requires(T integrator, const T::DataType & data, T::IntegralType & out,
-                T::AdditionalDataType & additional_data)
+        template <typename T, typename SampleType>
+        constexpr bool is_integrator = requires(T integrator, const Signal<SampleType> & data, Signal<SampleType> & out,
+                Signal<SampleType> * additional_data)
         {
             requires T::is_integrator == true;
             typename T::DataType;
             typename T::IntegralType;
             typename T::AdditionalDataType;
 
-            requires is_signal<typename T::DataType>;
-            requires is_signal<typename T::IntegralType>;
-            //requires (std::tuple_size_v<typename T::IntegralType::IdxType> == std::tuple_size_v<typename T::DataType::IdxType>);
-            requires is_signal_wrapper<typename T::AdditionalDataType>;
-
             integrator.compute(data, out, additional_data);
         };
 
         export
-        template <typename T>
-        concept Integrator = is_integrator<T>;
+        template <typename T, typename SampleType>
+        concept Integrator = is_integrator<T, SampleType>;
 
         export
-        template <typename T>
-        constexpr bool is_modes_extracor = requires (T modes_extractor, const T::DataType & data, T::ModeType & out,
-                T::AdditionalDataType & additional_data)
+        template <typename T, typename SampleType>
+        constexpr bool is_modes_extracor = requires (T modes_extractor, const Signal<SampleType> & data, Signal<SampleType> & out,
+                Signal<SampleType> * additional_data)
         {
             typename T::DataType;
             typename T::ModeType;
             typename T::AdditionalDataType;
 
-            requires (T::is_modes_extracor == true);
-            requires is_signal<typename T::DataType>;
-            requires is_signal<typename T::ModeType>;
-            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
             modes_extractor.compute(data, out, additional_data);
         };
 
         export
-        template<typename T>
-        concept ModeExtractor = is_modes_extracor<T>;
+        template<typename T, typename SampleType>
+        concept ModeExtractor = is_modes_extracor<T, SampleType>;
 
         export 
-        template <typename T>
+        template <typename T, typename SampleType>
         constexpr bool is_phase_computer
-                = requires (T phase_computer, const T::DataType & data,
-                    T::OutType & inst_freq, T::AdditionalDataType & additional_data)
+                = requires (T phase_computer, const Signal<SampleType> & data,
+                    Signal<SampleType> & inst_freq, Signal<SampleType> * additional_data)
         {
             typename T::DataType;
             typename T::OutType;
             typename T::AdditionalDataType;
             requires T::is_phase_computer == true;
             
-            requires is_signal<typename T::DataType>;
-            requires is_signal<typename T::OutType>;
-            requires is_signal_wrapper<typename T::AdditionalDataType>;
-            
             phase_computer.compute(data, inst_freq, additional_data);
         };
 
         export
-        template<typename T>
-        concept PhaseComputer = is_phase_computer<T>;
+        template<typename T, typename SampleType>
+        concept PhaseComputer = is_phase_computer<T, SampleType>;
 
         export
-        template <typename T>
-        constexpr bool is_mode_graber = requires(T mode_graber, T::DataType & data, const T::ModeType & mode,
-                T::AdditionalDataType & additional_data)
+        template <typename T, typename SampleType>
+        constexpr bool is_mode_graber = requires(T mode_graber, Signal<SampleType> & data, const Signal<SampleType> & mode,
+                Signal<SampleType> * additional_data)
         {
             typename T::DataType;
             typename T::ModeType;
             typename T::AdditionalDataType;
             requires T::is_mode_graber == true;
-            requires is_signal<typename T::DataType>;
-            requires is_signal<typename T::ModeType>;
-            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
             mode_graber.compute(data, mode, additional_data);
         };
 
         export
-        template<typename T>
-        concept ModeGraber = is_mode_graber<T>;
+        template<typename T, typename SampleType>
+        concept ModeGraber = is_mode_graber<T, SampleType>;
 
         export
-        template<typename T>
+        template<typename T, typename SampleType>
         constexpr bool is_inst_freq_computer =
-                requires (T inst_freq_computer, const T::DataType & data, T::OutType & inst_freq,
-                T::AdditionalDataType & additional_data)
+                requires (T inst_freq_computer, const Signal<SampleType> & data, Signal<SampleType> & inst_freq,
+                Signal<SampleType> * additional_data)
         {
             typename T::DataType;
             typename T::OutType;
             typename T::AdditionalDataType;
 
             requires T::is_inst_freq_computer == true;
-            requires is_signal<typename T::DataType>;
-            requires is_signal<typename T::OutType>;
-            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
+            { inst_freq_computer.is_phase_based() } -> std::convertible_to<bool>;
             inst_freq_computer.compute(data, inst_freq, additional_data);
         };
 
         export
-        template<typename T>
-        concept InstFreqComputer = is_inst_freq_computer<T>;
+        template<typename T, typename SampleType>
+        concept InstFreqComputer = is_inst_freq_computer<T, SampleType>;
 
         export
-        template<typename T>
+        template<typename T, typename SampleType>
         constexpr bool is_inst_ampl_computer =
-                requires (T inst_ampl_computer, const T::DataType & data, T::OutType & inst_ampl,
-                T::AdditionalDataType & additional_data)
+                requires (T inst_ampl_computer, const Signal<SampleType> & data, Signal<SampleType> & inst_ampl,
+                Signal<SampleType> * additional_data)
         {
             typename T::DataType;
             typename T::OutType;
             typename T::AdditionalDataType;
 
             requires T::is_inst_freq_computer == true;
-            requires is_signal<typename T::DataType>;
-            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
             inst_ampl_computer.compute(data, inst_ampl, additional_data);
         };
 
         export
-        template<typename T>
-        concept InstAmplComputer = is_inst_ampl_computer<T>;
-
+        template<typename T, typename SampleType>
+        concept InstAmplComputer = is_inst_ampl_computer<T, SampleType>;
 
         export
-        template<typename T>
-        constexpr bool is_filter = requires (T filter, const T::DataType & data, T::OutType & out,
-                T::AdditionalDataType & additional_data)
+        template<typename T, typename SampleType>
+        constexpr bool is_filter = requires (T filter, const Signal<SampleType> & data, Signal<SampleType> & out,
+                Signal<SampleType> * additional_data)
         {
             typename T::DataType;
             typename T::OutType;
             typename T::AdditionalDataType;
 
             requires T::is_filter == true;
-            requires is_signal<typename T::DataType>;
-            requires is_signal<typename T::OutType>;
-            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
             filter.compute(data, out, additional_data);
         };
 
         export
-        template<typename T>
-        concept Filter = is_filter<T>;
+        template<typename T, typename SampleType>
+        concept Filter = is_filter<T, SampleType>;
+
 
         export
-        template<typename T>
-        constexpr bool is_ortogonal_component_solver =
-                requires(T solver, const T::DataType & data, T::InstFreqType & inst_freq,
-                        T::InstAmplType & inst_ampl, T::DataType & ort_component, bool is_inst_freq_ready,
-                        T::AdditionalDataType & additional_data)
-        {
-            typename T::DataType;
-            typename T::InstFreqType;
-            typename T::InstAmplType;
-            typename T::AdditionalDataType;
-
-            requires T::is_ortogonal_component_solver == true;
-            requires is_signal<typename T::DataType>;
-            requires is_signal<typename T::InstFreqType>;
-            requires is_signal<typename T::InstAmplType>;
-            requires is_signal_wrapper<typename T::AdditionalDataType>;
-
-            solver.compute(data, inst_freq, inst_ampl, ort_component, is_inst_freq_ready, additional_data);
-        };
-
-        export
-        template<typename T>
-        concept OrtogonalComponentSolver = is_ortogonal_component_solver<T>;
-
-        export
-        template<typename T>
+        template<typename T, typename SampleType>
         constexpr bool is_signal_approximator =
                 requires(T & approximator, T::Loss loss, T::StopPoint stop_point, T::ApproxModel model, T::IdxType idx, T::SampleType max_error){
             typename T::IdxType;

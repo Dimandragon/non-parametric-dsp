@@ -19,19 +19,20 @@ namespace NP_DSP{
         namespace APPROX{
             export enum class FSApproxKind {Simple, Positive};
             export
-            template<Signal SignalT, typename LossFunc, typename StopPointFunc, FSApproxKind kind_v, typename BySampleLoss>
+            template<typename T, typename LossFunc, typename StopPointFunc, FSApproxKind kind_v, typename BySampleLoss>
             struct FourierSeriesBased{
-                using SignalType = SignalT;
-                using SampleType = SignalT::SampleType;
+                using SignalType = Signal<T>;
+                using SignalT = SignalType;
+                using SampleType = T;
                 using Loss = LossFunc;
                 using StopPoint = StopPointFunc;
-                using IdxType = SignalT::IdxType;
+                using IdxType = typename SignalT::IdxType;
                 static constexpr bool is_signal_approximator = true;
 
                 static constexpr FSApproxKind kind = kind_v;
 
                 Loss * loss;
-                BySampleLoss * bySampleLoss = NULL;
+                BySampleLoss * bySampleLoss = nullptr;
 
                 StopPoint * stopPont;
                 SignalType * signal;
@@ -41,11 +42,10 @@ namespace NP_DSP{
                 int polynoms_count_on_tile;
                 int tile_size;
 
-                std::vector<std::complex<SampleType>> fourier_series;
-                std::vector<std::complex<SampleType>> approximated_data;
+                std::vector<std::complex<T>> fourier_series;
+                std::vector<std::complex<T>> approximated_data;
 
                 SampleType max_value = 10000000000000000000000000.;
-
 
                 FourierSeriesBased(Loss & lossFn, SignalType & signal_in, StopPointFunc & stop_point){
                     loss = &lossFn;
@@ -58,7 +58,7 @@ namespace NP_DSP{
                     tile_size = signal_in.size();
                 }
 
-                size_t mirrorIdx(size_t i){
+                size_t mirrorIdx(size_t const i) const {
                     return i / tile_size * tile_size + i / tile_size * tile_size + tile_size - i;
                 }
 
@@ -80,7 +80,7 @@ namespace NP_DSP{
                     UTILITY_MATH::ifftc2c(fourier_series, approximated_data, approximated_data.size() - pad, pad);
                 }
 
-                void computeTile(size_t idx){
+                void computeTile(size_t const idx){
                     auto i = idx/tile_size;
                     auto pad = i * tile_size;
                     if (approximated_data.size() > pad + tile_size){
@@ -91,13 +91,13 @@ namespace NP_DSP{
                     }
                 }
 
-                void setApproxOrderRatio(double ratio){
+                void setApproxOrderRatio(double const ratio){
                     polynoms_count_on_tile = static_cast<int>(static_cast<double>(tile_size) * 0.5 * ratio);
                 }
 
                 std::complex<SampleType> computeSample(IdxType idx){
                     std::complex<SampleType> accum = {static_cast<SampleType>(0), static_cast<SampleType>(0)};
-                    
+
                     if (idx<=approximated_data.size() && idx >= 0){
                         auto tile_first_idx = idx / tile_size * tile_size;
                         if (tile_first_idx + tile_size < approximated_data.size()){
@@ -107,7 +107,7 @@ namespace NP_DSP{
                             }
                         }
                         else{
-                            SampleType w = std::numbers::pi * 2.0 * static_cast<SampleType>(idx) / 
+                            SampleType w = std::numbers::pi * 2.0 * static_cast<SampleType>(idx) /
                                 static_cast<SampleType>(approximated_data.size() - tile_first_idx);
                             for (auto i = 0; i < approximated_data.size() - tile_first_idx; i++){
                                 accum+= fourier_series[i + tile_first_idx]*std::complex<SampleType>{std::cos(w*i), std::sin(w*i)};
@@ -116,7 +116,7 @@ namespace NP_DSP{
                     }
                     else if (idx > approximated_data.size()){
                         auto tile_first_idx = approximated_data.size() / tile_size * tile_size;
-                        SampleType w = std::numbers::pi * 2.0 * static_cast<SampleType>(idx) / 
+                        SampleType w = std::numbers::pi * 2.0 * static_cast<SampleType>(idx) /
                                 static_cast<SampleType>(approximated_data.size() - tile_first_idx);
                         for (auto i = 0; i < approximated_data.size() - tile_first_idx; i++){
                             accum+= fourier_series[i + tile_first_idx]*std::complex<SampleType>{std::cos(w*i), std::sin(w*i)};
@@ -124,21 +124,21 @@ namespace NP_DSP{
                     }
                     else{
                         if (approximated_data.size() > tile_size){
-                            SampleType w = std::numbers::pi * 2.0 * static_cast<SampleType>(idx) / 
+                            SampleType w = std::numbers::pi * 2.0 * static_cast<SampleType>(idx) /
                                 static_cast<SampleType>(tile_size);
                             for (auto i = 0; i < tile_size; i++){
                                 accum+= fourier_series[i]*std::complex<SampleType>{std::cos(w*i), std::sin(w*i)};
                             }
                         }
                         else{
-                            SampleType w = std::numbers::pi * 2.0 * static_cast<SampleType>(idx) / 
+                            SampleType w = std::numbers::pi * 2.0 * static_cast<SampleType>(idx) /
                                 static_cast<SampleType>(approximated_data.size());
                             for (auto i = 0; i < approximated_data.size(); i++){
                                 accum+= fourier_series[i]*std::complex<SampleType>{std::cos(w*i), std::sin(w*i)};
                             }
                         }
                     }
-                    
+
                     return accum;
                 }
 
@@ -280,7 +280,7 @@ namespace NP_DSP{
                             return loss4;
                         };
 
-                        auto trigonometric_sample = ONE_D::UTILITY_MATH::convertFSampleC2T(fourier_series[i]);
+                        auto trigonometric_sample = UTILITY_MATH::convertFSampleC2T(fourier_series[i]);
 
                         auto theta_max = trigonometric_sample.second + std::numbers::pi/10.0;
                         auto theta_central = trigonometric_sample.second;
@@ -301,25 +301,25 @@ namespace NP_DSP{
                         if constexpr (CONFIG::debug){
                             std::string mark = "end compute first losses";
                             IC(mark);
-                        
+
                             IC(theta_min, left_loss, theta_central, central_loss, theta_max, right_loss);
                         }
-                        
+
                         auto period_opt_iter = 0;
 
                         if constexpr (CONFIG::debug){
                             std::string mark = "start optimize period";
-                            IC(mark); 
+                            IC(mark);
                         }
-                        
 
-                        while (!((*stopPont)(std::abs(right_loss - central_loss) + std::abs(left_loss - central_loss) , *this))) {
+
+                        while (!(*stopPont)(std::abs(right_loss - central_loss) + std::abs(left_loss - central_loss) , *this)) {
                             if constexpr (CONFIG::debug){
                                 IC(period_opt_iter,left_loss, central_loss, right_loss, theta_min, theta_central, theta_max);
                                 IC(right_loss-central_loss, left_loss-central_loss, right_loss-left_loss);
                                 IC(theta_central - theta_min, theta_max-theta_central);
                             }
-                            
+
                             auto left_diff = left_loss - central_loss;
                             auto right_diff = right_loss - central_loss;
                             if (left_diff > 0 && right_diff <=0) {
@@ -377,11 +377,11 @@ namespace NP_DSP{
                             period_opt_iter++;
                         }
                         trigonometric_sample.second = theta_central;
-                        
+
 
                         if constexpr (CONFIG::debug){
                             std::string mark = "start optimize ampl";
-                            IC(mark);   
+                            IC(mark);
                         }
                         SampleType ampl_twenty_procent = ampl * 0.2;
                         SampleType ampl_left = ampl;
@@ -406,14 +406,14 @@ namespace NP_DSP{
                         auto loss_central = check_loss(trigonometric_sample);
                         auto ampl_opt_iter = 0;
                         //while(!(*stopPont)(std::abs(ampl_right - ampl_left), *this)) {
-                        auto errors_counter = 0; 
-                        while (!((*stopPont)(std::abs(loss_right - loss_central) + std::abs(loss_left - loss_central), *this))) {
+                        auto errors_counter = 0;
+                        while (!(*stopPont)(std::abs(loss_right - loss_central) + std::abs(loss_left - loss_central), *this)) {
                             if constexpr (CONFIG::debug){
                                 IC(ampl_opt_iter, loss_left, loss_central, loss_right, ampl_left, ampl_central, ampl_right);
                                 IC(loss_right-loss_central, loss_left-loss_central, loss_right-loss_left);
                                 IC(ampl_central - ampl_left, ampl_right - ampl_central);
                             }
-                            
+
                             auto left_diff = loss_left-loss_central;
                             auto right_diff = loss_right-loss_central;
                             if(left_diff > 0 && right_diff <=0) {
@@ -508,17 +508,17 @@ namespace NP_DSP{
                                     if constexpr (CONFIG::debug){
                                         IC(left_diff, loss_left-loss_central, right_diff, loss_right-loss_central);
                                     }
-                                    
+
                                     errors_counter++;
                                     if constexpr (CONFIG::debug){
                                         IC(errors_counter);
                                     }
-                                    
+
                                     if (errors_counter > 10){
                                         if constexpr (CONFIG::debug){
                                             for(;;){}
                                         }
-                                        
+
                                     }
                                 }
                                 else{
@@ -542,7 +542,7 @@ namespace NP_DSP{
                         else{
                             trigonometric_sample.first = ampl_left;
                         }
-                        
+
                         check_loss(trigonometric_sample);
                     }
                 }
@@ -550,14 +550,11 @@ namespace NP_DSP{
                 void train() {
                     computeData();
                     for (auto i = 0; i < fourier_series.size(); i++) {
-                        // сделать это по тайлам
                         if (i % tile_size > tile_size/2)
                         {
-                            //auto idx_mirror = i / tile_size * tile_size + i / tile_size * tile_size + tile_size - i;
-                            //fourier_series[i] = {fourier_series[idx_mirror].real() / 2.0, -fourier_series[idx_mirror].imag() / 2.0};
-                            //fourier_series[idx_mirror] = fourier_series[idx_mirror] / 2.0;
                             continue;
                         }
+
                         if (i % tile_size >= polynoms_count_on_tile){
                             continue;
                         }
@@ -568,20 +565,19 @@ namespace NP_DSP{
                             IC(mark);
                             IC(i);
                         }
-                        
+
                         if constexpr (CONFIG::debug){
                             std::string mark = "compute first losses";
-                            IC(mark); 
+                            IC(mark);
                         }
 
                         auto check_loss = [&](std::pair<SampleType, SampleType> data){
                             auto complex_sample = UTILITY_MATH::convertFSampleT2C<SampleType>(data);
                             fourier_series[i] = complex_sample;
-                            //applyMirror(i);
                             computeTile(i);
                             SampleType loss1 = 0.;
                             if (bySampleLoss) {
-                                size_t pad = (i / tile_size) * tile_size;
+                                const size_t pad = i / tile_size * tile_size;
                                 for (auto idx = 0; idx < tile_size; idx++){
                                     if (idx + pad >= approximated_data.size()){
                                         continue;
@@ -593,11 +589,10 @@ namespace NP_DSP{
                                 loss1 = (*loss)(*this);
                             }
                             fourier_series[i] = {complex_sample.real(), -complex_sample.imag()};
-                            //applyMirror(i);
                             computeTile(i);
                             SampleType loss2 = 0.;
                             if (bySampleLoss) {
-                                size_t pad = i / tile_size * tile_size;
+                                const size_t pad = i / tile_size * tile_size;
                                 for (auto idx = 0; idx < tile_size; idx++){
                                     if (idx + pad >= approximated_data.size()){
                                         continue;
@@ -609,11 +604,10 @@ namespace NP_DSP{
                                 loss2 = (*loss)(*this);
                             }
                             fourier_series[i] = {-complex_sample.real(), complex_sample.imag()};
-                            //applyMirror(i);
                             computeTile(i);
                             SampleType loss3 = 0.;
                             if (bySampleLoss) {
-                                size_t pad = i / tile_size * tile_size;
+                                const size_t pad = i / tile_size * tile_size;
                                 for (auto idx = 0; idx < tile_size; idx++){
                                     if (idx + pad >= approximated_data.size()){
                                         continue;
@@ -625,11 +619,10 @@ namespace NP_DSP{
                                 loss3 = (*loss)(*this);
                             }
                             fourier_series[i] = {-complex_sample.real(), -complex_sample.imag()};
-                            //applyMirror(i);
                             computeTile(i);
                             SampleType loss4 = 0.;
                             if (bySampleLoss) {
-                                size_t pad = i / tile_size * tile_size;
+                                const size_t pad = i / tile_size * tile_size;
                                 for (auto idx = 0; idx < tile_size; idx++){
                                     if (idx + pad >= approximated_data.size()){
                                         continue;
@@ -643,25 +636,21 @@ namespace NP_DSP{
 
                             if (loss1 <= loss2 && loss1 <= loss3 && loss1 <= loss4){
                                 fourier_series[i] = complex_sample;
-                                //applyMirror(i);
                                 computeTile(i);
                                 return loss1;
                             }
                             if (loss2 <= loss1 && loss2 <= loss3 && loss2 <= loss4){
                                 fourier_series[i] = {complex_sample.real(), -complex_sample.imag()};
-                                //applyMirror(i);
                                 computeTile(i);
                                 return loss2;
                             }
                             if (loss3 <= loss2 && loss3 <= loss1 && loss3 <= loss4){
                                 fourier_series[i] = {-complex_sample.real(), complex_sample.imag()};
-                                //applyMirror(i);
                                 computeTile(i);
                                 return loss3;
                             }
 
                             fourier_series[i] = {-complex_sample.real(), -complex_sample.imag()};
-                            //applyMirror(i);
                             computeTile(i);
                             return loss4;
                         };
@@ -673,7 +662,7 @@ namespace NP_DSP{
                         if constexpr (kind == FSApproxKind::Positive){
                             if (i % tile_size != 0){
                                 auto thr_sample = UTILITY_MATH::convertFSampleC2T<SampleType>(fourier_series[i/tile_size * tile_size]);
-                            
+
                                 max_ampl = thr_sample.first * std::cos(thr_sample.second);
                             }
                         }
@@ -684,17 +673,17 @@ namespace NP_DSP{
                         if constexpr (CONFIG::debug){
                             std::string mark = "end compute first losses";
                             IC(mark);
-                        
+
                             IC(theta_min, left_loss, theta_central, central_loss, theta_max, right_loss);
                         }
-                        
+
                         auto period_opt_iter = 0;
 
                         if constexpr (CONFIG::debug){
                             std::string mark = "start optimize period";
-                            IC(mark); 
+                            IC(mark);
                         }
-                        
+
 
                         while (!((*stopPont)(std::abs(right_loss - central_loss) + std::abs(left_loss - central_loss) , *this))) {
                             if constexpr (CONFIG::debug){
@@ -702,7 +691,7 @@ namespace NP_DSP{
                                 IC(right_loss-central_loss, left_loss-central_loss, right_loss-left_loss);
                                 IC(theta_central - theta_min, theta_max-theta_central);
                             }
-                            
+
                             auto left_diff = left_loss - central_loss;
                             auto right_diff = right_loss - central_loss;
                             if (left_diff > 0 && right_diff <=0) {
@@ -760,13 +749,13 @@ namespace NP_DSP{
                             period_opt_iter++;
                         }
                         trigonometric_sample.second = theta_central;
-                        
+
 
                         if constexpr (CONFIG::debug){
                             std::string mark = "start optimize ampl";
-                            IC(mark);   
+                            IC(mark);
                         }
-                        
+
                         SampleType ampl_left = 0.0;
                         SampleType ampl_right = max_value;
                         if constexpr (kind == FSApproxKind::Positive){
@@ -782,14 +771,14 @@ namespace NP_DSP{
                         trigonometric_sample.first = ampl_central;
                         auto loss_central = check_loss(trigonometric_sample);
                         auto ampl_opt_iter = 0;
-                        auto errors_counter = 0; 
+                        auto errors_counter = 0;
                         while (!((*stopPont)(std::abs(loss_right - loss_central) + std::abs(loss_left - loss_central), *this))) {
                             if constexpr (CONFIG::debug){
                                 IC(ampl_opt_iter, loss_left, loss_central, loss_right, ampl_left, ampl_central, ampl_right);
                                 IC(loss_right-loss_central, loss_left-loss_central, loss_right-loss_left);
                                 IC(ampl_central - ampl_left, ampl_right - ampl_central);
                             }
-                            
+
                             auto left_diff = loss_left-loss_central;
                             auto right_diff = loss_right-loss_central;
                             if(left_diff > 0 && right_diff <=0) {
@@ -879,22 +868,21 @@ namespace NP_DSP{
                                     loss_central = check_loss(trigonometric_sample);
                                 }
                             }
-                            if (left_diff == (loss_left-loss_central)){
+                            if (left_diff == loss_left-loss_central){
                                 if (right_diff == (loss_right-loss_central)){
                                     if constexpr (CONFIG::debug){
                                         IC(left_diff, loss_left-loss_central, right_diff, loss_right-loss_central);
                                     }
-                                    
+
                                     errors_counter++;
                                     if constexpr (CONFIG::debug){
                                         IC(errors_counter);
                                     }
-                                    
+
                                     if (errors_counter > 10){
                                         if constexpr (CONFIG::debug){
                                             for(;;){}
                                         }
-                                        
                                     }
                                 }
                                 else{
@@ -925,13 +913,12 @@ namespace NP_DSP{
                         else{
                             trigonometric_sample.first = ampl_left;
                         }
-                        
+
                         check_loss(trigonometric_sample);
-                        //show(PlottingKind::Simple);
                     }
                 }
 
-                void show(PlottingKind kind){
+                void show(const PlottingKind kind){
                     is_actual = false;
                     if (kind == PlottingKind::Simple){
                         std::vector<SampleType> plotting_data = {};
@@ -943,7 +930,7 @@ namespace NP_DSP{
                     }
                 }
 
-                void show(PlottingKind kind, const std::string & filename, const std::string & format){
+                void show(const PlottingKind kind, const std::string & filename, const std::string & format){
                     is_actual = false;
                     if (kind == PlottingKind::Simple){
                         std::vector<SampleType> plotting_data = {};
@@ -956,7 +943,7 @@ namespace NP_DSP{
                     }
                 }
 
-                void show(PlottingKind kind, const std::string & filename){
+                void show(const PlottingKind kind, const std::string & filename){
                     is_actual = false;
                     if (kind == PlottingKind::Simple){
                         std::vector<SampleType> plotting_data = {};

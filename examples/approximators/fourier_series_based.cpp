@@ -41,7 +41,8 @@ int incr(int & point){
 
 int main(){
     int point = 0;
-    NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> signal1;
+    auto signal1 = NP_DSP::ONE_D::GenericSignal<double, true>
+        (NP_DSP::GENERAL::Tag<NP_DSP::ONE_D::SimpleVecWrapper<double>>{});
     using SignalT = decltype(signal1);
     //if (len == 100) fs[51].re == fs[49].re, fs[51].im = -fs[49].im; fs[50]is uniq
     //if len == 101 its 50 and 51
@@ -49,12 +50,13 @@ int main(){
     //if 10 then 4 and 6
     //if 11 then 5 and 6
     for (auto i = 0; i < 102; i++){
-        signal1.base->vec->push_back(0.);
+        static_cast<NP_DSP::ONE_D::SimpleVecWrapper<double> *>(signal1.base)->vec->push_back(0.);
     }
     createFill(signal1);
 
     signal1.show(NP_DSP::ONE_D::PlottingKind::Simple, "/home/dmitry/projects/non-parametric-dsp/examples/approximators/images/signal1.svg");
-    SignalT signal2;
+    auto signal2 = NP_DSP::ONE_D::GenericSignal<double, true>
+        (NP_DSP::GENERAL::Tag<NP_DSP::ONE_D::SimpleVecWrapper<double>>{});
     auto error = [&](auto & approximator){
         approximator.is_actual = false;
         auto accum = 0.;
@@ -77,7 +79,7 @@ int main(){
         }
     };
     
-    NP_DSP::ONE_D::APPROX::FourierSeriesBased<SignalT, decltype(error), decltype(stopPoint),
+    NP_DSP::ONE_D::APPROX::FourierSeriesBased<double, decltype(error), decltype(stopPoint),
         NP_DSP::ONE_D::APPROX::FSApproxKind::Simple, decltype(bySampleError)> approximator(error, signal1, stopPoint);
     approximator.setApproxOrderRatio(1.);
     approximator.tile_size = 5;
@@ -85,7 +87,7 @@ int main(){
     approximator.train();
     approximator.is_actual = false;
     for (auto i = 0; i < signal1.size(); i++){
-        signal2.base->vec->push_back(approximator.compute(i));
+        static_cast<NP_DSP::ONE_D::SimpleVecWrapper<double> *>(signal2.base)->vec->push_back(approximator.compute(i));
     }
 
     
