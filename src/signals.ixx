@@ -132,7 +132,7 @@ namespace NP_DSP::ONE_D {
         SizeExpr* size_expression;
 
         ExpressionWrapper(DataValExpr& val_expr, SizeExpr& size_expr) {
-            IC(&val_expr, &size_expr);
+            //IC(&val_expr, &size_expr);
             val_expression = &val_expr;
             size_expression = &size_expr;
         }
