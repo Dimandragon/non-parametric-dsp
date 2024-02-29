@@ -2,7 +2,6 @@ add_rules("mode.debug", "mode.release")
 
 set_languages("c++23")
 
-
 --xmake f --cxx=clang++ --cc=clang -m debug --debugger=lldb-16
 --xmake project -k compile_commands
 
@@ -51,6 +50,7 @@ target("non-parametric_dsp")
     add_deps("pocketfft")
     add_deps("matplot++_external")
     add_deps("icecream")
+    add_cxxflags("-O3")
 
 
 target("fft-example")

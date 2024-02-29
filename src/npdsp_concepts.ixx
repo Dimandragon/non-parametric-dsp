@@ -47,10 +47,26 @@ namespace NP_DSP{
             using IdxType = std::size_t;
             constexpr static bool is_signal_base = true;
 
-            virtual T & operator[](size_t idx) = 0;
-            virtual T operator[](size_t idx) const = 0;
-            virtual size_t size() const = 0;
+            std::function<T&(size_t idx)> ref_fn;
+            std::function<T(size_t idx)> val_fn;
+            std::function<size_t()> size_fn;
+
+            __attribute__((flatten)) inline
+            T & operator[](size_t idx) {
+                return ref_fn(idx);
+            }
+
+            __attribute__((flatten)) inline
+            T operator[](size_t idx) const {
+                return val_fn(idx);
+            }
+
+            __attribute__((flatten)) inline
+            size_t size() {
+                return size_fn();
+            }
             SignalBase(){}
+
             virtual ~SignalBase(){}
             void operator=(const SignalBase &) = delete;
             SignalBase(const SignalBase & other){std::unreachable();}
@@ -69,24 +85,23 @@ namespace NP_DSP{
             SignalBase<T> * base = nullptr;
             bool has_ovnership = false;
 
-            /*inline*/
-             T & operator[](size_t idx) {
+            __attribute__((flatten)) inline
+            T & operator[](size_t idx) {
                 return (*base)[idx];
             }
 
-            /*inline*/
+            __attribute__((flatten)) inline
             T operator[](size_t idx) const {
                 return (*static_cast<const SignalBase<T> *>(base))[idx];
             }
 
-            /*inline*/
+            __attribute__((flatten)) inline
             size_t size() const {
                 return base->size();
             }
 
             //template<std::convertible_to<SignalBase<T>> BaseT>
-            Signal() {
-            }
+            Signal() {}
 
             template <typename BaseT>
             Signal(GENERAL::Tag<BaseT>){
