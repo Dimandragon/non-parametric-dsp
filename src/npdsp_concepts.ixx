@@ -37,36 +37,116 @@ namespace NP_DSP{
     }
 
     namespace ONE_D{
+        export
+        template <typename T>
+        constexpr bool is_signal_base_first
+                = requires (T signal, T::IdxType idx)
+        {
+            requires T::is_signal_base == true;
+            //requires T::is_writable == true || T::is_writable == false;
+
+            typename T::IdxType;
+            typename T::SampleType ;
+
+            //{ delete new T };
+            //{ signal[idx] } -> std::convertible_to<typename T::SampleType &>;
+
+
+            { signal.size() } -> std::convertible_to<size_t>;
+        };
+
+        export
+        template <typename T>
+        constexpr bool is_signal_base_second
+                = requires (T signal, T::IdxType idx)
+        {
+            requires T::is_signal_base == true;
+            requires (T::is_writable == true || T::is_writable == false);
+
+            typename T::IdxType;
+            typename T::SampleType;
+
+            { delete new T };
+            { signal[idx] } -> std::convertible_to<typename T::SampleType>;
+
+            { signal.size() } -> std::convertible_to<size_t>;
+        };
+
+
+
+        export
+        template <typename T>
+        concept SignalBase = is_signal_base_second<T> || is_signal_base_first<T>;
+
+        export enum class SignalKind {Monotone, Stohastic, Harmonic, Smooth};
         export enum class PlottingKind {Simple, Interpolate};
 
         export
         template <typename T>
-        class SignalBase{
+        constexpr bool is_signal = requires(T signal, size_t idx, std::optional<typename T::IdxType> idx1,
+        T::SampleType value, PlottingKind kind, const std::string & filename, const std::string & format, SignalKind s_kind) {
+            requires T::is_signal == true;
+
+            //typename T::Base;
+            //requires is_signal_base_first<typename T::Base> || is_signal_base_second<typename T::Base>;
+
+            typename T::IdxType;
+            requires std::is_same_v<typename T::IdxType, typename T::Base::IdxType>;
+
+            typename T::SampleType;
+            requires std::is_same_v<typename T::SampleType, typename T::Base::SampleType>;
+
+            //{ delete new T };
+            //{ signal[idx] } -> std::convertible_to<typename T::SampleType &>;
+            { signal.size() } -> std::convertible_to<size_t>;
+            { signal.interpolate(idx, s_kind) } -> std::convertible_to<typename T::SampleType>;
+            //{ signal.findInterpolateUnimode(value, idx, idx) } -> std::convertible_to<typename T::IdxType>;
+            //{ signal.findMonotone(value, idx1, idx1)} -> std::convertible_to<typename T::IdxType>;
+            { signal.show(kind, filename) };
+            { signal.show(kind, filename, format) };
+        };
+
+        export
+        template<typename T>
+        concept Signal = is_signal<T>;
+
+        export
+        template <typename T>
+        constexpr bool is_signal_wrapper = requires{
+            requires is_signal<T> || std::is_same_v<GENERAL::Nil, T>;
+        };
+
+        export
+        template <typename T>
+        concept SignalWrapper = is_signal_wrapper<T>;
+
+        export
+        template <typename T>
+        class SignalBasePrototype{
         public:
             using SampleType = T;
-            using IdxType = std::size_t;
+            using IdxType = size_t;
             constexpr static bool is_signal_base = true;
 
             virtual T & operator[](size_t idx) = 0;
             virtual T operator[](size_t idx) const = 0;
             virtual size_t size() const = 0;
-            SignalBase(){}
-            virtual ~SignalBase(){}
-            void operator=(const SignalBase &) = delete;
-            SignalBase(const SignalBase & other){std::unreachable();}
+            SignalBasePrototype(){}
+            virtual ~SignalBasePrototype(){}
+            void operator=(const SignalBasePrototype &) = delete;
+            SignalBasePrototype(const SignalBasePrototype & other){std::unreachable();}
         };
-
-        export enum class SignalKind {Monotone, Stohastic, Harmonic, Smooth};
 
         export
         template <typename T>
-        class Signal {
+        class SignalPrototype {
         public:
             constexpr static bool is_signal = true;
             using IdxType = size_t;
             using SampleType = T;
+            using Base = SignalBasePrototype<T>;
 
-            SignalBase<T> * base = nullptr;
+            SignalBasePrototype<T> * base = nullptr;
             bool has_ovnership = false;
 
             /*inline*/
@@ -76,7 +156,7 @@ namespace NP_DSP{
 
             /*inline*/
             T operator[](size_t idx) const {
-                return (*static_cast<const SignalBase<T> *>(base))[idx];
+                return (*static_cast<const SignalBasePrototype<T> *>(base))[idx];
             }
 
             /*inline*/
@@ -85,19 +165,20 @@ namespace NP_DSP{
             }
 
             //template<std::convertible_to<SignalBase<T>> BaseT>
-            Signal() {
+            SignalPrototype() {
             }
 
             template <typename BaseT>
-            Signal(GENERAL::Tag<BaseT>){
+            SignalPrototype(GENERAL::Tag<BaseT>){
+                base = new BaseT;
                 base = new BaseT;
                 has_ovnership = true;
             }
 
-            Signal(SignalBase<T> * base) { this->base = base;  }
+            SignalPrototype(SignalBasePrototype<T> * base) { this->base = base;  }
 
-            virtual ~Signal() { if (has_ovnership) delete base; }
-            void operator=(const Signal &) = delete;
+            virtual ~SignalPrototype() { if (has_ovnership) delete base; }
+            void operator=(const SignalPrototype &) = delete;
 
             virtual T interpolate(double idx, SignalKind kind) const = 0;
 
@@ -295,18 +376,20 @@ namespace NP_DSP{
                     }
                 }
             }
-
+        };
+        struct details {
+            static_assert(is_signal<SignalPrototype<double>>);
         };
 
         export
         template <typename T, typename SampleType>
-        constexpr bool is_derivator = requires(T derivator, const Signal<SampleType> & data, Signal<SampleType> & out,
-                Signal<SampleType> * additional_data)
+        constexpr bool is_derivator = requires(T derivator, const SignalPrototype<SampleType> & data, SignalPrototype<SampleType> & out,
+                SignalPrototype<SampleType> * additional_data)
         {
-            requires T::is_derivator == true;
-            typename T::DataType;
-            typename T::DerivativeType;
             typename T::AdditionalDataType;
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
+
+            requires T::is_derivator == true;
 
             derivator.compute(data, out, additional_data);
         };
@@ -317,13 +400,12 @@ namespace NP_DSP{
 
         export
         template <typename T, typename SampleType>
-        constexpr bool is_integrator = requires(T integrator, const Signal<SampleType> & data, Signal<SampleType> & out,
-                Signal<SampleType> * additional_data)
+        constexpr bool is_integrator = requires(T integrator, const SignalPrototype<SampleType> & data, SignalPrototype<SampleType> & out,
+                SignalPrototype<SampleType> * additional_data)
         {
             requires T::is_integrator == true;
-            typename T::DataType;
-            typename T::IntegralType;
             typename T::AdditionalDataType;
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
             integrator.compute(data, out, additional_data);
         };
@@ -334,13 +416,12 @@ namespace NP_DSP{
 
         export
         template <typename T, typename SampleType>
-        constexpr bool is_modes_extracor = requires (T modes_extractor, const Signal<SampleType> & data, Signal<SampleType> & out,
-                Signal<SampleType> * additional_data)
+        constexpr bool is_modes_extracor = requires (T modes_extractor, const SignalPrototype<SampleType> & data, SignalPrototype<SampleType> & out,
+                SignalPrototype<SampleType> * additional_data)
         {
-            typename T::DataType;
-            typename T::ModeType;
+            requires T::is_modes_extractor == true;
             typename T::AdditionalDataType;
-
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
             modes_extractor.compute(data, out, additional_data);
         };
@@ -352,13 +433,12 @@ namespace NP_DSP{
         export 
         template <typename T, typename SampleType>
         constexpr bool is_phase_computer
-                = requires (T phase_computer, const Signal<SampleType> & data,
-                    Signal<SampleType> & inst_freq, Signal<SampleType> * additional_data)
+                = requires (T phase_computer, const SignalPrototype<SampleType> & data,
+                    SignalPrototype<SampleType> & inst_freq, SignalPrototype<SampleType> * additional_data)
         {
-            typename T::DataType;
-            typename T::OutType;
-            typename T::AdditionalDataType;
             requires T::is_phase_computer == true;
+            typename T::AdditionalDataType;
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
             
             phase_computer.compute(data, inst_freq, additional_data);
         };
@@ -369,13 +449,12 @@ namespace NP_DSP{
 
         export
         template <typename T, typename SampleType>
-        constexpr bool is_mode_graber = requires(T mode_graber, Signal<SampleType> & data, const Signal<SampleType> & mode,
-                Signal<SampleType> * additional_data)
+        constexpr bool is_mode_graber = requires(T mode_graber, SignalPrototype<SampleType> & data, const SignalPrototype<SampleType> & mode,
+                SignalPrototype<SampleType> * additional_data)
         {
-            typename T::DataType;
-            typename T::ModeType;
-            typename T::AdditionalDataType;
             requires T::is_mode_graber == true;
+            typename T::AdditionalDataType;
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
             mode_graber.compute(data, mode, additional_data);
         };
@@ -387,14 +466,12 @@ namespace NP_DSP{
         export
         template<typename T, typename SampleType>
         constexpr bool is_inst_freq_computer =
-                requires (T inst_freq_computer, const Signal<SampleType> & data, Signal<SampleType> & inst_freq,
-                Signal<SampleType> * additional_data)
+                requires (T inst_freq_computer, const SignalPrototype<SampleType> & data, SignalPrototype<SampleType> & inst_freq,
+                SignalPrototype<SampleType> * additional_data)
         {
-            typename T::DataType;
-            typename T::OutType;
-            typename T::AdditionalDataType;
-
             requires T::is_inst_freq_computer == true;
+            typename T::AdditionalDataType;
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
             { inst_freq_computer.is_phase_based() } -> std::convertible_to<bool>;
             inst_freq_computer.compute(data, inst_freq, additional_data);
@@ -407,14 +484,12 @@ namespace NP_DSP{
         export
         template<typename T, typename SampleType>
         constexpr bool is_inst_ampl_computer =
-                requires (T inst_ampl_computer, const Signal<SampleType> & data, Signal<SampleType> & inst_ampl,
-                Signal<SampleType> * additional_data)
+                requires (T inst_ampl_computer, const SignalPrototype<SampleType> & data, SignalPrototype<SampleType> & inst_ampl,
+                SignalPrototype<SampleType> * additional_data)
         {
-            typename T::DataType;
-            typename T::OutType;
-            typename T::AdditionalDataType;
-
             requires T::is_inst_freq_computer == true;
+            typename T::AdditionalDataType;
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
             inst_ampl_computer.compute(data, inst_ampl, additional_data);
         };
@@ -425,14 +500,12 @@ namespace NP_DSP{
 
         export
         template<typename T, typename SampleType>
-        constexpr bool is_filter = requires (T filter, const Signal<SampleType> & data, Signal<SampleType> & out,
-                Signal<SampleType> * additional_data)
+        constexpr bool is_filter = requires (T filter, const SignalPrototype<SampleType> & data, SignalPrototype<SampleType> & out,
+                SignalPrototype<SampleType> * additional_data)
         {
-            typename T::DataType;
-            typename T::OutType;
-            typename T::AdditionalDataType;
-
             requires T::is_filter == true;
+            typename T::AdditionalDataType;
+            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
             filter.compute(data, out, additional_data);
         };

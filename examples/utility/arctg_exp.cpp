@@ -9,28 +9,19 @@ import filters;
 import integrators;
 
 int main(){
-    NP_DSP::GENERAL::Nil nil;
-    auto data = NP_DSP::ONE_D::GenericSignal<double, true>
-        (NP_DSP::GENERAL::Tag<NP_DSP::ONE_D::SimpleVecWrapper<double>>{});
-    using DataT = decltype(data);
-    auto out = NP_DSP::ONE_D::GenericSignal<double, true>
-        (NP_DSP::GENERAL::Tag<NP_DSP::ONE_D::SimpleVecWrapper<double>>{});
-    auto buffer = NP_DSP::ONE_D::GenericSignal<double, true>
-        (NP_DSP::GENERAL::Tag<NP_DSP::ONE_D::SimpleVecWrapper<double>>{});
+    NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> data;
+    using SignalT = decltype(data);
+    SignalT out;
+    SignalT buffer;
+    NP_DSP::ONE_D::INTEGRATORS::Riman<NP_DSP::ONE_D::INTEGRATORS::PolygonType::ByPoint> integrator;
+    NP_DSP::ONE_D::DERIVATORS::FinniteDifference<NP_DSP::ONE_D::DERIVATORS::FinniteDifferenceType::Central> derivator;
 
     for (int i = 0; i < 100; i++) {
-        //IC(data.base);
-        //IC(static_cast<NP_DSP::ONE_D::SimpleVecWrapper<double> *>(data.base)->vec);
-        static_cast<NP_DSP::ONE_D::SimpleVecWrapper<double> *>(data.base)->vec->push_back(static_cast<double>(i) * 2.0 + std::cos(i));
-        static_cast<NP_DSP::ONE_D::SimpleVecWrapper<double> *>(out.base)->vec->push_back(0.0);
-        static_cast<NP_DSP::ONE_D::SimpleVecWrapper<double> *>(buffer.base)->vec->push_back(0.159 / 2.);
+        data.base->vec->push_back(static_cast<double>(i) * 2.0 + std::cos(i));
+        out.base->vec->push_back(0.0);
+        buffer.base->vec->push_back(0.159 / 2.);
     }
 
-    NP_DSP::ONE_D::DERIVATORS::FinniteDifference
-        <double, NP_DSP::ONE_D::DERIVATORS::FinniteDifferenceType::Central>
-            derivator;
-
-    //IC(data.base, out.base);
     derivator.compute(data, out, nullptr);
 
     for (int i = 0; i < data.size(); i++) {
@@ -50,7 +41,7 @@ int main(){
 
     NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter
         <double, NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased,
-            NP_DSP::ONE_D::INTEGRATORS::Riman<double, NP_DSP::ONE_D::INTEGRATORS::PolygonType::ByPoint>,
+            NP_DSP::ONE_D::INTEGRATORS::Riman<NP_DSP::ONE_D::INTEGRATORS::PolygonType::ByPoint>,
                 NP_DSP::ONE_D::FILTERS::InstFreqKind::Average>
                 filter;
 

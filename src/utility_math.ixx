@@ -46,7 +46,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         auto dx = point2.first - point1.first;
         auto dy = point2.second - point1.second;
         if (dx == 0) {
-            return (point1.second + point2.second) / 2.0;
+            return (point1.second + point2.second) / 2;
         }
         return point1.second + dy * (x_in - point1.first) / dx;
     }
@@ -101,8 +101,8 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
     }
 
     export
-    template<typename T>
-    void fftc2c(const Signal<std::complex<T>>& in, Signal<std::complex<T>>& out) {
+    template<Signal DataT, Signal OutT, typename T>
+    void fftc2c(const DataT& in, OutT& out) {
         //using T = typename OutT::SampleType;
         auto len = in.size();
         pocketfft::shape_t shape{len};
@@ -131,8 +131,8 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
     }
 
     export
-    template<typename T>
-    void ifftc2c(const Signal<std::complex<T>>& in, Signal<std::complex<T>>& out) {
+    template<Signal DataT, Signal OutT, typename T>
+    void ifftc2c(const DataT& in, OutT& out) {
         auto len = in.size();
         pocketfft::shape_t shape{len};
         pocketfft::stride_t stridef(shape.size());
@@ -159,8 +159,9 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
     }
 
     export
-    template<typename T>
-    void fastConvolution(Signal<T>& in1, Signal<T>& in2, Signal<T>& out) {
+    template<Signal DataT1, Signal DataT2, Signal OutT>
+    void fastConvolution(DataT1& in1, DataT2& in2, OutT& out) {
+        using T = typename OutT::SampleType;
         std::vector<std::complex<T>> data_in1;
         std::vector<std::complex<T>> data_in2;
         std::vector<std::complex<T>> sp1;
@@ -242,9 +243,9 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
                        data_in.data() + pad, data_out.data() + pad, static_cast<T>(1));
     }
 
-    /*
+
     export
-    template <typename TIndex, SignalBase Base, typename TValue>
+    template<typename TIndex, SignalBase Base, typename TValue>
     std::pair<TIndex, TIndex> interpoationSearch(Base data, TIndex idx1, TIndex idx2, TValue value) {
         //todo interpolate or values limits
         if (idx1 > idx2) {
@@ -255,32 +256,30 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         while (std::abs(idx2 - idx1) > 1) {
             auto dx = static_cast<double>(idx2 - idx1);
             auto dy = static_cast<double>(data[idx2] - data[idx1]);
-            if (dy == 0){
+            if (dy == 0) {
                 break;
             }
-            auto idx_new = static_cast<TIndex>(idx1 + dx * (value - data[idx1])/dy);
-            if constexpr (CONFIG::debug){
+            auto idx_new = static_cast<TIndex>(idx1 + dx * (value - data[idx1]) / dy);
+            if constexpr (CONFIG::debug) {
                 IC(idx1, idx2, dx, dy, idx_new);
             }
             if (data[idx_new] > value) {
                 idx2 = idx_new;
-            }
-            else if(data[idx_new] < value){
+            } else if (data[idx_new] < value) {
                 idx1 = idx_new;
-            }
-            else if (data[idx_new] == value){
+            } else if (data[idx_new] == value) {
                 idx1 = idx_new;
                 idx2 = idx1 + 1;
             }
-            if constexpr (CONFIG::debug){
+            if constexpr (CONFIG::debug) {
                 IC(idx1, idx2);
             }
         }
         return {idx1, idx2};
-    }*/
+    }
 
-    /*export
-    template <typename TIndex, typename TValue, typename IdxLambdaT>
+    export
+    template<typename TIndex, typename TValue, typename IdxLambdaT>
     std::pair<TIndex, TIndex> interpoationSearch(TIndex idx1, TIndex idx2, TValue value, IdxLambdaT idx_lambda) {
         //todo interpolate or values limits
         if (idx1 > idx2) {
@@ -291,31 +290,29 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         while (std::abs(idx2 - idx1) > 1) {
             auto dx = static_cast<double>(idx2 - idx1);
             auto dy = static_cast<double>(idx_lambda(idx2) - idx_lambda(idx1));
-            if (dy == 0){
+            if (dy == 0) {
                 idx2 = idx1 + 1;
                 break;
             }
-            auto idx_new = static_cast<TIndex>(idx1 + dx * (value - idx_lambda(idx1))/dy);
-            if constexpr (CONFIG::debug){
+            auto idx_new = static_cast<TIndex>(idx1 + dx * (value - idx_lambda(idx1)) / dy);
+            if constexpr (CONFIG::debug) {
                 std::string mark = "creating idx_new in interpolation search";
                 IC(idx1, idx2, dx, dy, idx_new);
             }
             if (idx_lambda(idx_new) > value) {
                 idx2 = idx_new;
-            }
-            else if(idx_lambda(idx_new) < value){
+            } else if (idx_lambda(idx_new) < value) {
                 idx1 = idx_new;
-            }
-            else if (idx_lambda(idx_new) == value){
+            } else if (idx_lambda(idx_new) == value) {
                 idx1 = idx_new;
                 idx2 = idx1 + 1;
             }
-            if constexpr (CONFIG::debug){
+            if constexpr (CONFIG::debug) {
                 IC(idx1, idx2);
             }
         }
         return {idx1, idx2};
-    }*/
+    }
 
     export
     template<typename T>

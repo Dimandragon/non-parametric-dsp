@@ -23,14 +23,10 @@ namespace NP_DSP::ONE_D::FILTERS {
     export enum class FilteringType { DerivativeBased, ValueBased, AverageBased, Median };
 
     export
-    template<typename T, FilteringType filtering_type_k,
-        Integrator<T> IntegratorT, InstFreqKind inst_freq_k>
+    template<typename U, FilteringType filtering_type_k,
+        Integrator<U> IntegratorT, InstFreqKind inst_freq_k>
     struct NonOptPeriodBasedFilter {
-        using DataType = Signal<T>;
-        using OutType = Signal<T>;
-        using InstFreqType = Signal<T>;
-        using AdditionalDataType = InstFreqType;
-        using SampleType = T;
+        using AdditionalDataType = SignalPrototype<double>;
         using IdxType = size_t;
 
         IntegratorT integrator;
@@ -47,8 +43,9 @@ namespace NP_DSP::ONE_D::FILTERS {
         }
 
         //data and inst freq must be not monotone
+        template<Signal DataType, Signal OutType, Signal InstFreqType>
         void compute(const DataType& data, OutType& out, const InstFreqType * inst_freq) {
-
+            using T = typename OutType::SampleType;
             if constexpr (filtering_type_k == FilteringType::DerivativeBased) {
                 if constexpr (inst_freq_kind == InstFreqKind::Average) {
                     auto size_expr = [&]() {
@@ -66,9 +63,9 @@ namespace NP_DSP::ONE_D::FILTERS {
                         decltype(val_expression), GENERAL::Nil, decltype(size_expr), false>
                             expr_wrapper(val_expression, size_expr);
 
-                    const GenericSignal<T, false> expr_signal(expr_wrapper);
+                    const GenericSignal<decltype(expr_wrapper), false> expr_signal(expr_wrapper);
 
-                    INTEGRATORS::Riman<T, INTEGRATORS::PolygonType::ByPoint> integrator_new;
+                    INTEGRATORS::Riman<INTEGRATORS::PolygonType::ByPoint> integrator_new;
 
                     //todo fix its big crucher
                     integrator_new.compute(expr_signal, out, nullptr);
@@ -89,27 +86,26 @@ namespace NP_DSP::ONE_D::FILTERS {
                     ExpressionWrapper<T, size_t,
                         decltype(inst_freq_first_val_expression), GENERAL::Nil, decltype(size_expr), false>
                             inst_freq_first_expr_wrapper(inst_freq_first_val_expression, size_expr);
-                    GenericSignal<T, false> inst_freq_first(inst_freq_first_expr_wrapper);
+                    GenericSignal<decltype(inst_freq_first_expr_wrapper), false> inst_freq_first(inst_freq_first_expr_wrapper);
 
                     ExpressionWrapper<T, size_t,
                         decltype(inst_freq_second_val_expression), GENERAL::Nil, decltype(size_expr), false>
                             inst_freq_second_expr_wrapper(inst_freq_second_val_expression, size_expr);
-                    GenericSignal<T, false> inst_freq_second (inst_freq_second_expr_wrapper);
+                    GenericSignal<decltype(inst_freq_second_expr_wrapper), false> inst_freq_second (inst_freq_second_expr_wrapper);
 
                     auto val_expression = [&](typename DataType::IdxType idx) {
                         return (data.interpolate(idx + 0.5 / inst_freq_second.interpolate(idx, SignalKind::Stohastic), SignalKind::Stohastic) -
                                 data.interpolate(idx - 0.5 / inst_freq_first.interpolate(idx, SignalKind::Stohastic), SignalKind::Stohastic)) /
                                (0.5 / inst_freq_second.interpolate(idx, SignalKind::Stohastic) + 0.5 / inst_freq_first.interpolate(idx, SignalKind::Stohastic));
                     };
-                    GENERAL::Nil nil;
 
                     ExpressionWrapper<T, size_t,
                                 decltype(val_expression), GENERAL::Nil, decltype(size_expr), false>
                             expr_wrapper(val_expression, size_expr);
 
-                    GenericSignal<T, false> expr_signal(expr_wrapper);
+                    GenericSignal<decltype(expr_wrapper), false> expr_signal(expr_wrapper);
 
-                    INTEGRATORS::Riman<T, INTEGRATORS::PolygonType::ByPoint> integrator_new;
+                    INTEGRATORS::Riman<INTEGRATORS::PolygonType::ByPoint> integrator_new;
 
                     //todo fix its big crucher
                     integrator_new.compute(expr_signal, out, nullptr);
@@ -142,13 +138,13 @@ namespace NP_DSP::ONE_D::FILTERS {
                     ExpressionWrapper<typename DataType::SampleType, typename DataType::IdxType,
                                 decltype(inst_freq_first_val_expression), GENERAL::Nil, decltype(size_expr), false>
                             inst_freq_first_expr_wrapper(inst_freq_first_val_expression, size_expr);
-                    GenericSignal<T, false> inst_freq_first(
+                    GenericSignal<decltype(inst_freq_first_expr_wrapper), false> inst_freq_first(
                         inst_freq_first_expr_wrapper);
 
                     ExpressionWrapper<typename DataType::SampleType, typename DataType::IdxType,
                                 decltype(inst_freq_second_val_expression), GENERAL::Nil, decltype(size_expr), false>
                             inst_freq_second_expr_wrapper(inst_freq_second_val_expression, size_expr);
-                    GenericSignal<T, false> inst_freq_second(
+                    GenericSignal<decltype(inst_freq_second_expr_wrapper), false> inst_freq_second(
                         inst_freq_second_expr_wrapper);
 
                     auto val_expression = [&](typename DataType::IdxType idx) {
@@ -227,24 +223,20 @@ namespace NP_DSP::ONE_D::FILTERS {
     enum class PhaseComputingKind { extremums_based_non_opt, arctg_scaled };
 
     export
-    template<typename T, Filter<T> FilterT, InstFreqComputer<T> InstFreqComputerT,
-        PhaseComputer<T> PhaseComputerT>
+    template<typename U, Filter<U> FilterT, InstFreqComputer<U> InstFreqComputerT,
+        PhaseComputer<U> PhaseComputerT>
     //INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind inst_freq_k>
     struct OptPeriodBasedFilter {
-        using DataType = Signal<T>;
-        using OutType = Signal<T>;
-        using InstFreqType = Signal<T>;
-        using AdditionalDataType = InstFreqType;
+        using AdditionalDataType = SignalPrototype<U>;
 
         //SimpleVecWrapper<T> mode_base;
         //SimpleVecWrapper<T> inst_freq_buffer2_base;
 
-        using BufferT = GenericSignal<T, true>;
-        GenericSignal<T, true> mode = GenericSignal<T, true>(GENERAL::Tag<SimpleVecWrapper<T>>{});
-        GenericSignal<T, true> inst_freq_buffer2 =  GenericSignal<T, true>(GENERAL::Tag<SimpleVecWrapper<T>>{});
+        using BufferT = GenericSignal<SimpleVecWrapper<U>, true>;
+        BufferT mode;
+        BufferT inst_freq_buffer2;
 
         double error_threshold = 0.1;
-        using BuffT = decltype(mode);
         size_t iter_number = 0;
         size_t good_iter_number = 0;
         size_t true_iter_number = 0;
@@ -272,8 +264,9 @@ namespace NP_DSP::ONE_D::FILTERS {
             //delete inst_freq_buffer2;
         }
 
-        //
+        template<Signal DataType, Signal OutType, Signal InstFreqType>
         bool computeIter(const DataType& data, OutType& out, InstFreqType& inst_freq_buffer) {
+            using T = typename OutType::SampleType;
             iter_number++;
             true_iter_number++;
             filter->compute(data, out, &inst_freq_buffer);
@@ -379,7 +372,9 @@ namespace NP_DSP::ONE_D::FILTERS {
             return true;
         }
 
+        template<Signal DataType, Signal OutType, Signal InstFreqType>
         void compute(const DataType& data, OutType& out, InstFreqType * inst_freq_buffer) {
+            using T = typename OutType::SampleType;
             //inst_freq_computer->compute(data, inst_freq_buffer, out);
             if constexpr (std::is_same_v<typename InstFreqComputerT::AdditionalDataType, GENERAL::Nil>) {
                 inst_freq_computer->compute(data, *inst_freq_buffer, nullptr);

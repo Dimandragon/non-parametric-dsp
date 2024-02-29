@@ -18,14 +18,10 @@ namespace NP_DSP::ONE_D::APPROX {
     export enum class FSApproxKind { Simple, Positive };
 
     export
-    template<typename T, typename LossFunc, typename StopPointFunc, FSApproxKind kind_v, typename BySampleLoss>
+    template<typename LossFunc, typename StopPointFunc, FSApproxKind kind_v, typename BySampleLoss>
     struct FourierSeriesBased {
-        using SignalType = Signal<T>;
-        using SignalT = SignalType;
-        using SampleType = T;
         using Loss = LossFunc;
         using StopPoint = StopPointFunc;
-        using IdxType = typename SignalT::IdxType;
         static constexpr bool is_signal_approximator = true;
 
         static constexpr FSApproxKind kind = kind_v;
@@ -34,23 +30,25 @@ namespace NP_DSP::ONE_D::APPROX {
         BySampleLoss* bySampleLoss = nullptr;
 
         StopPoint* stopPont;
-        SignalType* signal;
+
+        size_t signal_size;
         bool is_actual = false;
         int polynoms_count;
 
         int polynoms_count_on_tile;
         int tile_size;
 
-        std::vector<std::complex<T>> fourier_series;
-        std::vector<std::complex<T>> approximated_data;
+        std::vector<std::complex<double>> fourier_series;
+        std::vector<std::complex<double>> approximated_data;
 
-        SampleType max_value = 10000000000000000000000000.;
+        double max_value = 10000000000000000000000000.;
 
+        template<Signal SignalType>
         FourierSeriesBased(Loss& lossFn, SignalType& signal_in, StopPointFunc& stop_point) {
             loss = &lossFn;
-            signal = &signal_in;
-            fourier_series = std::vector<std::complex<SampleType>>(signal_in.size());
-            approximated_data = std::vector<std::complex<SampleType>>(signal_in.size());
+            signal_size = signal_in.size();
+            fourier_series = std::vector<std::complex<double>>(signal_in.size());
+            approximated_data = std::vector<std::complex<double>>(signal_in.size());
             stopPont = &stop_point;
             polynoms_count = signal_in.size() / 2;
             polynoms_count_on_tile = signal_in.size() / 2;
@@ -61,9 +59,9 @@ namespace NP_DSP::ONE_D::APPROX {
             return i / tile_size * tile_size + i / tile_size * tile_size + tile_size - i;
         }
 
-        void applyMirror(size_t i) {
+        void applyMirror(size_t const i) {
             if (i % tile_size != 0) {
-                auto mirror_idx = mirrorIdx(i);
+                auto const mirror_idx = mirrorIdx(i);
                 fourier_series[mirror_idx] = {fourier_series[i].real() / 2.0, -fourier_series[i].imag() / 2.0};
                 fourier_series[i] = fourier_series[i] / 2.0;
             }
@@ -72,16 +70,16 @@ namespace NP_DSP::ONE_D::APPROX {
         void computeData() {
             is_actual = true;
             for (auto i = 0; i < approximated_data.size() / tile_size; i++) {
-                auto pad = i * tile_size;
+                auto const pad = i * tile_size;
                 UTILITY_MATH::ifftc2c(fourier_series, approximated_data, tile_size, pad);
             }
-            auto pad = approximated_data.size() / tile_size * tile_size;
+            auto const pad = approximated_data.size() / tile_size * tile_size;
             UTILITY_MATH::ifftc2c(fourier_series, approximated_data, approximated_data.size() - pad, pad);
         }
 
         void computeTile(size_t const idx) {
-            auto i = idx / tile_size;
-            auto pad = i * tile_size;
+            auto const i = idx / tile_size;
+            auto const pad = i * tile_size;
             if (approximated_data.size() > pad + tile_size) {
                 UTILITY_MATH::ifftc2c(fourier_series, approximated_data, tile_size, pad);
             } else {
@@ -93,8 +91,10 @@ namespace NP_DSP::ONE_D::APPROX {
             polynoms_count_on_tile = static_cast<int>(static_cast<double>(tile_size) * 0.5 * ratio);
         }
 
-        std::complex<SampleType> computeSample(IdxType idx) {
-            std::complex<SampleType> accum = {static_cast<SampleType>(0), static_cast<SampleType>(0)};
+        template<typename IdxT>
+        std::complex<double> computeSample(IdxT idx) {
+            using SampleType = double;
+            std::complex<double> accum = {0.0, 0.0};
 
             if (idx <= approximated_data.size() && idx >= 0) {
                 auto tile_first_idx = idx / tile_size * tile_size;
@@ -143,6 +143,7 @@ namespace NP_DSP::ONE_D::APPROX {
             return accum;
         }
 
+        template<typename SampleType, typename IdxType>
         SampleType compute(IdxType idx) {
             if (std::abs(static_cast<double>(idx) - static_cast<int64_t>(idx)) == 0) {
                 if (is_actual) {
@@ -156,6 +157,7 @@ namespace NP_DSP::ONE_D::APPROX {
             }
         }
 
+        template<typename SampleType, typename IdxType>
         std::complex<SampleType> computeComplex(IdxType idx) {
             if (std::abs(static_cast<double>(idx) - static_cast<int64_t>(idx)) == 0) {
                 if (is_actual) {
@@ -170,6 +172,7 @@ namespace NP_DSP::ONE_D::APPROX {
         }
 
         void fineTrainIter() {
+            using SampleType = double;
             computeData();
             //todo for tiles and for positive
             for (auto i = 0; i < fourier_series.size(); i++) {
@@ -185,7 +188,7 @@ namespace NP_DSP::ONE_D::APPROX {
 
 
                 auto check_loss = [&](std::pair<SampleType, SampleType> data) {
-                    auto complex_sample = UTILITY_MATH::convertFSampleT2C<SampleType>(data);
+                    auto const complex_sample = UTILITY_MATH::convertFSampleT2C<SampleType>(data);
                     fourier_series[i] = complex_sample;
                     applyMirror(i);
                     computeTile(i);
@@ -206,7 +209,7 @@ namespace NP_DSP::ONE_D::APPROX {
                     computeTile(i);
                     SampleType loss2 = 0.;
                     if (bySampleLoss) {
-                        size_t pad = i / tile_size * tile_size;
+                        size_t const pad = i / tile_size * tile_size;
                         for (auto idx = 0; idx < tile_size; idx++) {
                             if (idx + pad >= approximated_data.size()) {
                                 break;
@@ -526,6 +529,7 @@ namespace NP_DSP::ONE_D::APPROX {
         }
 
         void train() {
+            using SampleType = double;
             computeData();
             for (auto i = 0; i < fourier_series.size(); i++) {
                 if (i % tile_size > tile_size / 2) {
@@ -549,7 +553,7 @@ namespace NP_DSP::ONE_D::APPROX {
                 }
 
                 auto check_loss = [&](std::pair<SampleType, SampleType> data) {
-                    auto complex_sample = UTILITY_MATH::convertFSampleT2C<SampleType>(data);
+                    auto const complex_sample = UTILITY_MATH::convertFSampleT2C<SampleType>(data);
                     fourier_series[i] = complex_sample;
                     computeTile(i);
                     SampleType loss1 = 0.;
@@ -659,8 +663,8 @@ namespace NP_DSP::ONE_D::APPROX {
                 }
 
 
-                while (!((*stopPont)(std::abs(right_loss - central_loss) + std::abs(left_loss - central_loss),
-                                     *this))) {
+                while (!(*stopPont)(std::abs(right_loss - central_loss) + std::abs(left_loss - central_loss),
+                                     *this)) {
                     if constexpr (CONFIG::debug) {
                         IC(period_opt_iter, left_loss, central_loss, right_loss, theta_min, theta_central, theta_max);
                         IC(right_loss-central_loss, left_loss-central_loss, right_loss-left_loss);
@@ -882,11 +886,12 @@ namespace NP_DSP::ONE_D::APPROX {
         }
 
         void show(const PlottingKind kind) {
+            using SampleType = double;
             is_actual = false;
             if (kind == PlottingKind::Simple) {
                 std::vector<SampleType> plotting_data = {};
-                for (auto i = 0; i < signal->size(); i++) {
-                    plotting_data.push_back(compute(i));
+                for (auto i = 0; i < signal_size; i++) {
+                    plotting_data.push_back(compute<double, size_t>(i));
                 }
                 matplot::plot(plotting_data);
                 matplot::show();
@@ -895,10 +900,11 @@ namespace NP_DSP::ONE_D::APPROX {
 
         void show(const PlottingKind kind, const std::string& filename, const std::string& format) {
             is_actual = false;
+            using SampleType = double;
             if (kind == PlottingKind::Simple) {
                 std::vector<SampleType> plotting_data = {};
-                for (auto i = 0; i < signal->size(); i++) {
-                    plotting_data.push_back(compute(i));
+                for (auto i = 0; i < signal_size; i++) {
+                    plotting_data.push_back(compute<double, size_t>(i));
                 }
                 matplot::plot(plotting_data);
                 matplot::show();
@@ -908,10 +914,11 @@ namespace NP_DSP::ONE_D::APPROX {
 
         void show(const PlottingKind kind, const std::string& filename) {
             is_actual = false;
+            using SampleType = double;
             if (kind == PlottingKind::Simple) {
                 std::vector<SampleType> plotting_data = {};
-                for (auto i = 0; i < signal->size(); i++) {
-                    plotting_data.push_back(compute(i));
+                for (auto i = 0; i < signal_size; i++) {
+                    plotting_data.push_back(compute<double, size_t>(i));
                 }
                 matplot::plot(plotting_data);
                 matplot::show();

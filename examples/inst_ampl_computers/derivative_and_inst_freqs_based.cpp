@@ -10,29 +10,23 @@ import inst_ampl_computers;
 import phase_computers;
 
 int main(){
-    auto signal1 = NP_DSP::ONE_D::GenericSignal<double, true>
-        (NP_DSP::GENERAL::Tag<NP_DSP::ONE_D::SimpleVecWrapper<double>>{});
+    NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> signal1;
     using SignalT = decltype(signal1);
-    auto signal2 = NP_DSP::ONE_D::GenericSignal<double, true>
-        (NP_DSP::GENERAL::Tag<NP_DSP::ONE_D::SimpleVecWrapper<double>>{});
-    auto signal3 = NP_DSP::ONE_D::GenericSignal<double, true>
-        (NP_DSP::GENERAL::Tag<NP_DSP::ONE_D::SimpleVecWrapper<double>>{});
-    auto compute_buffer = NP_DSP::ONE_D::GenericSignal<double, true>
-        (NP_DSP::GENERAL::Tag<NP_DSP::ONE_D::SimpleVecWrapper<double>>{});
-    NP_DSP::ONE_D::INTEGRATORS::Riman<double, NP_DSP::ONE_D::INTEGRATORS::PolygonType::ByPoint> integrator;
-    NP_DSP::ONE_D::DERIVATORS::FinniteDifference<double, NP_DSP::ONE_D::DERIVATORS::FinniteDifferenceType::Central> derivator;
+    SignalT signal2;
+    SignalT signal3;
+    SignalT compute_buffer;
+    NP_DSP::ONE_D::INTEGRATORS::Riman<NP_DSP::ONE_D::INTEGRATORS::PolygonType::ByPoint> integrator;
+    NP_DSP::ONE_D::DERIVATORS::FinniteDifference<NP_DSP::ONE_D::DERIVATORS::FinniteDifferenceType::Central> derivator;
     
     for (auto i = 0; i < 5000; i++){
-        static_cast<NP_DSP::ONE_D::SimpleVecWrapper<double> *>(signal1.base)->vec->push_back(std::sin(static_cast<double>(i) / 500.) * i);
-        //signal1.base->vec->push_back(std::sin(static_cast<double>(i) * 2.) * 1000);
-        static_cast<NP_DSP::ONE_D::SimpleVecWrapper<double> *>(signal2.base)->vec->push_back(0);
-        //signal3.base->vec->push_back(static_cast<double>(i) / 2400. / std::numbers::pi );
-        static_cast<NP_DSP::ONE_D::SimpleVecWrapper<double> *>(signal3.base)->vec->push_back(0);
-        static_cast<NP_DSP::ONE_D::SimpleVecWrapper<double> *>(compute_buffer.base)->vec->push_back(0);
+        signal1.base->vec->push_back(std::sin(static_cast<double>(i) / 500.) * i);
+        signal2.base->vec->push_back(0);
+        signal3.base->vec->push_back(0);
+        compute_buffer.base->vec->push_back(0);
     }
 
     NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBased
-        <double, NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBasedComputeInstFreqKind::Linear>
+        <NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBasedComputeInstFreqKind::Linear>
                 inst_freq_computer;
 
     NP_DSP::ONE_D::INST_AMPL_COMPUTERS::DerivativeAndInstFreqBased<double, decltype(integrator), decltype(derivator), decltype(inst_freq_computer),

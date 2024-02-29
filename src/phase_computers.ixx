@@ -21,17 +21,16 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
     enum class ExtremumsKind { Simple, DerArctg };
 
     export
-    template<typename T, ExtremumsKind kind_e, Derivator<T> DerivatorT>
+    template<typename U, ExtremumsKind kind_e, Derivator<U> DerivatorT>
     struct ExtremumsBasedNonOpt {
-        using DataType = Signal<T>;
-        using OutType = Signal<T>;
-        using AdditionalDataType = Signal<T>;
+        using AdditionalDataType = GENERAL::Nil;
 
         DerivatorT derivator;
 
         constexpr static bool is_phase_computer = true;
 
-        void compute(const DataType& data, OutType& out, AdditionalDataType * nil) {
+        template<Signal DataType, Signal OutType>
+        void compute(const DataType& data, OutType& out, auto * nil) {
             if constexpr (kind_e == ExtremumsKind::DerArctg) {
                 derivator.compute(data, out, nullptr);
                 for (int i = 0; i < data.size(); i++) {
@@ -61,7 +60,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
 
             if (extremums.size() > 2) {
                 extremums[0] = extremums[1] * 2 - extremums[2];
-                auto last = extremums.size() - 1;
+                auto const last = extremums.size() - 1;
                 extremums[last] = extremums[last - 1] * 2 - extremums[last - 2];
                 if (extremums[0] > 0) {
                     extremums[0] = -extremums[1];
@@ -70,7 +69,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                     extremums[last] = out.size() + out.size() - extremums[last - 1];
                 }
             } else {
-                auto last = extremums.size() - 1;
+                auto const last = extremums.size() - 1;
                 extremums[0] = -extremums[1];
                 extremums[last] = out.size() + out.size() - extremums[last - 1];
             }
@@ -88,7 +87,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 0, UTILITY_MATH::linearInterpolate<int, double>
                 (support[0], support[1], 0)
             };
-            auto pad = support[0].second;
+            auto const pad = support[0].second;
             for (auto i = 0; i < support.size(); i++) {
                 support[i].second = support[i].second - pad;
             }
@@ -107,19 +106,99 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                     out[j] = UTILITY_MATH::linearInterpolate<int, double>(support[i], support[i + 1], j);
                 }
             }
-            auto i = support.size() - 2;
+            auto const i = support.size() - 2;
+            auto j = support[i + 1].first;
+            out[j] = UTILITY_MATH::linearInterpolate<int, double>(support[i], support[i + 1], j);
+        }
+
+        template<Signal DataType, Signal OutType>
+        void compute(const DataType& data, OutType& out, std::nullptr_t * nil) {
+            if constexpr (kind_e == ExtremumsKind::DerArctg) {
+                derivator.compute(data, out, nullptr);
+                for (int i = 0; i < data.size(); i++) {
+                    out[i] = std::atan(out[i]);
+                }
+            } else if constexpr (kind_e == ExtremumsKind::Simple) {
+                for (int i = 0; i < data.size(); i++) {
+                    out[i] = data[i];
+                }
+            }
+
+            std::vector<int> extremums;
+            extremums.push_back(0);
+            for (int i = 1; i < out.size() - 1; i++) {
+                if ((out[i] >= out[i - 1] &&
+                     out[i] > out[i + 1]) ||
+                    (out[i] > out[i - 1] &&
+                     out[i] >= out[i + 1]) ||
+                    (out[i] <= out[i - 1] &&
+                     out[i] < out[i + 1]) ||
+                    (out[i] < out[i - 1] &&
+                     out[i] <= out[i + 1])) {
+                    extremums.push_back(i);
+                }
+            }
+            extremums.push_back(static_cast<int>(out.size() - 1));
+
+            if (extremums.size() > 2) {
+                extremums[0] = extremums[1] * 2 - extremums[2];
+                auto const last = extremums.size() - 1;
+                extremums[last] = extremums[last - 1] * 2 - extremums[last - 2];
+                if (extremums[0] > 0) {
+                    extremums[0] = -extremums[1];
+                }
+                if (extremums[last] < extremums.size() - 1) {
+                    extremums[last] = out.size() + out.size() - extremums[last - 1];
+                }
+            } else {
+                auto const last = extremums.size() - 1;
+                extremums[0] = -extremums[1];
+                extremums[last] = out.size() + out.size() - extremums[last - 1];
+            }
+
+            std::vector<std::pair<int, double>> support;
+            for (auto i = 0; i < extremums.size(); i++) {
+                support.push_back({extremums[i], i * std::numbers::pi});
+            }
+
+            if constexpr (CONFIG::debug) {
+                IC(support);
+            }
+
+            support[0] = {
+                0, UTILITY_MATH::linearInterpolate<int, double>
+                (support[0], support[1], 0)
+            };
+            auto const pad = support[0].second;
+            for (auto i = 0; i < support.size(); i++) {
+                support[i].second = support[i].second - pad;
+            }
+
+            support[support.size() - 1] = {
+                out.size() - 1, UTILITY_MATH::linearInterpolate<int, double>
+                (support[support.size() - 2], support[support.size() - 1], out.size() - 1)
+            };
+
+            if constexpr (CONFIG::debug) {
+                IC(support);
+            }
+
+            for (int i = 0; i < support.size() - 1; i++) {
+                for (int j = support[i].first; j < support[i + 1].first; j++) {
+                    out[j] = UTILITY_MATH::linearInterpolate<int, double>(support[i], support[i + 1], j);
+                }
+            }
+            auto const i = support.size() - 2;
             auto j = support[i + 1].first;
             out[j] = UTILITY_MATH::linearInterpolate<int, double>(support[i], support[i + 1], j);
         }
     };
 
     export
-    template<typename T,
-        ExtremumsKind kind_e, Integrator<T> IntegratorT, Derivator<T> DerivatorT>
+    template<typename U,
+        ExtremumsKind kind_e, Integrator<U> IntegratorT, Derivator<U> DerivatorT>
     struct ExtremumsBasedUsingFS {
-        using DataType = Signal<T>;
-        using OutType = Signal<T>;
-        using AdditionalDataType = Signal<T>;
+        using AdditionalDataType = SignalPrototype<U>;
         using IntegratorType = IntegratorT;
         using DerivatorType = DerivatorT;
 
@@ -136,7 +215,8 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
             derivator = derivator_in;
         }
 
-        void compute(const DataType& data, OutType& out, AdditionalDataType * computer_buffer) {
+        template<Signal DataType, Signal OutType, Signal ComputerBufferType>
+        void compute(const DataType& data, OutType& out, ComputerBufferType * computer_buffer) {
             //compute extremums
             //compute "support" vector of pairs size_t and double, 
             //where first is extremum position and second is value = idx * std::numbers::pi
@@ -174,7 +254,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
 
             if (extremums.size() > 2) {
                 extremums[0] = extremums[1] * 2 - extremums[2];
-                auto last = extremums.size() - 1;
+                auto const last = extremums.size() - 1;
                 extremums[last] = extremums[last - 1] * 2 - extremums[last - 2];
                 if (extremums[0] > 0) {
                     extremums[0] = -extremums[1];
@@ -183,7 +263,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                     extremums[last] = out.size() + out.size() - extremums[last - 1];
                 }
             } else {
-                auto last = extremums.size() - 1;
+                auto const last = extremums.size() - 1;
                 extremums[0] = -extremums[1];
                 extremums[last] = out.size() + out.size() - extremums[last - 1];
             }
@@ -201,7 +281,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 0, UTILITY_MATH::linearInterpolate<int, double>
                 (support[0], support[1], 0)
             };
-            auto pad = support[0].second;
+            auto const pad = support[0].second;
             for (auto i = 0; i < support.size(); i++) {
                 support[i].second = support[i].second - pad;
             }
@@ -285,7 +365,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 }
             };
 
-            auto approximator = APPROX::FourierSeriesBased<T, decltype(loss), decltype(stopPoint),
+            auto approximator = APPROX::FourierSeriesBased<decltype(loss), decltype(stopPoint),
                         APPROX::FSApproxKind::Positive, decltype(bySampleError)>
                     (loss, out, stopPoint);
 
@@ -305,12 +385,10 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
 
 
     export
-    template<typename T,
-        ExtremumsKind kind_e, Integrator<T> IntegratorT, Derivator<T> DerivatorT>
+    template<typename U,
+        ExtremumsKind kind_e, Integrator<U> IntegratorT, Derivator<U> DerivatorT>
     struct ArctgScaledToExtremums {
-        using DataType = Signal<T>;
-        using OutType = Signal<T>;
-        using AdditionalDataType = Signal<T>;
+        using AdditionalDataType = SignalPrototype<U>;
         using IntegratorType = IntegratorT;
         using DerivatorType = DerivatorT;
 
@@ -327,7 +405,8 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
             derivator = derivator_in;
         }
 
-        void compute(const DataType& data, OutType& out, AdditionalDataType * computer_buffer) {
+        template<Signal DataType, Signal OutType, Signal ComputerBufferType>
+        void compute(const DataType& data, OutType& out, ComputerBufferType * computer_buffer) {
             //compute extremums
             //compute "support" vector of pairs size_t and double, 
             //where first is extremum position and second is value = idx * std::numbers::pi
@@ -362,7 +441,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
 
             if (extremums.size() > 2) {
                 extremums[0] = extremums[1] * 2 - extremums[2];
-                auto last = extremums.size() - 1;
+                auto const last = extremums.size() - 1;
                 extremums[last] = extremums[last - 1] * 2 - extremums[last - 2];
                 if (extremums[0] > 0) {
                     extremums[0] = -extremums[1];
@@ -371,7 +450,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                     extremums[last] = out.size() + out.size() - extremums[last - 1];
                 }
             } else {
-                auto last = extremums.size() - 1;
+                auto const last = extremums.size() - 1;
                 extremums[0] = -extremums[1];
                 extremums[last] = out.size() + out.size() - extremums[last - 1];
             }
@@ -389,7 +468,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 0, UTILITY_MATH::linearInterpolate<int, double>
                 (support[0], support[1], 0)
             };
-            auto pad = support[0].second;
+            auto const pad = support[0].second;
             for (auto i = 0; i < support.size(); i++) {
                 support[i].second = support[i].second - pad;
             }
@@ -444,7 +523,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                              UTILITY_MATH::linearInterpolate<int, double>(div_support[i], div_support[i + 1], j);
                 }
             }
-            auto i = div_support.size() - 2;
+            auto const i = div_support.size() - 2;
             auto j = div_support[i + 1].first;
             out[j] = out[j] *
                      UTILITY_MATH::linearInterpolate<int, double>(div_support[i], div_support[i + 1], j);
@@ -460,12 +539,10 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
     };
 
     export
-    template<typename T,
-        Integrator<T> IntegratorT, Derivator<T> DerivatorT, InstFreqDerivativeBasedKind kind>
+    template<typename U,
+        Integrator<U> IntegratorT, Derivator<U> DerivatorT, InstFreqDerivativeBasedKind kind>
     struct ArctgScaledToExtremumsSquare {
-        using DataType = Signal<T>;
-        using OutType = Signal<T>;
-        using AdditionalDataType = Signal<T>;
+        using AdditionalDataType = SignalPrototype<U>;
         using IntegratorType = IntegratorT;
         using DerivatorType = DerivatorT;
 
@@ -479,11 +556,13 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
             derivator = derivator_in;
         }
 
-        void compute(const DataType& data, OutType& out, AdditionalDataType * computer_buffer) {
+        template<Signal DataType, Signal OutType, Signal ComputerBufferType>
+        void compute(const DataType& data, OutType& out, ComputerBufferType * computer_buffer) {
             //compute extremums
             //compute "support" vector of pairs size_t and double,
             //where first is extremum position and second is value = idx * std::numbers::pi
             //compute f(x) = integral(|arctg'(data')|)
+            using T = typename OutType::SampleType;
 
             std::vector<int> extremums;
             extremums.push_back(0);
@@ -503,7 +582,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
 
             if (extremums.size() > 2) {
                 extremums[0] = extremums[1] * 2 - extremums[2];
-                auto last = extremums.size() - 1;
+                auto const last = extremums.size() - 1;
                 extremums[last] = extremums[last - 1] * 2 - extremums[last - 2];
                 if (extremums[0] > 0) {
                     extremums[0] = -extremums[1];
@@ -512,7 +591,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                     extremums[last] = data.size() + data.size() - extremums[last - 1];
                 }
             } else {
-                auto last = extremums.size() - 1;
+                auto const last = extremums.size() - 1;
                 extremums[0] = -extremums[1];
                 extremums[last] = data.size() + data.size() - extremums[last - 1];
             }
@@ -526,17 +605,15 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 IC(support);
             }
 
-            GENERAL::Nil nil;
-
-            derivator.compute(data, *computer_buffer, nil);
+            derivator.compute(data, *computer_buffer, nullptr);
             for (int i = 0; i < data.size(); i++) {
                 (*computer_buffer)[i] = std::atan(computer_buffer[i]);
             }
-            derivator.compute(*computer_buffer, out, nil);
+            derivator.compute(*computer_buffer, out, nullptr);
             for (int i = 0; i < data.size(); i++) {
                 out[i] = std::abs(out[i]);
             }
-            integrator.compute(out, *computer_buffer, nil);
+            integrator.compute(out, *computer_buffer, nullptr);
             if constexpr (CONFIG::debug) {
                 computer_buffer->show(PlottingKind::Simple);
             }
@@ -561,7 +638,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 for (int i = 0; i < data.size(); i++) {
                     (*computer_buffer)[i] = out[i] / (std::numbers::pi * 2.0);
                 }
-                integrator.compute(*computer_buffer, out, nil);
+                integrator.compute(*computer_buffer, out, nullptr);
             } else if constexpr (kind == InstFreqDerivativeBasedKind::DeriveAverage) {
                 for (auto i = 0; i < data.size(); i++) {
                     auto approx_answer_right = static_cast<T>(0.0);
@@ -599,7 +676,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 for (int i = 0; i < data.size(); i++) {
                     (*computer_buffer)[i] = out[i] / (std::numbers::pi * 2.0);
                 }
-                integrator.compute(*computer_buffer, out, nil);
+                integrator.compute(*computer_buffer, out, nullptr);
             } else if constexpr (kind == InstFreqDerivativeBasedKind::Momental) {
                 for (int i = 0; i < data.size(); i++) {
                     out[i] = (*computer_buffer)[i];
@@ -611,7 +688,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 0, UTILITY_MATH::linearInterpolate<int, double>
                 (support[0], support[1], 0)
             };
-            auto pad = support[0].second;
+            auto const pad = support[0].second;
             for (auto i = 0; i < support.size(); i++) {
                 support[i].second = support[i].second - pad;
             }
@@ -651,7 +728,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                              UTILITY_MATH::linearInterpolate<int, double>(div_support[i], div_support[i + 1], j);
                 }
             }
-            auto i = div_support.size() - 2;
+            auto const i = div_support.size() - 2;
             auto j = div_support[i + 1].first;
             out[j] = out[j] *
                      UTILITY_MATH::linearInterpolate<int, double>(div_support[i], div_support[i + 1], j);

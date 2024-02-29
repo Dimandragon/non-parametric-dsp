@@ -16,7 +16,6 @@ import <optional>;
 import <memory>;
 import <iostream>;
 import <complex>;
-import <functional>;
 
 import npdsp_concepts;
 import utility_math;
@@ -25,9 +24,11 @@ import npdsp_config;
 namespace NP_DSP::ONE_D {
     export
     template<typename T>
-    struct SimpleVecWrapper : SignalBase<T> {
+    struct SimpleVecWrapper {
         bool has_ovnership = false;
 
+        using SampleType = T;
+        using IdxType = std::size_t;
         constexpr static bool is_signal_base = true;
         constexpr static bool is_writable = true;
 
@@ -38,7 +39,7 @@ namespace NP_DSP::ONE_D {
             vec = new std::vector<T>;
         }
 
-        ~SimpleVecWrapper() override {
+        ~SimpleVecWrapper() {
             if (has_ovnership) {
                 delete vec;
             }
@@ -48,27 +49,25 @@ namespace NP_DSP::ONE_D {
             vec = &vec_in;
         }
 
-        /*inline*/
-        T& operator[](std::size_t idx) override {
+        inline T& operator[](std::size_t idx) {
             return (*vec)[idx];
         }
 
-        /*inline*/
-        T operator[](std::size_t idx) const override {
+        inline const T& operator[](std::size_t idx) const {
             return (*vec)[idx];
         }
 
-        size_t size() const override {
+        inline std::size_t size() const {
             return vec->size();
         }
     };
 
-    //static_assert(is_signal_base_first<SimpleVecWrapper<int>>);
+    static_assert(is_signal_base_first<SimpleVecWrapper<int>>);
 
     export
     template<typename T, typename IdxT, typename DataValExpr,
         typename DataRefExpr, typename SizeExpr, bool is_writeble_b>
-    struct ExpressionWrapper : SignalBase<T> {
+    struct ExpressionWrapper {
         using SampleType = T;
         using IdxType = IdxT;
         using DataValueExpression = DataValExpr;
@@ -78,18 +77,17 @@ namespace NP_DSP::ONE_D {
         constexpr static bool is_signal_base = true;
         constexpr static bool is_writable = is_writeble_b;
 
-        std::function<DataValExpr> val_expression;
-        std::function<DataRefExpr> ref_expression;
-        std::function<SizeExpr> size_expression;
+        DataValExpr* val_expression;
+        DataRefExpr* ref_expression;
+        SizeExpr* size_expression;
 
         ExpressionWrapper(DataValExpr& val_expr, DataRefExpr& ref_expr, SizeExpr& size_expr) {
-            val_expression = val_expr;
-            ref_expression = ref_expr;
-            size_expression = size_expr;
+            val_expression = &val_expr;
+            ref_expression = &ref_expr;
+            size_expression = &size_expr;
         }
 
-        /*inline*/
-        T& operator[](std::size_t idx) override {
+        inline T& operator[](std::size_t idx) {
             if constexpr (!std::is_same_v<DataReferenceExpression, GENERAL::Nil>) {
                 return ref_expression(idx);
             } else {
@@ -97,19 +95,17 @@ namespace NP_DSP::ONE_D {
             }
         }
 
-        /*inline*/
-        T operator[](std::size_t idx) const override {
+        inline T operator[](std::size_t idx) const {
             if constexpr (!std::is_same_v<DataValueExpression, GENERAL::Nil>) {
-                //IC(val_expression);
-                return val_expression(idx);
+                return (*val_expression)(idx);
             } else {
                 std::unreachable();
             }
         }
 
-        std::size_t size() const override {
+        std::size_t size() const {
             if constexpr (!std::is_same_v<SizeExpression, GENERAL::Nil>) {
-                return size_expression();
+                return (*size_expression)();
             } else {
                 std::unreachable();
             }
@@ -119,10 +115,12 @@ namespace NP_DSP::ONE_D {
     export
     template<typename T, typename IdxT, typename DataValExpr,
         typename SizeExpr>
-    struct ExpressionWrapper<T, IdxT, DataValExpr, GENERAL::Nil, SizeExpr, false> : SignalBase<T> {
+    struct ExpressionWrapper<T, IdxT, DataValExpr,
+                GENERAL::Nil, SizeExpr, false> {
         using SampleType = T;
         using IdxType = IdxT;
         using DataValueExpression = DataValExpr;
+        using DataReferenceExpression = GENERAL::Nil;
         using SizeExpression = SizeExpr;
 
         constexpr static bool is_signal_base = true;
@@ -132,18 +130,11 @@ namespace NP_DSP::ONE_D {
         SizeExpr* size_expression;
 
         ExpressionWrapper(DataValExpr& val_expr, SizeExpr& size_expr) {
-            //IC(&val_expr, &size_expr);
             val_expression = &val_expr;
             size_expression = &size_expr;
         }
 
-        /*inline*/
-        T& operator[](std::size_t idx) override {
-            std::unreachable();
-        }
-
-        /*inline*/
-        T operator[](std::size_t idx) const override {
+        inline T operator[](std::size_t idx) const {
             if constexpr (!std::is_same_v<DataValueExpression, GENERAL::Nil>) {
                 return (*val_expression)(idx);
             } else {
@@ -151,7 +142,7 @@ namespace NP_DSP::ONE_D {
             }
         }
 
-        std::size_t size() const override {
+        std::size_t size() const {
             if constexpr (!std::is_same_v<SizeExpression, GENERAL::Nil>) {
                 return (*size_expression)();
             } else {
@@ -160,72 +151,145 @@ namespace NP_DSP::ONE_D {
         }
     };
 
+    //export enum class SignalKind {Monotone, Stohastic, Harmonic, Smooth};
 
     export
-    template<typename T, bool is_writable_b>
-    struct GenericSignal : Signal<T> {
+    template<SignalBase BaseT, bool is_writable_b>
+    struct GenericSignal {
         bool has_ovnership = false;
         constexpr static bool is_writable = is_writable_b;
         constexpr static bool is_signal = true;
-        using Base = SignalBase<T>;
+        using Base = BaseT;
         using IdxType = typename Base::IdxType;
         using SampleType = typename Base::SampleType;
+        Base* base;
 
         GenericSignal(Base& base_o) {
-            this->base = &base_o;
+            base = &base_o;
         }
-
 
         GenericSignal() {
-            this->base = nullptr;
-        }
-
-        template<typename BaseT>
-        GenericSignal(GENERAL::Tag<BaseT> tag) {
-            this->base = new BaseT;
+            base = new Base;
             has_ovnership = true;
         }
 
-        ~GenericSignal() override {
+        ~GenericSignal() {
             if (has_ovnership) {
-                delete this->base;
+                delete base;
             }
         }
 
-        //получение значения в неизвестной точке внутри диапазона определения (те в нашем случае по дробному индексу)
+        inline SampleType& operator[](IdxType idx) {
+            return (*base)[idx];
+        }
 
-        SampleType interpolate(double idx, SignalKind kind) const override {
-            using Idx = double;
+        inline SampleType operator[](IdxType idx) const {
+            return (*base)[idx];
+        }
+
+        inline size_t size() const {
+            return base->size();
+        }
+
+        void show(PlottingKind kind) {
+            if (kind == PlottingKind::Interpolate) {
+                std::vector<SampleType> plotting_data = {};
+                int i = -size();
+                while (i < static_cast<int>(size() * 2)) {
+                    ++i;
+                    plotting_data.push_back(static_cast<float>(interpolate<double>(static_cast<double>(i), SignalKind::Stohastic)));
+                }
+                matplot::plot(plotting_data);
+                matplot::show();
+            } else if (kind == PlottingKind::Simple) {
+                std::vector<SampleType> plotting_data = {};
+                for (auto i = 0; i < base->size(); ++i) {
+                    auto sample = (*base)[i];
+                    plotting_data.push_back(sample);
+                }
+                matplot::plot(plotting_data);
+                matplot::show();
+            }
+        }
+
+        void show(PlottingKind kind, const std::string& filename, const std::string& format) const {
+            if (kind == PlottingKind::Simple) {
+                std::vector<SampleType> plotting_data = {};
+                for (auto i = 0; i < base->size(); ++i) {
+                    plotting_data.push_back((*base)[i]);
+                }
+                matplot::plot(plotting_data);
+                matplot::show();
+                matplot::save(filename, format);
+            } else if (kind == PlottingKind::Interpolate) {
+                std::vector<SampleType> plotting_data = {};
+                int i = -size();
+                while (i < static_cast<int>(size() * 2)) {
+                    ++i;
+                    plotting_data.push_back(interpolate<int>(i, SignalKind::Stohastic));
+                }
+                matplot::plot(plotting_data);
+                matplot::show();
+                matplot::save(filename, format);
+            }
+        }
+
+        void show(PlottingKind kind, const std::string& filename) const {
+            if (kind == PlottingKind::Simple) {
+                std::vector<SampleType> plotting_data = {};
+                for (auto i = 0; i < base->size(); ++i) {
+                    plotting_data.push_back((*base)[i]);
+                }
+                matplot::plot(plotting_data);
+                matplot::show();
+                matplot::save(filename);
+            } else if (kind == PlottingKind::Interpolate) {
+                std::vector<SampleType> plotting_data = {};
+                int i = -size();
+                while (i < static_cast<int>(size() * 2)) {
+                    ++i;
+                    plotting_data.push_back(interpolate<int>(i, SignalKind::Stohastic));
+                }
+                matplot::plot(plotting_data);
+                matplot::show();
+                matplot::save(filename);
+            }
+        }
+
+
+        //получение значения в неизвестной точке внутри диапазона определения (те в нашем случае по дробному индексу)
+        template<typename Idx>
+        SampleType interpolate(Idx idx, SignalKind kind) const {
             if (kind == SignalKind::Monotone) {
-                if (idx >= 0 && idx < static_cast<Idx>(this->size() - 2)) {
+                if (idx >= 0 && idx < static_cast<Idx>(size() - 2)) {
                     if constexpr (CONFIG::debug) {
                         std::string mark = "1b";
                         IC(mark);
                     }
                     return UTILITY_MATH::linearInterpolate<double, SampleType>(
-                        {static_cast<double>(idx), (*this->base)[static_cast<int>(idx)]},
-                        {static_cast<double>(idx + 1), (*this->base)[idx + 1]}, static_cast<double>(idx));
+                        {static_cast<double>(idx), (*base)[static_cast<int>(idx)]},
+                        {static_cast<double>(idx + 1), (*base)[idx + 1]}, static_cast<double>(idx));
                 } else if (idx < 0) {
-                    Idx idx_new = idx + ((0 - static_cast<int>(idx)) % static_cast<int>(this->size())) * 2;
+                    Idx idx_new = idx + ((0 - static_cast<int>(idx)) % static_cast<int>(size())) * 2;
                     if constexpr (CONFIG::debug) {
                         std::string mark = "2b";
                         IC(mark);
                         IC(idx_new);
                     }
                     if (idx_new == idx) {
-                        ++idx_new;
+                        idx_new++;
                     }
                     SampleType value_new = interpolate(idx_new, kind);
                     return UTILITY_MATH::linearInterpolate<double, SampleType>(
-                        {idx_new, value_new}, {0.0, (*this->base)[0]}, static_cast<double>(idx));
-                } else if (idx > this->size() - 1) {
-                    Idx idx_new = idx - ((static_cast<int>(idx) - static_cast<int>(this->size())) % static_cast<int>(
-                                             this->size())) * 2 - 1;
+                        {static_cast<double>(idx_new), value_new}, {0.0, (*base)[0]}, static_cast<double>(idx));
+                } else if (idx > size() - 1) {
+                    Idx idx_new = idx - ((static_cast<int>(idx) - static_cast<int>(size())) % static_cast<int>(size()))
+                                  * 2 - 1;
                     if (idx_new == idx) {
-                        --idx_new;
+                        idx_new--;
                     }
-                    if (idx_new > this->size() - 1) {
-                        idx_new = this->size() - 2;
+                    if (idx_new > size() - 1) {
+                        idx_new = size() - 2;
                     }
                     if constexpr (CONFIG::debug) {
                         std::string mark = "3b";
@@ -234,88 +298,57 @@ namespace NP_DSP::ONE_D {
                     }
                     SampleType value_new = interpolate(idx_new, kind);
                     return UTILITY_MATH::linearInterpolate<double, SampleType>(
-                        {static_cast<double>(this->size() - 1), (*this->base)[this->size() - 1]}, {idx_new, value_new},
-                        idx);
+                        {static_cast<double>(size() - 1), (*base)[size() - 1]},
+                        {static_cast<double>(idx_new), value_new}, static_cast<double>(idx));
                 } else {
                     if constexpr (CONFIG::debug) {
                         std::string mark = "4b";
                         IC(mark);
                     }
                     return UTILITY_MATH::linearInterpolate<double, SampleType>(
-                        {static_cast<double>(this->size() - 1), (*this->base)[this->size() - 1]}, {
-                            static_cast<double>(this->size() - 2), (*this->base)[this->size() - 2]
-                        }, idx);
+                        {static_cast<double>(size() - 1), (*base)[size() - 1]},
+                        {static_cast<double>(size() - 2), (*base)[size() - 2]}, static_cast<double>(idx));
                 }
             } else if (kind == SignalKind::Harmonic) {
-                if constexpr (GENERAL::is_complex<T>) {
-                    std::vector<std::complex<double>> data;
-                    std::vector<std::complex<double>> spectr;
-                    if (spectr.size() != this->size()) {
-                        spectr.clear();
-                        data.clear();
-                        for (int i = 0; i < this->size(); i++) {
-                            spectr.push_back({0.0, 0.0});
-                            data.push_back((*this)[i]);
-                        }
-                    } else {
-                        for (int i = 0; i < this->size(); i++) {
-                            data.push_back((*this)[i]);
-                            spectr[i] = {0.0, 0.0};
-                        }
+                std::vector<std::complex<double>> data;
+                std::vector<std::complex<double>> spectr;
+                //using DT = GenericSignal<SimpleVecWrapper<std::complex<double>>, true>;
+                if (spectr.size() != size()) {
+                    spectr.clear();
+                    data.clear();
+                    for (int i = 0; i < size(); i++) {
+                        spectr.push_back({0.0, 0.0});
+                        data.push_back({(*this)[i], 0.0});
                     }
-                    UTILITY_MATH::fftc2c(data, spectr);
-                    //IC()
-                    //spectr.show(PlottingKind::Simple);
-
-
-                    std::complex accum = {0.0, 0.0};
-                    for (int i = 0; i < this->size(); i++) {
-                        std::complex b = {
-                            std::cos(2.0 * std::numbers::pi * i * idx / this->size()),
-                            std::sin(2.0 * std::numbers::pi * i * idx / this->size())
-                        };
-                        accum += spectr[i] * b;
-                    }
-                    return accum;
                 } else {
-                    std::vector<std::complex<double>> data;
-                    std::vector<std::complex<double>> spectr;
-                    if (spectr.size() != this->size()) {
-                        spectr.clear();
-                        data.clear();
-                        for (int i = 0; i < this->size(); i++) {
-                            spectr.push_back({0.0, 0.0});
-                            data.push_back({(*this)[i], 0.0});
-                        }
-                    } else {
-                        for (int i = 0; i < this->size(); i++) {
-                            data[i] = {(*this)[i], 0.0};
-                            spectr[i] = {0.0, 0.0};
-                        }
+                    for (int i = 0; i < size(); i++) {
+                        data[i] = {(*this)[i], 0.0};
+                        spectr[i] = {0.0, 0.0};
                     }
-                    UTILITY_MATH::fftc2c(data, spectr);
-                    //IC()
-                    //spectr.show(PlottingKind::Simple);
-
-
-                    std::complex accum = {0.0, 0.0};
-                    for (int i = 0; i < this->size(); i++) {
-                        std::complex b = {
-                            std::cos(2.0 * std::numbers::pi * i * idx / this->size()),
-                            std::sin(2.0 * std::numbers::pi * i * idx / this->size())
-                        };
-                        accum += spectr[i] * b;
-                    }
-                    return accum.real();
                 }
+                UTILITY_MATH::fftc2c(data, spectr);
+                //IC()
+                //spectr.show(PlottingKind::Simple);
+
+
+                std::complex<double> accum = {0.0, 0.0};
+                for (int i = 0; i < size(); i++) {
+                    std::complex b = {
+                        std::cos(2.0 * std::numbers::pi * i * idx / size()),
+                        std::sin(2.0 * std::numbers::pi * i * idx / size())
+                    };
+                    accum += spectr[i] * b;
+                }
+                return accum.real();
             } else if (kind == SignalKind::Stohastic) {
-                if (idx >= 0 && idx < static_cast<Idx>(this->size() - 2)) {
-                    if constexpr (CONFIG::debug) {
+                if (idx >= 0 && idx < static_cast<Idx>(size() - 2)) {
+                    if constexpr (NP_DSP::CONFIG::debug) {
                         std::string mark = "1b";
                         IC(mark);
                     }
                     return UTILITY_MATH::linearInterpolate<double, SampleType>(
-                        {idx, (*this->base)[static_cast<int>(idx)]}, {idx + 1, (*this->base)[idx + 1]}, idx);
+                        {static_cast<double>(idx), (*base)[static_cast<int>(idx)]},
+                        {static_cast<double>(idx + 1), (*base)[idx + 1]}, static_cast<double>(idx));
                 } else if (idx < 0) {
                     Idx idx_new = 0.0 - idx;
 
@@ -324,21 +357,295 @@ namespace NP_DSP::ONE_D {
                     }
                     SampleType value_new = interpolate(idx_new, kind);
                     return value_new;
-                } else if (idx > this->size() - 1) {
-                    Idx idx_new = 2.0 * this->size() - 2.0 - idx;
+                } else if (idx > size() - 1) {
+                    Idx idx_new = 2.0 * size() - 2.0 - idx;
 
                     SampleType value_new = interpolate(idx_new, kind);
                     return value_new;
                 } else {
                     return UTILITY_MATH::linearInterpolate<double, SampleType>(
-                        {static_cast<double>(this->size() - 1), (*this->base)[this->size() - 1]}, {
-                            static_cast<double>(this->size() - 2), (*this->base)[this->size() - 2]
-                        }, idx);
+                        {static_cast<double>(size() - 1), (*base)[size() - 1]},
+                        {static_cast<double>(size() - 2), (*base)[size() - 2]}, static_cast<double>(idx));
                 }
             } else if (kind == SignalKind::Smooth) {
                 //todo Teilors Series
                 std::unreachable();
             }
         }
+
+        template<typename Idx>
+        IdxType findMonotone(SampleType value, std::optional<Idx> idx1, std::optional<Idx> idx2) const {
+            if (!idx1) {
+                if (*idx2 != 0) {
+                    idx1 = {0};
+                } else {
+                    idx1 = {-size()};
+                }
+            }
+            if (!idx2) {
+                if (*idx2 != 0) {
+                    idx1 = {2 * size()};
+                } else {
+                    idx2 = {size()};
+                }
+            }
+            auto idx_lambda = [&](int idx) {
+                return interpolate(idx, SignalKind::Monotone);
+            };
+            std::pair<int, int> idxes = ONE_D::UTILITY_MATH::interpoationSearch(*idx1, *idx2, value, idx_lambda);
+            if constexpr (CONFIG::debug) {
+                std::string mark = "find monotone";
+                IC(mark, idxes.first, idxes.second, value);
+            }
+            return UTILITY_MATH::backLinearInterpolate<Idx, SampleType>(
+                {*idx1, (*base)[*idx1]}, {*idx2, (*base)[*idx2]}, value);
+        }
     };
+
+    export
+    template<SignalBase BaseT>
+    struct GenericSignal<BaseT, false> {
+        bool has_ovnership = false;
+        constexpr static bool is_writable = false;
+        constexpr static bool is_signal = true;
+        using Base = BaseT;
+        using IdxType = typename Base::IdxType;
+        using SampleType = typename Base::SampleType;
+        Base* base;
+
+        GenericSignal(Base& base_o) {
+            base = &base_o;
+        }
+
+        GenericSignal() {
+            base = new Base;
+            has_ovnership = true;
+        }
+
+        ~GenericSignal() {
+            if (has_ovnership) {
+                delete base;
+            }
+        }
+
+        inline SampleType operator[](IdxType idx) const {
+            return (*base)[idx];
+        }
+
+        inline size_t size() const {
+            return base->size();
+        }
+
+        void show(PlottingKind kind) {
+            if (kind == PlottingKind::Interpolate) {
+                std::vector<SampleType> plotting_data = {};
+                int i = -size();
+                while (i < static_cast<int>(size() * 2)) {
+                    i++;
+                    plotting_data.push_back(static_cast<float>(interpolate<double>(static_cast<double>(i), SignalKind::Stohastic)));
+                }
+                matplot::plot(plotting_data);
+                matplot::show();
+            } else if (kind == PlottingKind::Simple) {
+                std::vector<SampleType> plotting_data = {};
+                for (auto i = 0; i < base->size(); i++) {
+                    auto sample = (*base)[i];
+                    plotting_data.push_back(sample);
+                }
+                matplot::plot(plotting_data);
+                matplot::show();
+            }
+        }
+
+        void show(PlottingKind kind, const std::string& filename, const std::string& format) const {
+            if (kind == PlottingKind::Simple) {
+                std::vector<SampleType> plotting_data = {};
+                for (auto i = 0; i < base->size(); i++) {
+                    plotting_data.push_back((*base)[i]);
+                }
+                matplot::plot(plotting_data);
+                matplot::show();
+                matplot::save(filename, format);
+            } else if (kind == PlottingKind::Interpolate) {
+                std::vector<SampleType> plotting_data = {};
+                int i = -size();
+                while (i < static_cast<int>(size() * 2)) {
+                    i++;
+                    plotting_data.push_back(interpolate<int>(i, SignalKind::Stohastic));
+                }
+                matplot::plot(plotting_data);
+                matplot::show();
+                matplot::save(filename, format);
+            }
+        }
+
+        void show(PlottingKind kind, const std::string& filename) const {
+            if (kind == PlottingKind::Simple) {
+                std::vector<SampleType> plotting_data = {};
+                for (auto i = 0; i < base->size(); i++) {
+                    plotting_data.push_back((*base)[i]);
+                }
+                matplot::plot(plotting_data);
+                matplot::show();
+                matplot::save(filename);
+            } else if (kind == PlottingKind::Interpolate) {
+                std::vector<SampleType> plotting_data = {};
+                int i = -size();
+                while (i < static_cast<int>(size() * 2)) {
+                    i++;
+                    plotting_data.push_back(interpolate<int>(i, SignalKind::Stohastic));
+                }
+                matplot::plot(plotting_data);
+                matplot::show();
+                matplot::save(filename);
+            }
+        }
+
+
+        //получение значения в неизвестной точке внутри диапазона определения (те в нашем случае по дробному индексу)
+        template<typename Idx>
+        SampleType interpolate(Idx idx, SignalKind kind) const {
+            if (kind == SignalKind::Monotone) {
+                if (idx >= 0 && idx < static_cast<Idx>(size() - 2)) {
+                    if constexpr (CONFIG::debug) {
+                        std::string mark = "1b";
+                        IC(mark);
+                    }
+                    return UTILITY_MATH::linearInterpolate<double, SampleType>(
+                        {static_cast<double>(idx), (*base)[static_cast<int>(idx)]},
+                        {static_cast<double>(idx + 1), (*base)[idx + 1]}, static_cast<double>(idx));
+                } else if (idx < 0) {
+                    Idx idx_new = idx + ((0 - static_cast<int>(idx)) % static_cast<int>(size())) * 2;
+                    if constexpr (CONFIG::debug) {
+                        std::string mark = "2b";
+                        IC(mark);
+                        IC(idx_new);
+                    }
+                    if (idx_new == idx) {
+                        idx_new++;
+                    }
+                    SampleType value_new = interpolate(idx_new, kind);
+                    return UTILITY_MATH::linearInterpolate<double, SampleType>(
+                        {static_cast<double>(idx_new), value_new}, {0.0, (*base)[0]}, static_cast<double>(idx));
+                } else if (idx > size() - 1) {
+                    Idx idx_new = idx - ((static_cast<int>(idx) - static_cast<int>(size())) % static_cast<int>(size()))
+                                  * 2 - 1;
+                    if (idx_new == idx) {
+                        idx_new--;
+                    }
+                    if (idx_new > size() - 1) {
+                        idx_new = size() - 2;
+                    }
+                    if constexpr (CONFIG::debug) {
+                        std::string mark = "3b";
+                        IC(mark);
+                        IC(idx_new);
+                    }
+                    SampleType value_new = interpolate(idx_new, kind);
+                    return UTILITY_MATH::linearInterpolate<double, SampleType>(
+                        {static_cast<double>(size() - 1), (*base)[size() - 1]},
+                        {static_cast<double>(idx_new), value_new}, static_cast<double>(idx));
+                } else {
+                    if constexpr (CONFIG::debug) {
+                        std::string mark = "4b";
+                        IC(mark);
+                    }
+                    return UTILITY_MATH::linearInterpolate<double, SampleType>(
+                        {static_cast<double>(size() - 1), (*base)[size() - 1]},
+                        {static_cast<double>(size() - 2), (*base)[size() - 2]}, static_cast<double>(idx));
+                }
+            } else if (kind == SignalKind::Harmonic) {
+                std::vector<std::complex<double>> data;
+                std::vector<std::complex<double>> spectr;
+                //using DT = GenericSignal<SimpleVecWrapper<std::complex<double>>, true>;
+                if (spectr.size() != size()) {
+                    spectr.clear();
+                    data.clear();
+                    for (int i = 0; i < size(); i++) {
+                        spectr.push_back({0.0, 0.0});
+                        data.push_back({(*this)[i], 0.0});
+                    }
+                } else {
+                    for (int i = 0; i < size(); i++) {
+                        data[i] = {(*this)[i], 0.0};
+                        spectr[i] = {0.0, 0.0};
+                    }
+                }
+                UTILITY_MATH::fftc2c(data, spectr);
+                //IC()
+                //spectr.show(PlottingKind::Simple);
+
+
+                std::complex<double> accum = {0.0, 0.0};
+                for (int i = 0; i < size(); i++) {
+                    std::complex b = {
+                        std::cos(2.0 * std::numbers::pi * i * idx / size()),
+                        std::sin(2.0 * std::numbers::pi * i * idx / size())
+                    };
+                    accum += spectr[i] * b;
+                }
+                return accum.real();
+            } else if (kind == SignalKind::Stohastic) {
+                if (idx >= 0 && idx < static_cast<Idx>(size() - 2)) {
+                    if constexpr (NP_DSP::CONFIG::debug) {
+                        std::string mark = "1b";
+                        IC(mark);
+                    }
+                    return UTILITY_MATH::linearInterpolate<double, SampleType>(
+                        {static_cast<double>(idx), (*base)[static_cast<int>(idx)]},
+                        {static_cast<double>(idx + 1), (*base)[idx + 1]}, static_cast<double>(idx));
+                } else if (idx < 0) {
+                    Idx idx_new = 0.0 - idx;
+
+                    if (idx_new == idx) {
+                        ++idx_new;
+                    }
+                    SampleType value_new = interpolate(idx_new, kind);
+                    return value_new;
+                } else if (idx > size() - 1) {
+                    Idx idx_new = 2.0 * size() - 2.0 - idx;
+
+                    SampleType value_new = interpolate(idx_new, kind);
+                    return value_new;
+                } else {
+                    return UTILITY_MATH::linearInterpolate<double, SampleType>(
+                        {static_cast<double>(size() - 1), (*base)[size() - 1]},
+                        {static_cast<double>(size() - 2), (*base)[size() - 2]}, static_cast<double>(idx));
+                }
+            } else if (kind == SignalKind::Smooth) {
+                //todo Teilors Series
+                std::unreachable();
+            }
+        }
+
+        template<typename Idx>
+        IdxType findMonotone(SampleType value, std::optional<Idx> idx1, std::optional<Idx> idx2) const {
+            if (!idx1) {
+                if (*idx2 != 0) {
+                    idx1 = {0};
+                } else {
+                    idx1 = {-size()};
+                }
+            }
+            if (!idx2) {
+                if (*idx2 != 0) {
+                    idx1 = {2 * size()};
+                } else {
+                    idx2 = {size()};
+                }
+            }
+            auto idx_lambda = [&](int idx) {
+                return interpolate(idx, SignalKind::Monotone);
+            };
+            std::pair<int, int> idxes = UTILITY_MATH::interpoationSearch(*idx1, *idx2, value, idx_lambda);
+            if constexpr (CONFIG::debug) {
+                std::string mark = "find monotone";
+                IC(mark, idxes.first, idxes.second, value);
+            }
+            return UTILITY_MATH::backLinearInterpolate<Idx, SampleType>(
+                {*idx1, (*base)[*idx1]}, {*idx2, (*base)[*idx2]}, value);
+        }
+    };
+
+    static_assert(ONE_D::is_signal<GenericSignal<SimpleVecWrapper<int>, true>>);
 }

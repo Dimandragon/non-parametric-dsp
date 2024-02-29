@@ -14,14 +14,11 @@ import <concepts>;
 
 namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
     export
-    template<typename T,
-        Integrator<T> IntegratorT, Derivator <T> DerivatorT,
+    template<typename U,
+        Integrator<U> IntegratorT, Derivator<U> DerivatorT,
             INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind kind_e>
     struct DerivativeBasedUsingExternalInstFreq {
-        using DataType = Signal<T>;
-        using OutType = Signal<T>;
-        using InstFreqT = Signal<T>;
-        using AdditionalDataType = Signal<T>;
+        using AdditionalDataType = SignalPrototype<U>;
 
     private:
         using InstFreqDerivativeBasedKind = INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind;
@@ -29,17 +26,20 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
     public:
         constexpr static InstFreqDerivativeBasedKind kind = kind_e;
 
-        InstFreqT* inst_freq;
+        using BuffT = GenericSignal<SimpleVecWrapper<U>, true>;
+        BuffT * inst_freq;
+
         IntegratorT integrator;
         DerivatorT derivator;
 
-        DerivativeBasedUsingExternalInstFreq(IntegratorT integrator, DerivatorT derivator, InstFreqT& inst_freq) {
+
+        DerivativeBasedUsingExternalInstFreq(IntegratorT integrator, DerivatorT derivator, BuffT& inst_freq) {
             this->integrator = integrator;
             this->derivator = derivator;
             this->inst_freq = &inst_freq;
         }
 
-        DerivativeBasedUsingExternalInstFreq(InstFreqT& inst_freq) {
+        DerivativeBasedUsingExternalInstFreq(BuffT& inst_freq) {
             this->inst_freq = &inst_freq;
         }
 
@@ -47,7 +47,8 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
             this->inst_freq = NULL;
         }
 
-        void compute(const DataType& data, OutType& out, AdditionalDataType * computer_buffer) {
+        template<Signal DataType, Signal OutType, Signal ComputeBufferType>
+        void compute(const DataType& data, OutType& out, ComputeBufferType * computer_buffer) {
             derivator.compute(data, out, nullptr);
             for (int i = 0; i < out.size(); i++) {
                 out[i] = std::abs(out[i]) / 4;
@@ -72,14 +73,12 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
     };
 
     export
-    template<typename T, Integrator<T> IntegratorT,
-        Derivator<T> DerivatorT,
-        InstFreqComputer<T> InstFreqComputerType,
+    template<typename U, Integrator<U> IntegratorT,
+        Derivator<U> DerivatorT,
+        InstFreqComputer<U> InstFreqComputerType,
         INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind kind_e>
     struct DerivativeAndInstFreqBased {
-        using DataType = Signal<T>;
-        using OutType = Signal<T>;
-        using AdditionalDataType = Signal<T>;
+        using AdditionalDataType = SignalPrototype<U>;
 
     private:
         using InstFreqDerivativeBasedKind = INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind;
@@ -87,7 +86,8 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
     public:
         constexpr static InstFreqDerivativeBasedKind kind = kind_e;
 
-        GenericSignal <T, true> inst_freq = GenericSignal <T, true>(GENERAL::Tag<SimpleVecWrapper<T>>{});
+        using BuffT = GenericSignal<SimpleVecWrapper<U>, true>;
+        BuffT inst_freq;
 
         IntegratorT integrator;
         DerivatorT derivator;
@@ -109,8 +109,9 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
             //todo
         }
 
-        //computer buffer and data must be monotone
-        void compute(const DataType& data, OutType& out, AdditionalDataType * computer_buffer) {
+        template<Signal DataType, Signal OutType, Signal ComputerBufferType>
+        void compute(const DataType& data, OutType& out, ComputerBufferType * computer_buffer) {
+            using T = typename OutType::SampleType;
             if constexpr (std::convertible_to<typename InstFreqComputerType::AdditionalDataType, GENERAL::Nil>) {
                 if (inst_freq.size() != data.size()) {
                     static_cast<SimpleVecWrapper<T> *>(inst_freq.base)->vec->clear();
