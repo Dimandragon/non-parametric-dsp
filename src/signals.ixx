@@ -36,15 +36,6 @@ namespace NP_DSP::ONE_D {
         SimpleVecWrapper() {
             has_ovnership = true;
             vec = new std::vector<T>;
-            this->ref_fn = [&](size_t idx)-> T& {
-                return (*vec)[idx];
-            };
-            this->val_fn = [&](size_t idx)-> T const {
-                return (*vec)[idx];
-            };
-            this->size_fn = [&]()-> size_t const {
-                return vec->size();
-            };
         }
 
         ~SimpleVecWrapper() override {
@@ -55,22 +46,14 @@ namespace NP_DSP::ONE_D {
 
         SimpleVecWrapper(std::vector<T>& vec_in) {
             vec = &vec_in;
-            this->ref_fn = [&](size_t idx)-> T& {
-                return (*vec)[idx];
-            };
-            this->val_fn = [&](size_t idx)-> T const {
-                return (*vec)[idx];
-            };
-            this->size_fn = [&]()-> size_t const {
-                return vec->size();
-            };
         }
 
-        /*
+        /*inline*/
         T& operator[](std::size_t idx) override {
             return (*vec)[idx];
         }
 
+        /*inline*/
         T operator[](std::size_t idx) const override {
             return (*vec)[idx];
         }
@@ -78,7 +61,6 @@ namespace NP_DSP::ONE_D {
         size_t size() const override {
             return vec->size();
         }
-        */
     };
 
     //static_assert(is_signal_base_first<SimpleVecWrapper<int>>);
@@ -96,10 +78,41 @@ namespace NP_DSP::ONE_D {
         constexpr static bool is_signal_base = true;
         constexpr static bool is_writable = is_writeble_b;
 
+        std::function<DataValExpr> val_expression;
+        std::function<DataRefExpr> ref_expression;
+        std::function<SizeExpr> size_expression;
+
         ExpressionWrapper(DataValExpr& val_expr, DataRefExpr& ref_expr, SizeExpr& size_expr) {
-            this->val_fn = val_expr;
-            this->ref_fn = ref_expr;
-            this->size_fn = size_expr;
+            val_expression = val_expr;
+            ref_expression = ref_expr;
+            size_expression = size_expr;
+        }
+
+        /*inline*/
+        T& operator[](std::size_t idx) override {
+            if constexpr (!std::is_same_v<DataReferenceExpression, GENERAL::Nil>) {
+                return ref_expression(idx);
+            } else {
+                std::unreachable();
+            }
+        }
+
+        /*inline*/
+        T operator[](std::size_t idx) const override {
+            if constexpr (!std::is_same_v<DataValueExpression, GENERAL::Nil>) {
+                //IC(val_expression);
+                return val_expression(idx);
+            } else {
+                std::unreachable();
+            }
+        }
+
+        std::size_t size() const override {
+            if constexpr (!std::is_same_v<SizeExpression, GENERAL::Nil>) {
+                return size_expression();
+            } else {
+                std::unreachable();
+            }
         }
     };
 
@@ -115,10 +128,35 @@ namespace NP_DSP::ONE_D {
         constexpr static bool is_signal_base = true;
         constexpr static bool is_writable = false;
 
+        DataValExpr* val_expression;
+        SizeExpr* size_expression;
+
         ExpressionWrapper(DataValExpr& val_expr, SizeExpr& size_expr) {
             //IC(&val_expr, &size_expr);
-            this->val_fn = val_expr;
-            this->size_fn = size_expr;
+            val_expression = &val_expr;
+            size_expression = &size_expr;
+        }
+
+        /*inline*/
+        T& operator[](std::size_t idx) override {
+            std::unreachable();
+        }
+
+        /*inline*/
+        T operator[](std::size_t idx) const override {
+            if constexpr (!std::is_same_v<DataValueExpression, GENERAL::Nil>) {
+                return (*val_expression)(idx);
+            } else {
+                std::unreachable();
+            }
+        }
+
+        std::size_t size() const override {
+            if constexpr (!std::is_same_v<SizeExpression, GENERAL::Nil>) {
+                return (*size_expression)();
+            } else {
+                std::unreachable();
+            }
         }
     };
 
@@ -148,7 +186,7 @@ namespace NP_DSP::ONE_D {
             has_ovnership = true;
         }
 
-        ~GenericSignal() override final {
+        ~GenericSignal() override {
             if (has_ovnership) {
                 delete this->base;
             }
@@ -156,7 +194,7 @@ namespace NP_DSP::ONE_D {
 
         //получение значения в неизвестной точке внутри диапазона определения (те в нашем случае по дробному индексу)
 
-        SampleType interpolate(double idx, SignalKind kind) const override final {
+        SampleType interpolate(double idx, SignalKind kind) const override {
             using Idx = double;
             if (kind == SignalKind::Monotone) {
                 if (idx >= 0 && idx < static_cast<Idx>(this->size() - 2)) {
