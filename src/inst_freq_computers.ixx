@@ -206,7 +206,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     while (approx_answer_right < std::numbers::pi * variability) {
                         counter++;
                         old_approx_answer_right = approx_answer_right;
-                        approx_answer_right = phase.interpolate(i + counter) - phase.interpolate(i);
+                        approx_answer_right = phase.interpolate(i + counter, SignalKind::Monotone) - phase.interpolate(i, SignalKind::Monotone);
                     }
                     auto left_loss_right_edge = std::numbers::pi * variability - old_approx_answer_right;
                     auto right_loss_right_edge = approx_answer_right - std::numbers::pi * variability;
@@ -219,7 +219,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     while (approx_answer_left < std::numbers::pi * variability) {
                         counter++;
                         old_approx_answer_left = approx_answer_left;
-                        approx_answer_left = phase.interpolate(i) - phase.interpolate(i - counter);
+                        approx_answer_left = phase.interpolate(i, SignalKind::Monotone) - phase.interpolate(i - counter, SignalKind::Monotone);
                     }
                     auto left_loss_left_edge = std::numbers::pi * variability - old_approx_answer_left;
                     auto right_loss_left_edge = approx_answer_left - std::numbers::pi * variability;
@@ -237,7 +237,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     while (approx_answer_right < std::numbers::pi * variability) {
                         counter++;
                         old_approx_answer_right = approx_answer_right;
-                        approx_answer_right = phase.interpolate(i + counter) - phase.interpolate(i);
+                        approx_answer_right = phase.interpolate(i + counter, SignalKind::Monotone) - phase.interpolate(i, SignalKind::Monotone);
                     }
                     auto left_loss_right_edge = std::numbers::pi * variability - old_approx_answer_right;
                     auto right_loss_right_edge = approx_answer_right - std::numbers::pi * variability;
@@ -250,7 +250,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     while (approx_answer_left < std::numbers::pi * variability) {
                         counter++;
                         old_approx_answer_left = approx_answer_left;
-                        approx_answer_left = phase.interpolate(i) - phase.interpolate(i - counter);
+                        approx_answer_left = phase.interpolate(i, SignalKind::Monotone) - phase.interpolate(i - counter, SignalKind::Monotone);
                     }
                     auto left_loss_left_edge = std::numbers::pi * variability - old_approx_answer_left;
                     auto right_loss_left_edge = approx_answer_left - std::numbers::pi * variability;
@@ -297,7 +297,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     while (approx_answer_right < std::numbers::pi * variability) {
                         counter++;
                         old_approx_answer_right = approx_answer_right;
-                        approx_answer_right = phase.interpolate(i + counter) - phase.interpolate(i);
+                        approx_answer_right = phase.interpolate(i + counter, SignalKind::Monotone) - phase.interpolate(i, SignalKind::Monotone);
                     }
                     auto left_loss_right_edge = std::numbers::pi * variability - old_approx_answer_right;
                     auto right_loss_right_edge = approx_answer_right - std::numbers::pi * variability;
@@ -310,7 +310,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     while (approx_answer_left < std::numbers::pi * variability) {
                         counter++;
                         old_approx_answer_left = approx_answer_left;
-                        approx_answer_left = phase.interpolate(i) - phase.interpolate(i - counter);
+                        approx_answer_left = phase.interpolate(i, SignalKind::Monotone) - phase.interpolate(i - counter, SignalKind::Monotone);
                     }
                     auto left_loss_left_edge = std::numbers::pi * variability - old_approx_answer_left;
                     auto right_loss_left_edge = approx_answer_left - std::numbers::pi * variability;
@@ -328,7 +328,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     while (approx_answer_right < std::numbers::pi * variability) {
                         counter++;
                         old_approx_answer_right = approx_answer_right;
-                        approx_answer_right = phase.interpolate(i + counter) - phase.interpolate(i);
+                        approx_answer_right = phase.interpolate(i + counter, SignalKind::Monotone) - phase.interpolate(i, SignalKind::Monotone);
                     }
                     auto left_loss_right_edge = std::numbers::pi * variability - old_approx_answer_right;
                     auto right_loss_right_edge = approx_answer_right - std::numbers::pi * variability;
@@ -341,7 +341,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     while (approx_answer_left < std::numbers::pi * variability) {
                         counter++;
                         old_approx_answer_left = approx_answer_left;
-                        approx_answer_left = phase.interpolate(i) - phase.interpolate(i - counter);
+                        approx_answer_left = phase.interpolate(i, SignalKind::Monotone) - phase.interpolate(i - counter, SignalKind::Monotone);
                     }
                     auto left_loss_left_edge = std::numbers::pi * variability - old_approx_answer_left;
                     auto right_loss_left_edge = approx_answer_left - std::numbers::pi * variability;
@@ -552,8 +552,8 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     while (approx_answer < 2.0 * std::numbers::pi * variability) {
                         counter++;
                         old_approx_answer = approx_answer;
-                        approx_answer = computer_buffer->interpolate(i + counter) - computer_buffer->interpolate(
-                                            i - counter);
+                        approx_answer = computer_buffer->interpolate(i + counter, SignalKind::Monotone) - computer_buffer->interpolate(
+                                            i - counter, SignalKind::Monotone);
                     }
                     auto left_loss = std::numbers::pi * 2.0 * variability - old_approx_answer;
                     auto right_loss = approx_answer - std::numbers::pi * 2.0 * variability;
@@ -581,8 +581,8 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     while (approx_answer_right < std::numbers::pi * variability) {
                         counter++;
                         old_approx_answer_right = approx_answer_right;
-                        approx_answer_right = computer_buffer->interpolate(i + counter) - computer_buffer->
-                                              interpolate(i);
+                        approx_answer_right = computer_buffer->interpolate(i + counter, SignalKind::Monotone) - computer_buffer->
+                                              interpolate(i, SignalKind::Monotone);
                     }
                     auto left_loss_right_edge = std::numbers::pi * variability - old_approx_answer_right;
                     auto right_loss_right_edge = approx_answer_right - std::numbers::pi * variability;
@@ -595,8 +595,8 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     while (approx_answer_left < std::numbers::pi * variability) {
                         counter++;
                         old_approx_answer_left = approx_answer_left;
-                        approx_answer_left = computer_buffer->interpolate(i) - computer_buffer->
-                                             interpolate(i - counter);
+                        approx_answer_left = computer_buffer->interpolate(i, SignalKind::Monotone) - computer_buffer->
+                                             interpolate(i - counter, SignalKind::Monotone);
                     }
                     auto left_loss_left_edge = std::numbers::pi * variability - old_approx_answer_left;
                     auto right_loss_left_edge = approx_answer_left - std::numbers::pi * variability;

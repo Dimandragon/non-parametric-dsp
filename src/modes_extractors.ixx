@@ -15,43 +15,37 @@ import integrators;
 import derivators;
 
 namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
-    export
-    template<InstFreqComputer InstFreqComputerT>
-    struct LinearExtractor {
-        //using InstFreqComputerT
-    };
 
     export
     struct MainExtractor {
-        using DataType = GenericSignal<double, true>;
+        using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         DataType data;
         std::vector<DataType *> modes;
         std::vector<DataType *> inst_freqs;
         std::vector<DataType *> inst_ampls;
         std::vector<DataType *> phases;
 
-        INTEGRATORS::Riman<DataType, DataType, INTEGRATORS::PolygonType::ByPoint> integrator;
-        DERIVATORS::FinniteDifference<DataType, DataType, DERIVATORS::FinniteDifferenceType::Central> derivator;
+        INTEGRATORS::Riman<INTEGRATORS::PolygonType::ByPoint> integrator;
+        DERIVATORS::FinniteDifference<DERIVATORS::FinniteDifferenceType::Central> derivator;
 
         PHASE_COMPUTERS::ExtremumsBasedNonOpt
-        <DataType, DataType, PHASE_COMPUTERS::ExtremumsKind::DerArctg, decltype(derivator)>
-        phase_computer;
+            <double, PHASE_COMPUTERS::ExtremumsKind::DerArctg, decltype(derivator)>
+                phase_computer;
 
         PHASE_COMPUTERS::ExtremumsBasedNonOpt
-        <DataType, DataType, PHASE_COMPUTERS::ExtremumsKind::Simple, decltype(derivator)>
-        phase_computer_for_mode;
+            <double, PHASE_COMPUTERS::ExtremumsKind::Simple, decltype(derivator)>
+                phase_computer_for_mode;
 
-        INST_FREQ_COMPUTERS::ComputedOnPhase<DataType, DataType, decltype(integrator),
+        INST_FREQ_COMPUTERS::ComputedOnPhase<double, decltype(integrator),
             decltype(derivator), INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage>
-        inst_freq_computer =
-                INST_FREQ_COMPUTERS::ComputedOnPhase<DataType, DataType, decltype(integrator),
-                    decltype(derivator), INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage>
-                (integrator, derivator);
+                inst_freq_computer =
+                    INST_FREQ_COMPUTERS::ComputedOnPhase<double, decltype(integrator),
+                        decltype(derivator), INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage>
+                            (integrator, derivator);
 
-        INST_AMPL_COMPUTERS::DerivativeBasedUsingExternalInstFreq<DataType, DataType, DataType,
-            DataType, decltype(integrator), decltype(derivator),
+        INST_AMPL_COMPUTERS::DerivativeBasedUsingExternalInstFreq<double, decltype(integrator), decltype(derivator),
             INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage>
-        inst_ampl_computer;
+                inst_ampl_computer;
 
 
         /*FILTERS::OptPeriodBasedFilter<DataType, DataType, DataType, PHASE_COMPUTERS::ExtremumsKind::DerArctg,
@@ -61,15 +55,13 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                         decltype(integrator), decltype(derivator), FILTERS::InstFreqComputerKind::phase_based_time_average,
                             FILTERS::PhaseComputingKind::extremums_based_non_opt>(integrator, derivator);*/
 
-        FILTERS::NonOptPeriodBasedFilter<DataType, DataType,
-            DataType, FILTERS::FilteringType::Median,
+        FILTERS::NonOptPeriodBasedFilter<double, FILTERS::FilteringType::Median,
             decltype(integrator), FILTERS::InstFreqKind::Average>
-        filter1;
+                filter1;
 
-        FILTERS::NonOptPeriodBasedFilter<DataType, DataType,
-            DataType, FILTERS::FilteringType::DerivativeBased,
+        FILTERS::NonOptPeriodBasedFilter<double, FILTERS::FilteringType::DerivativeBased,
             decltype(integrator), FILTERS::InstFreqKind::Average>
-        filter2;
+                filter2;
 
         ~MainExtractor() {
             for (int i = 0; i < modes.size(); i++) {
@@ -103,6 +95,9 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
             }
             for (int i = 0; i < inst_ampls.size(); i++) {
                 inst_ampls[i]->base->vec->clear();
+            }
+            for (int i = 0; i < inst_freqs.size(); i++) {
+                inst_freqs[i]->base->vec->clear();
             }
         }
 
@@ -171,18 +166,12 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                         phases[iter_number]->base->vec->push_back(0.0);
                     }
                 }
-                inst_ampls[iter_number]->kind = SignalKind::Stohastic;
-                modes[iter_number]->kind = SignalKind::Stohastic;
-                inst_freqs[iter_number]->kind = SignalKind::Stohastic;
-                data.kind = SignalKind::Stohastic;
-                phases[iter_number]->kind = SignalKind::Monotone;
-                GENERAL::Nil nil;
 
-                phase_computer.compute(data, *phases[iter_number], nil);
+                phase_computer.compute(data, *phases[iter_number], nullptr);
                 //phases[iter_number]->show(PlottingKind::Simple);
 
-                inst_freq_computer.compute(*phases[iter_number], *inst_freqs[iter_number], nil);
-                filter2.compute(data, *modes[iter_number], *inst_freqs[iter_number]);
+                inst_freq_computer.compute(*phases[iter_number], *inst_freqs[iter_number], nullptr);
+                filter2.compute(data, *modes[iter_number], inst_freqs[iter_number]);
 
 
                 //modes[iter_number]->show(PlottingKind::Simple);
@@ -198,11 +187,11 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                 for (int i = 0; i < data.size(); i++) {
                     computer_buffer.base->vec->push_back(0.0);
                 }
-                phase_computer_for_mode.compute(*modes[iter_number], *phases[iter_number], nil);
+                phase_computer_for_mode.compute(*modes[iter_number], *phases[iter_number], nullptr);
                 //phases[iter_number]->show(PlottingKind::Simple);
-                inst_freq_computer.compute(*phases[iter_number], *inst_freqs[iter_number], nil);
+                inst_freq_computer.compute(*phases[iter_number], *inst_freqs[iter_number], nullptr);
                 inst_ampl_computer.inst_freq = inst_freqs[iter_number];
-                inst_ampl_computer.compute(*modes[iter_number], *inst_ampls[iter_number], computer_buffer);
+                inst_ampl_computer.compute(*modes[iter_number], *inst_ampls[iter_number], &computer_buffer);
 
                 //inst_ampls[iter_number]->show(PlottingKind::Simple);
 
@@ -265,19 +254,13 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                     for (int i = 0; i < data.size(); i++) {
                         (*modes[iter_number])[i] = data[i];
                     }
-                    inst_ampls[iter_number]->kind = SignalKind::Stohastic;
-                    modes[iter_number]->kind = SignalKind::Stohastic;
-                    inst_freqs[iter_number]->kind = SignalKind::Stohastic;
-                    data.kind = SignalKind::Stohastic;
-                    phases[iter_number]->kind = SignalKind::Monotone;
 
-
-                    phase_computer.compute(*modes[iter_number], *phases[iter_number], nil);
+                    phase_computer.compute(*modes[iter_number], *phases[iter_number], nullptr);
                     //phases[iter_number]->show(PlottingKind::Simple);
-                    inst_freq_computer.compute(*phases[iter_number], *inst_freqs[iter_number], nil);
+                    inst_freq_computer.compute(*phases[iter_number], *inst_freqs[iter_number], nullptr);
                     //inst_freqs[iter_number]->show(PlottingKind::Simple);
                     inst_ampl_computer.inst_freq = inst_freqs[iter_number];
-                    inst_ampl_computer.compute(*modes[iter_number], *inst_ampls[iter_number], computer_buffer);
+                    inst_ampl_computer.compute(*modes[iter_number], *inst_ampls[iter_number], &computer_buffer);
                     //inst_ampls[iter_number]->show(PlottingKind::Simple);
                     //IC(iter_number, *phases[iter_number][]);
                     break;
@@ -297,28 +280,27 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         std::vector<DataType *> inst_ampls;
         std::vector<DataType *> phases;
 
-        INTEGRATORS::Riman<DataType, DataType, INTEGRATORS::PolygonType::ByPoint> integrator;
-        DERIVATORS::FinniteDifference<DataType, DataType, DERIVATORS::FinniteDifferenceType::Central> derivator;
+        INTEGRATORS::Riman<INTEGRATORS::PolygonType::ByPoint> integrator;
+        DERIVATORS::FinniteDifference<DERIVATORS::FinniteDifferenceType::Central> derivator;
 
         PHASE_COMPUTERS::ExtremumsBasedNonOpt
-        <DataType, DataType, PHASE_COMPUTERS::ExtremumsKind::DerArctg, decltype(derivator)>
-        phase_computer;
+            <double, PHASE_COMPUTERS::ExtremumsKind::DerArctg, decltype(derivator)>
+                phase_computer;
 
         PHASE_COMPUTERS::ExtremumsBasedNonOpt
-        <DataType, DataType, PHASE_COMPUTERS::ExtremumsKind::Simple, decltype(derivator)>
-        phase_computer_for_mode;
+            <double, PHASE_COMPUTERS::ExtremumsKind::Simple, decltype(derivator)>
+                phase_computer_for_mode;
 
-        INST_FREQ_COMPUTERS::ComputedOnPhase<DataType, InstFreqType, decltype(integrator),
+        INST_FREQ_COMPUTERS::ComputedOnPhase<double, decltype(integrator),
             decltype(derivator), INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveDouble>
-        inst_freq_computer =
-                INST_FREQ_COMPUTERS::ComputedOnPhase<DataType, InstFreqType, decltype(integrator),
-                    decltype(derivator), INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveDouble>
-                (integrator, derivator);
+                inst_freq_computer =
+                    INST_FREQ_COMPUTERS::ComputedOnPhase<double, decltype(integrator),
+                        decltype(derivator), INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveDouble>
+                            (integrator, derivator);
 
-        INST_AMPL_COMPUTERS::DerivativeBasedUsingExternalInstFreq<DataType, DataType, DataType,
-            InstFreqType, decltype(integrator), decltype(derivator),
+        INST_AMPL_COMPUTERS::DerivativeBasedUsingExternalInstFreq<double, decltype(integrator), decltype(derivator),
             INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveDouble>
-        inst_ampl_computer;
+                inst_ampl_computer;
 
 
         /*FILTERS::OptPeriodBasedFilter<DataType, DataType, DataType, PHASE_COMPUTERS::ExtremumsKind::DerArctg,
@@ -328,15 +310,13 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                         decltype(integrator), decltype(derivator), FILTERS::InstFreqComputerKind::phase_based_time_average,
                             FILTERS::PhaseComputingKind::extremums_based_non_opt>(integrator, derivator);*/
 
-        FILTERS::NonOptPeriodBasedFilter<DataType, DataType,
-            InstFreqType, FILTERS::FilteringType::Median,
+        FILTERS::NonOptPeriodBasedFilter<double, FILTERS::FilteringType::Median,
             decltype(integrator), FILTERS::InstFreqKind::Double>
-        filter1;
+                filter1;
 
-        FILTERS::NonOptPeriodBasedFilter<DataType, DataType,
-            InstFreqType, FILTERS::FilteringType::DerivativeBased,
+        FILTERS::NonOptPeriodBasedFilter<double, FILTERS::FilteringType::DerivativeBased,
             decltype(integrator), FILTERS::InstFreqKind::Double>
-        filter2;
+                filter2;
 
         ~MainExtractorDouble() {
             for (int i = 0; i < modes.size(); i++) {
@@ -438,22 +418,19 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                         phases[iter_number]->base->vec->push_back(0.0);
                     }
                 }
-                GENERAL::Nil nil;
-                data.kind = SignalKind::Stohastic;
-                phases[iter_number]->kind = SignalKind::Monotone;
-                phase_computer.compute(data, *phases[iter_number], nil);
+                auto size_data = data.size();
+                auto out_size = phases[iter_number]->size();
+                phase_computer.compute(data, *phases[iter_number], nullptr);
                 //phases[iter_number]->show(PlottingKind::Simple);
 
-                inst_freqs[iter_number]->kind = SignalKind::Stohastic;
-                inst_freq_computer.compute(*phases[iter_number], *inst_freqs[iter_number], nil);
+                inst_freq_computer.compute(*phases[iter_number], *inst_freqs[iter_number], nullptr);
                 //inst_freqs[iter_number]->show(PlottingKind::Simple);
 
                 //if (iter_number%2 == 0) {
                 //filter1.compute(data, *modes[iter_number], *inst_freqs[iter_number]);
                 //}
                 //else {
-                modes[iter_number]->kind = SignalKind::Stohastic;
-                filter2.compute(data, *modes[iter_number], *inst_freqs[iter_number]);
+                filter2.compute(data, *modes[iter_number], inst_freqs[iter_number]);
                 //}
 
 
@@ -471,12 +448,11 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                     computer_buffer.base->vec->push_back(0.0);
                 }
 
-                phase_computer_for_mode.compute(*modes[iter_number], *phases[iter_number], nil);
+                phase_computer_for_mode.compute(*modes[iter_number], *phases[iter_number], nullptr);
                 //phases[iter_number]->show(PlottingKind::Simple);
-                inst_freq_computer.compute(*phases[iter_number], *inst_freqs[iter_number], nil);
-                inst_ampl_computer.inst_freq = inst_freqs[iter_number];
-                inst_ampls[iter_number]->kind = SignalKind::Stohastic;
-                inst_ampl_computer.compute(*modes[iter_number], *inst_ampls[iter_number], computer_buffer);
+                inst_freq_computer.compute(*phases[iter_number], *inst_freqs[iter_number], nullptr);
+                inst_ampl_computer.inst_freq_double = inst_freqs[iter_number];
+                inst_ampl_computer.compute(*modes[iter_number], *inst_ampls[iter_number], &computer_buffer);
 
                 //inst_ampls[iter_number]->show(PlottingKind::Simple);
 
@@ -539,18 +515,13 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                     for (int i = 0; i < data.size(); i++) {
                         (*modes[iter_number])[i] = data[i];
                     }
-                    inst_ampls[iter_number]->kind = SignalKind::Stohastic;
-                    modes[iter_number]->kind = SignalKind::Stohastic;
-                    inst_freqs[iter_number]->kind = SignalKind::Stohastic;
-                    data.kind = SignalKind::Stohastic;
-                    phases[iter_number]->kind = SignalKind::Monotone;
 
-                    phase_computer.compute(*modes[iter_number], *phases[iter_number], nil);
+                    phase_computer.compute(*modes[iter_number], *phases[iter_number], nullptr);
                     //phases[iter_number]->show(PlottingKind::Simple);
-                    inst_freq_computer.compute(*phases[iter_number], *inst_freqs[iter_number], nil);
+                    inst_freq_computer.compute(*phases[iter_number], *inst_freqs[iter_number], nullptr);
                     //inst_freqs[iter_number]->show(PlottingKind::Simple);
-                    inst_ampl_computer.inst_freq = inst_freqs[iter_number];
-                    inst_ampl_computer.compute(*modes[iter_number], *inst_ampls[iter_number], computer_buffer);
+                    inst_ampl_computer.inst_freq_double = inst_freqs[iter_number];
+                    inst_ampl_computer.compute(*modes[iter_number], *inst_ampls[iter_number], &computer_buffer);
                     //inst_ampls[iter_number]->show(PlottingKind::Simple);
                     //IC(iter_number, *phases[iter_number][]);
                     break;

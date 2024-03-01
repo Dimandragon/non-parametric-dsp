@@ -113,6 +113,8 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
 
         template<Signal DataType, Signal OutType>
         void compute(const DataType& data, OutType& out, std::nullptr_t * nil) {
+            auto size_data = data.size();
+            auto out_size = out.size();
             if constexpr (kind_e == ExtremumsKind::DerArctg) {
                 derivator.compute(data, out, nullptr);
                 for (int i = 0; i < data.size(); i++) {

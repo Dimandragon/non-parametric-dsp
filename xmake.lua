@@ -46,7 +46,7 @@ target("non-parametric_dsp")
             "src/integrators.ixx", "src/filters.ixx", "src/inst_freq_computers.ixx",
             "src/utility_math.ixx", "src/approximators.ixx", "src/config.ixx", 
             "src/phase_computers.ixx", "src/inst_ampl_computers.ixx"
-            --,"src/modes_extractors.ixx"
+            ,"src/modes_extractors.ixx"
             )
     add_deps("pocketfft")
     add_deps("matplot++_external")
@@ -176,12 +176,12 @@ target("my_fast_conv_example")
     add_deps("icecream")
 
 
---target("main_extractor_example")
-    --set_kind("binary")
-    --add_files("examples/modes_extractors/main.cpp")
-    --add_deps("matplot++_external")
-    --add_deps("non-parametric_dsp")
-    --add_deps("icecream")
+target("main_extractor_example")
+    set_kind("binary")
+    add_files("examples/modes_extractors/main.cpp")
+    add_deps("matplot++_external")
+    add_deps("non-parametric_dsp")
+    add_deps("icecream")
 
 
 target("arctg_experiments")

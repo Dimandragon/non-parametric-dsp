@@ -75,10 +75,10 @@ namespace NP_DSP::ONE_D::FILTERS {
                     }
                 } else if constexpr (inst_freq_kind == InstFreqKind::Double) {
                     auto inst_freq_first_val_expression = [&](typename DataType::IdxType idx) {
-                        return (*inst_freq[idx]).first;
+                        return (*inst_freq)[idx].first;
                     };
                     auto inst_freq_second_val_expression = [&](typename DataType::IdxType idx) {
-                        return (*inst_freq[idx]).second;
+                        return (*inst_freq)[idx].second;
                     };
                     auto size_expr = [&]() {
                         return data.size();

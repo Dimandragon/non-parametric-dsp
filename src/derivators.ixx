@@ -51,6 +51,8 @@ namespace NP_DSP::ONE_D::DERIVATORS {
             using T = typename DerivativeType::SampleType;
             //additional_data can be nullptr
             //init first and last values
+            auto size_data = data.size();
+            auto out_size = out.size();
 
             out[0] = data[1] - data[0];
             out[data.size() - 1] = data[data.size() - 1] - data[data.size() - 2];

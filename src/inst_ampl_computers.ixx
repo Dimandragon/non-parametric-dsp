@@ -28,6 +28,8 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
 
         using BuffT = GenericSignal<SimpleVecWrapper<U>, true>;
         BuffT * inst_freq;
+        using BuffTDouble = GenericSignal<SimpleVecWrapper<std::pair<U,U>>, true>;
+        BuffTDouble * inst_freq_double;
 
         IntegratorT integrator;
         DerivatorT derivator;
@@ -39,8 +41,18 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
             this->inst_freq = &inst_freq;
         }
 
+        DerivativeBasedUsingExternalInstFreq(IntegratorT integrator, DerivatorT derivator, BuffTDouble& inst_freq) {
+            this->integrator = integrator;
+            this->derivator = derivator;
+            this->inst_freq_double = &inst_freq;
+        }
+
         DerivativeBasedUsingExternalInstFreq(BuffT& inst_freq) {
             this->inst_freq = &inst_freq;
+        }
+
+        DerivativeBasedUsingExternalInstFreq(BuffTDouble& inst_freq) {
+            this->inst_freq_double = &inst_freq;
         }
 
         DerivativeBasedUsingExternalInstFreq() {
@@ -59,14 +71,14 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
                           || kind == InstFreqDerivativeBasedKind::DeriveAverage) {
                 integrator.compute(out, *computer_buffer, nullptr);
                 for (int i = 0; i < out.size(); i++) {
-                    out[i] = computer_buffer->interpolate(i + 0.5 / (*inst_freq)[i]) -
-                             computer_buffer->interpolate(i - 0.5 / (*inst_freq)[i]);
+                    out[i] = computer_buffer->interpolate(i + 0.5 / (*inst_freq)[i], SignalKind::Monotone) -
+                             computer_buffer->interpolate(i - 0.5 / (*inst_freq)[i], SignalKind::Monotone);
                 }
             } else if constexpr (kind == InstFreqDerivativeBasedKind::DeriveDouble) {
                 integrator.compute(out, *computer_buffer, nullptr);
                 for (int i = 0; i < out.size(); i++) {
-                    out[i] = computer_buffer->interpolate(i + 0.5 / (*inst_freq)[i].second) -
-                             computer_buffer->interpolate(i - 0.5 / (*inst_freq)[i].first);
+                    out[i] = computer_buffer->interpolate(i + 0.5 / (*inst_freq_double)[i].second, SignalKind::Monotone) -
+                             computer_buffer->interpolate(i - 0.5 / (*inst_freq_double)[i].first, SignalKind::Monotone);
                 }
             }
         }
@@ -88,10 +100,13 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
 
         using BuffT = GenericSignal<SimpleVecWrapper<U>, true>;
         BuffT inst_freq;
+        using BuffTDouble = GenericSignal<SimpleVecWrapper<std::pair<U,U>>, true>;
+        BuffTDouble * inst_freq_double;
 
         IntegratorT integrator;
         DerivatorT derivator;
         InstFreqComputerType* inst_freq_computer;
+
 
         DerivativeAndInstFreqBased(IntegratorT integrator, DerivatorT derivator,
                                    InstFreqComputerType& inst_freq_computer) {
@@ -146,8 +161,8 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
             } else if constexpr (kind == InstFreqDerivativeBasedKind::DeriveDouble) {
                 integrator.compute(out, computer_buffer, nullptr);
                 for (int i = 0; i < out.size(); i++) {
-                    out[i] = computer_buffer->interpolate(i + 0.5 / inst_freq[i].second, SignalKind::Monotone) -
-                             computer_buffer->interpolate(i - 0.5 / inst_freq[i].first, SignalKind::Monotone);
+                    out[i] = computer_buffer->interpolate(i + 0.5 / inst_freq_double[i].second, SignalKind::Monotone) -
+                             computer_buffer->interpolate(i - 0.5 / inst_freq_double[i].first, SignalKind::Monotone);
                 }
             }
         }

@@ -34,12 +34,14 @@ int main(){
     NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<double, decltype(integrator), decltype(derivator),
         NP_DSP::ONE_D::PHASE_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage, decltype(phase_computer)>
             inst_freq_computer (integrator, derivator, phase_computer);
+
+    NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBased<NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBasedComputeInstFreqKind::Linear> inst_freq_computer2;
     NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased,
         decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average> non_opt_filter;
 
 
-    NP_DSP::ONE_D::FILTERS::OptPeriodBasedFilter<double, decltype(non_opt_filter), decltype(inst_freq_computer),
-        decltype(phase_computer)> filter(non_opt_filter, inst_freq_computer, phase_computer);
+    NP_DSP::ONE_D::FILTERS::OptPeriodBasedFilter<double, decltype(non_opt_filter), decltype(inst_freq_computer2),
+        decltype(phase_computer)> filter(non_opt_filter, inst_freq_computer2, phase_computer);
 
     filter.compute(signal1, signal2, &signal3);
     signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);

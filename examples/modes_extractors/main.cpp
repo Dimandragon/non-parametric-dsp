@@ -7,19 +7,17 @@ import <vector>;
 import <cstdlib>;
 
 int main(){
-    auto data = NP_DSP::ONE_D::GenericSignal<double, true>
-        (NP_DSP::GENERAL::Tag<NP_DSP::ONE_D::SimpleVecWrapper<double>>{});
+    NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> data;
 
     for(int i = 0; i < 50; i++) {
-        static_cast<NP_DSP::ONE_D::SimpleVecWrapper<double> *>(data.base)->vec->push_back(std::rand() / 10000);
-        //data.base->vec->push_back(std::rand() / 100000.);
+        data.base->vec->push_back(std::rand() / 10000);
     }
 
-    IC(*static_cast<NP_DSP::ONE_D::SimpleVecWrapper<double> *>(data.base)->vec);
+    IC(*data.base->vec);
 
     NP_DSP::ONE_D::MODES_EXTRACTORS::MainExtractorDouble extractor;
     data.show(NP_DSP::ONE_D::PlottingKind::Simple);
-    //extractor.load(data);//todo
+    extractor.load(data);
 
     data.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
