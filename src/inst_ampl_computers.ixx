@@ -26,6 +26,8 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
     public:
         constexpr static InstFreqDerivativeBasedKind kind = kind_e;
 
+        constexpr static bool is_inst_ampl_computer = true;
+
         using BuffT = GenericSignal<SimpleVecWrapper<U>, true>;
         BuffT * inst_freq;
         using BuffTDouble = GenericSignal<SimpleVecWrapper<std::pair<U,U>>, true>;

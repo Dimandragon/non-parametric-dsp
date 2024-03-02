@@ -12,6 +12,7 @@ import <utility>;
 import <vector>;
 import <matplot/matplot.h>;
 
+
 namespace NP_DSP{
     namespace GENERAL
     {
@@ -487,9 +488,8 @@ namespace NP_DSP{
                 requires (T inst_ampl_computer, const SignalPrototype<SampleType> & data, SignalPrototype<SampleType> & inst_ampl,
                 SignalPrototype<SampleType> * additional_data)
         {
-            requires T::is_inst_freq_computer == true;
+            requires T::is_inst_ampl_computer == true;
             typename T::AdditionalDataType;
-            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
             inst_ampl_computer.compute(data, inst_ampl, additional_data);
         };
@@ -505,7 +505,6 @@ namespace NP_DSP{
         {
             requires T::is_filter == true;
             typename T::AdditionalDataType;
-            requires is_signal_wrapper<typename T::AdditionalDataType>;
 
             filter.compute(data, out, additional_data);
         };

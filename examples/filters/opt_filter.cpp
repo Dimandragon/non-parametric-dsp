@@ -19,9 +19,9 @@ int main(){
     NP_DSP::ONE_D::DERIVATORS::FinniteDifference<NP_DSP::ONE_D::DERIVATORS::FinniteDifferenceType::Central> derivator;
     
     for (auto i = 0; i < 5000; i++){
-        signal1.base->vec->push_back(std::sin(static_cast<double>(i) / 50) * 100000 +
+        signal1.base->vec->push_back(std::sin(static_cast<double>(i) / 50) * 10 +
             std::sin(static_cast<double>(i) / 200) +
-            std::sin(static_cast<double>(i) / 400) * 1000) ;
+            std::sin(static_cast<double>(i) / 400) * 5) ;
         signal2.base->vec->push_back(0);
         signal3.base->vec->push_back(0);
         compute_buffer.base->vec->push_back(0);
@@ -36,7 +36,7 @@ int main(){
             inst_freq_computer (integrator, derivator, phase_computer);
 
     NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBased<NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBasedComputeInstFreqKind::Linear> inst_freq_computer2;
-    NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased,
+    NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, NP_DSP::ONE_D::FILTERS::FilteringType::ValueBased,
         decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average> non_opt_filter;
 
 

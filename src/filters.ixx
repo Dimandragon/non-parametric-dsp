@@ -148,8 +148,8 @@ namespace NP_DSP::ONE_D::FILTERS {
                         inst_freq_second_expr_wrapper);
 
                     auto val_expression = [&](typename DataType::IdxType idx) {
-                        return (data.interpolate(idx + 0.25 / inst_freq_second.interpolate(idx), SignalKind::Stohastic) +
-                                data.interpolate(idx - 0.25 / inst_freq_first.interpolate(idx), SignalKind::Stohastic)) / 2.0;
+                        return (data.interpolate(idx + 0.25 / inst_freq_second.interpolate(idx, SignalKind::Stohastic), SignalKind::Stohastic) +
+                                data.interpolate(idx - 0.25 / inst_freq_first.interpolate(idx, SignalKind::Stohastic), SignalKind::Stohastic)) / 2.0;
                     };
                     for (auto i = 0; i < data.size(); i++) {
                         out[i] = val_expression(i);
@@ -438,4 +438,164 @@ namespace NP_DSP::ONE_D::FILTERS {
             }
         }
     };
+
+
+
+    export
+    template<typename U, Filter<U> FilterT, InstFreqComputer<U> InstFreqComputerT, 
+        PhaseComputer<U> PhaseComputerT, InstAmplComputer<U> InstAmplComputerT,
+            InstFreqComputer<U> InstFreqComputerForModeT, 
+                PhaseComputer<U> PhaseComputerForModeT>
+    struct RecursiveFilterInstAmplChanges{
+        using AdditionalDataType = SignalPrototype<U>;
+
+        using BufferT = GenericSignal<SimpleVecWrapper<U>, true>;
+
+        BufferT prediction_mode;
+        BufferT prediction_mode_inst_freq;
+        BufferT prediction_mode_ampl;
+        BufferT new_result;
+
+        static BufferT & prediction_phase(){
+            static BufferT * prediction_mode_phase = new BufferT;
+            return *prediction_mode_phase;
+        }
+
+        //BufferT computer_buffer;
+
+        std::vector<double> inst_freq_cache;
+
+        
+        constexpr static bool is_filter = true;
+
+        FilterT * filter;
+        InstFreqComputerT * inst_freq_computer;
+        InstFreqComputerForModeT * inst_freq_computer_for_mode;
+        PhaseComputerT * phase_computer;
+        PhaseComputerForModeT * phase_computer_for_mode;
+        InstAmplComputerT * inst_ampl_computer;
+
+        RecursiveFilterInstAmplChanges(FilterT & filter, InstFreqComputerT & inst_freq_computer,
+            PhaseComputerT & phase_computer, InstAmplComputerT & inst_ampl_computer, 
+                InstFreqComputerForModeT & inst_freq_computer_for_mode,
+                    PhaseComputerForModeT & phase_computer_for_mode){
+            this->filter = &filter;
+            this->inst_freq_computer = &inst_freq_computer;
+            this->inst_freq_computer_for_mode = &inst_freq_computer_for_mode;
+            this->phase_computer = &phase_computer;
+            this->inst_ampl_computer = &inst_ampl_computer;
+            this->phase_computer_for_mode = &phase_computer_for_mode;
+        }
+
+        ~RecursiveFilterInstAmplChanges(){}
+
+        template<Signal DataType, Signal OutType, Signal OldResultType>
+        bool computeIter(const DataType& data, OutType& result_buffer, OldResultType* computer_buffer){
+            using T = typename OutType::SampleType;
+            
+            if(prediction_mode.size() != data.size()){
+                prediction_mode.base->vec->clear();
+                for (auto i = 0; i < data.size(); i++){
+                    prediction_mode.base->vec->push_back(0.0);
+                }
+            }
+            if(prediction_mode_inst_freq.size() != data.size()){
+                prediction_mode_inst_freq.base->vec->clear();
+                for (auto i = 0; i < data.size(); i++){
+                    prediction_mode_inst_freq.base->vec->push_back(0.0);
+                }
+            }
+            if(prediction_mode_ampl.size() != data.size()){
+                prediction_mode_ampl.base->vec->clear();
+                for (auto i = 0; i < data.size(); i++){
+                    prediction_mode_ampl.base->vec->push_back(0.0);
+                }
+            }
+            for (auto i = 0; i < data.size(); i++){
+                prediction_mode_inst_freq[0.0];
+            }
+            for (auto i = 0; i < data.size(); i++){
+                prediction_mode_ampl[0.0];
+            }
+            for (auto i = 0; i < data.size(); i++){
+                (*computer_buffer)[i] = 0.0;
+            }
+
+
+            for(auto i = 0; i < data.size(); i++){
+                prediction_mode[i] = data[i] - result_buffer[i];
+            }
+            //prediction_mode.show(NP_DSP::ONE_D::PlottingKind::Simple);
+
+            if constexpr (InstFreqComputerForModeT::is_phase_based()){
+                if (prediction_phase().size()!= data.size){
+                    prediction_phase().base->vec->clear();
+                    for (auto i = 0; i < data.size(); i++){
+                        prediction_phase().base->vec->push_back(0.0);
+                    }
+                }
+                for (auto i = 0; i < data.size(); i++){
+                    prediction_phase()[i] = 0.0;
+                }
+                phase_computer->compute(prediction_mode, prediction_phase(), computer_buffer);
+                inst_freq_computer_for_mode->compute(prediction_phase(), prediction_mode_inst_freq, computer_buffer);
+            }
+            else{
+                inst_freq_computer_for_mode->compute(prediction_mode, prediction_mode_inst_freq, computer_buffer);
+            }
+            
+            
+            inst_ampl_computer->inst_freq = &prediction_mode_inst_freq;
+            inst_ampl_computer->compute(prediction_mode, prediction_mode_ampl, computer_buffer);
+
+            double mode_average = 0.0;
+            double inst_ampl_average = 0.0;
+            for (auto i = 0; i < data.size(); i++){
+                mode_average += prediction_mode[i];
+                inst_ampl_average += prediction_mode_ampl[i];
+            }
+            inst_ampl_average = inst_ampl_average / data.size();
+            mode_average = mode_average / data.size();
+
+            prediction_mode_ampl.show(NP_DSP::ONE_D::PlottingKind::Simple);
+            for (auto i = 0; i < data.size(); i++){
+                if (prediction_mode_ampl[i] !=0){
+                    prediction_mode[i] = (prediction_mode[i])/prediction_mode_ampl[i] * inst_ampl_average;
+                }
+            }
+
+            //inst_ampl_computer->compute(prediction_mode, prediction_mode_ampl, computer_buffer);
+            //prediction_mode_ampl.show(NP_DSP::ONE_D::PlottingKind::Simple);
+
+            //prediction_mode.show(NP_DSP::ONE_D::PlottingKind::Simple);
+            for(int i = 0; i < data.size(); i++){
+                (*computer_buffer)[i] = result_buffer[i] + prediction_mode[i];
+            }
+
+            //optional 
+            if constexpr (InstFreqComputerT::is_phase_based()){
+                for (auto i = 0; i < data.size(); i++){
+                    prediction_phase()[i] = 0.0;
+                }
+                phase_computer->compute(*computer_buffer, prediction_phase(), &prediction_mode_ampl);
+                inst_freq_computer->compute(prediction_phase(), prediction_mode_inst_freq, &prediction_mode_ampl);
+            }
+            else{
+                inst_freq_computer->compute(*computer_buffer, prediction_mode_inst_freq, &prediction_mode_ampl);
+            }
+            //auto * filter_p = filter;
+            //auto & filter_ref = *filter;
+            filter->compute(*computer_buffer, result_buffer, &prediction_mode_inst_freq);
+            return true;
+        }
+
+        /*template<Signal DataType, Signal OutType, Signal OldResultType>
+        bool compute(const DataType& data, OutType& out, OldResultType& old_result_buffer){
+            using T = typename OutType::SampleType;
+
+            
+        }*/
+    };
+
+
 }
