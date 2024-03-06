@@ -35,19 +35,13 @@ int main(){
         NP_DSP::ONE_D::PHASE_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage, decltype(phase_computer)>
             inst_freq_computer (integrator, derivator, phase_computer);
     
-    NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased,
-        decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average> filter;
+    NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, NP_DSP::ONE_D::FILTERS::FilteringType::ValueBased,
+        decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average> non_opt_filter;
 
-    NP_DSP::GENERAL::Nil nil;
     signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
-    inst_freq_computer.compute(signal1, signal2, &signal3);
+    inst_freq_computer.compute(signal1, signal3, &signal2);
+    signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
+    non_opt_filter.compute(signal1, signal2, &signal3);
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
     
-    
-    filter.compute(signal1, signal3, &signal2);
-    signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
-    for (int i = 0; i < signal3.size(); i++) {
-        signal3[i] = 0.0;
-    }
-
 }

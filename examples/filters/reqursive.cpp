@@ -15,6 +15,7 @@ int main(){
     using SignalT = decltype(signal1);
     SignalT signal2;
     SignalT signal3;
+    SignalT inst_freq_buffer;
     SignalT compute_buffer;
     NP_DSP::ONE_D::INTEGRATORS::Riman<NP_DSP::ONE_D::INTEGRATORS::PolygonType::ByPoint> integrator;
     NP_DSP::ONE_D::DERIVATORS::FinniteDifference<NP_DSP::ONE_D::DERIVATORS::FinniteDifferenceType::Central> derivator;
@@ -46,7 +47,7 @@ int main(){
                 inst_ampl_computer;
 
     NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
-        NP_DSP::ONE_D::FILTERS::FilteringType::AverageBased,
+        NP_DSP::ONE_D::FILTERS::FilteringType::ValueBased,
             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average>
                 non_opt_filter(integrator);
 
@@ -63,19 +64,23 @@ int main(){
         signal3.base->vec->push_back(0);
         compute_buffer.base->vec->push_back(0);
     }
-
+    inst_freq_computer.variability = 0.5;
     inst_freq_computer.compute(signal1, signal3, &compute_buffer);
-    non_opt_filter.compute(signal1, signal2, &signal3);
+    //non_opt_filter.compute(signal1, signal2, &signal3);
 
     signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
     while (true){
-        filter.computeIter(signal1, signal2, &compute_buffer);
+        for(int i = 0; i < 25000; i++){
+            non_opt_filter.compute(signal1, signal2, &signal3);
+            signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
+            //signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
         
-        for (auto i = 0; i < 50; i++){
-            signal3[i] = signal1[i] - signal2[i];
-        } 
-        signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
-        signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
-        signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
+            for (auto j = 0; j < 50; j++){
+                signal1[j] = signal2[j];
+            }
+        }
+        inst_freq_computer.compute(signal1, signal3, &compute_buffer);
+        
+        //signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
     }
 }

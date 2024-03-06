@@ -79,7 +79,7 @@ namespace NP_DSP{
         template <typename T>
         concept SignalBase = is_signal_base_second<T> || is_signal_base_first<T>;
 
-        export enum class SignalKind {Monotone, Stohastic, Harmonic, Smooth};
+        export enum class SignalKind {Monotone, Stohastic, Harmonic, Smooth, Universal};
         export enum class PlottingKind {Simple, Interpolate};
 
         export

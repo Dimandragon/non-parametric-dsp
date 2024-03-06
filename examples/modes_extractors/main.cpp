@@ -25,9 +25,9 @@ int main(){
 
     for(int i = 0; i < extractor.modes.size(); i++) {
         extractor.modes[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
-        extractor.phases[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
+        //extractor.phases[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
         //extractor.inst_freqs[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
-        extractor.inst_ampls[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
+        //extractor.inst_ampls[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
     }
 
     return 0;

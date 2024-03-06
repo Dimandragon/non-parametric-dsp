@@ -314,7 +314,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
             decltype(integrator), FILTERS::InstFreqKind::Double>
                 filter1;
 
-        FILTERS::NonOptPeriodBasedFilter<double, FILTERS::FilteringType::DerivativeBased,
+        FILTERS::NonOptPeriodBasedFilter<double, FILTERS::FilteringType::ValueBased,
             decltype(integrator), FILTERS::InstFreqKind::Double>
                 filter2;
 
@@ -363,6 +363,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
 
         void compute() {
+            inst_freq_computer.variability = 0.5;
             size_t iter_number = 0;
             for (;;) {
                 //data.show(PlottingKind::Simple);

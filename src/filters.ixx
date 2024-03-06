@@ -67,6 +67,11 @@ namespace NP_DSP::ONE_D::FILTERS {
 
                     INTEGRATORS::Riman<INTEGRATORS::PolygonType::ByPoint> integrator_new;
 
+                    double avg = 0.0;
+                    for (int i = 0; i < data.size(); i++){
+                        avg += data[i];
+                    }
+                    avg = avg / data.size();
                     //todo fix its big crucher
                     integrator_new.compute(expr_signal, out, nullptr);
 
@@ -107,6 +112,13 @@ namespace NP_DSP::ONE_D::FILTERS {
 
                     INTEGRATORS::Riman<INTEGRATORS::PolygonType::ByPoint> integrator_new;
 
+                    double avg = 0.0;
+                    for (int i = 0; i < data.size(); i++){
+                        avg += data[i];
+                    }
+                    avg = avg / data.size();
+
+
                     //todo fix its big crucher
                     integrator_new.compute(expr_signal, out, nullptr);
 
@@ -127,10 +139,10 @@ namespace NP_DSP::ONE_D::FILTERS {
                     }
                 } else if constexpr (inst_freq_kind == InstFreqKind::Double) {
                     auto inst_freq_first_val_expression = [&](typename DataType::IdxType idx) {
-                        return (*inst_freq[idx]).first;
+                        return (*inst_freq)[idx].first;
                     };
                     auto inst_freq_second_val_expression = [&](typename DataType::IdxType idx) {
-                        return (*inst_freq[idx]).second;
+                        return (*inst_freq)[idx].second;
                     };
                     auto size_expr = [&]() {
                         return data.size();
@@ -557,14 +569,19 @@ namespace NP_DSP::ONE_D::FILTERS {
             inst_ampl_average = inst_ampl_average / data.size();
             mode_average = mode_average / data.size();
 
-            prediction_mode_ampl.show(NP_DSP::ONE_D::PlottingKind::Simple);
+            //prediction_mode_ampl.show(NP_DSP::ONE_D::PlottingKind::Simple);
             for (auto i = 0; i < data.size(); i++){
                 if (prediction_mode_ampl[i] !=0){
-                    prediction_mode[i] = (prediction_mode[i])/prediction_mode_ampl[i] * inst_ampl_average;
+                    prediction_mode[i] = (prediction_mode[i] - mode_average)/prediction_mode_ampl[i] * inst_ampl_average + mode_average;
                 }
             }
 
-            //inst_ampl_computer->compute(prediction_mode, prediction_mode_ampl, computer_buffer);
+            inst_ampl_computer->compute(prediction_mode, prediction_mode_ampl, computer_buffer);
+            for (auto i = 0; i < data.size(); i++){
+                if (prediction_mode_ampl[i] !=0){
+                    prediction_mode[i] = (prediction_mode[i] - mode_average)/prediction_mode_ampl[i] * inst_ampl_average + mode_average;
+                }
+            }
             //prediction_mode_ampl.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
             //prediction_mode.show(NP_DSP::ONE_D::PlottingKind::Simple);
@@ -573,7 +590,7 @@ namespace NP_DSP::ONE_D::FILTERS {
             }
 
             //optional 
-            if constexpr (InstFreqComputerT::is_phase_based()){
+            /*if constexpr (InstFreqComputerT::is_phase_based()){
                 for (auto i = 0; i < data.size(); i++){
                     prediction_phase()[i] = 0.0;
                 }
@@ -582,7 +599,7 @@ namespace NP_DSP::ONE_D::FILTERS {
             }
             else{
                 inst_freq_computer->compute(*computer_buffer, prediction_mode_inst_freq, &prediction_mode_ampl);
-            }
+            }*/
             //auto * filter_p = filter;
             //auto & filter_ref = *filter;
             filter->compute(*computer_buffer, result_buffer, &prediction_mode_inst_freq);

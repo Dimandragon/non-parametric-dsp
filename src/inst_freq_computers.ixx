@@ -415,8 +415,8 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     while (approx_answer < 2.0 * std::numbers::pi * variability) {
                         counter++;
                         old_approx_answer = approx_answer;
-                        approx_answer = computer_buffer->interpolate(i + counter, SignalKind::Monotone) - 
-                            computer_buffer->interpolate(i - counter, SignalKind::Monotone);
+                        approx_answer = computer_buffer->interpolate(i + counter, SignalKind::Universal) - 
+                            computer_buffer->interpolate(i - counter, SignalKind::Universal);
                     }
                     auto left_loss = std::numbers::pi * 2.0 * variability - old_approx_answer;
                     auto right_loss = approx_answer - std::numbers::pi * 2.0 * variability;
