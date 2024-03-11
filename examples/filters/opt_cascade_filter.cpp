@@ -10,44 +10,43 @@ import npdsp_concepts;
 import <string>;
 import filters;
 
+#include <icecream.hpp>
+
 int main(){
     NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> signal1;
     using SignalT = decltype(signal1);
     SignalT signal2;
-    SignalT signal3;
     SignalT inst_freq_buffer;
-    SignalT inst_freq_mode_buffer;
     SignalT mode;
     SignalT compute_buffer;
+
+    int size = 2000;
+
+    for (int i = 0; i < size; i++){
+        signal1.base->vec->push_back(std::rand());
+        signal2.base->vec->push_back(0.);
+        compute_buffer.base->vec->push_back(0.);
+        inst_freq_buffer.base->vec->push_back(0.);
+        mode.base->vec->push_back(0.);
+    }
+
     NP_DSP::ONE_D::INTEGRATORS::Riman<NP_DSP::ONE_D::INTEGRATORS::PolygonType::ByPoint> integrator;
     NP_DSP::ONE_D::DERIVATORS::FinniteDifference<NP_DSP::ONE_D::DERIVATORS::FinniteDifferenceType::Central> derivator;
-    
-    //NP_DSP::ONE_D::
+
     NP_DSP::ONE_D::PHASE_COMPUTERS::ExtremumsBasedNonOpt
         <double, NP_DSP::ONE_D::PHASE_COMPUTERS::ExtremumsKind::DerArctg, decltype(derivator)>
             phase_computer;
-
+    
     NP_DSP::ONE_D::PHASE_COMPUTERS::ExtremumsBasedNonOpt
         <double, NP_DSP::ONE_D::PHASE_COMPUTERS::ExtremumsKind::Simple, decltype(derivator)>
             phase_computer_for_mode;
-
+    
     NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased
         <double, decltype(integrator), decltype(derivator), 
             NP_DSP::ONE_D::INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage,
                 decltype(phase_computer)> 
                     inst_freq_computer
                         (integrator, derivator, phase_computer);
-
-    NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased
-        <double, decltype(integrator), decltype(derivator), 
-            NP_DSP::ONE_D::INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage,
-                decltype(phase_computer_for_mode)> 
-                    inst_freq_computer_for_mode
-                        (integrator, derivator, phase_computer_for_mode);
-    
-    NP_DSP::ONE_D::INST_AMPL_COMPUTERS::DerivativeAndInstFreqBased<double, decltype(integrator), decltype(derivator), decltype(inst_freq_computer),
-        NP_DSP::ONE_D::INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage>
-            inst_ampl_computer(integrator, derivator, inst_freq_computer);
 
     NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
         NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased,
@@ -59,39 +58,32 @@ int main(){
             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average>
                 non_opt_filter2(integrator);
 
+    NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<double, decltype(integrator), decltype(derivator),
+        NP_DSP::ONE_D::PHASE_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage, decltype(phase_computer_for_mode)>
+            inst_freq_computer_for_mode (integrator, derivator, phase_computer_for_mode);
 
     NP_DSP::ONE_D::FILTERS::CascadeFilter<double, decltype(non_opt_filter), 
         decltype(non_opt_filter2)> cascade_filter(non_opt_filter, non_opt_filter2);
 
     NP_DSP::ONE_D::FILTERS::OptPeriodBasedFilter<double, decltype(cascade_filter), decltype(inst_freq_computer),
         decltype(phase_computer), decltype(inst_freq_computer_for_mode), decltype(phase_computer_for_mode)> 
-            opt_filter(cascade_filter, inst_freq_computer, phase_computer, 
+            filter(cascade_filter, inst_freq_computer, phase_computer, 
                 inst_freq_computer_for_mode, phase_computer_for_mode);
+    
+    //inst_freq_computer.compute(signal1, inst_freq_buffer, &compute_buffer);
 
-    NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChanges<double, decltype(integrator), decltype(derivator),
-        decltype(opt_filter), decltype(inst_freq_computer), decltype(phase_computer), decltype(inst_ampl_computer),
-            decltype(inst_freq_computer_for_mode), decltype(phase_computer_for_mode)> filter
-                (integrator, derivator, opt_filter, inst_freq_computer, phase_computer, inst_ampl_computer,
-                    inst_freq_computer_for_mode, phase_computer_for_mode);
+    //cascade_filter.compute(signal1, signal2, &inst_freq_buffer);
 
-    auto size = 500;
-    for (auto i = 0; i < size; i++){
-        signal1.base->vec->push_back(std::rand());
-        signal2.base->vec->push_back(0);
-        signal3.base->vec->push_back(0);
-        compute_buffer.base->vec->push_back(0);
-        inst_freq_buffer.base->vec->push_back(0);
-        inst_freq_mode_buffer.base->vec->push_back(0);
-        mode.base->vec->push_back(0);
+    filter.compute(signal1, signal2, &compute_buffer);
+    IC(filter.error_old);
+
+    for (int i = 0; i < size; i++){
+        mode[i] = signal1[i] - signal2[i];
     }
-    inst_freq_computer.variability = 0.5;
-    inst_freq_computer.compute(signal1, inst_freq_buffer, &compute_buffer);
-    opt_filter.compute(signal1, signal2, &inst_freq_buffer);
+
     signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
-    while (true){
-        filter.computeIter(signal1, signal2, &compute_buffer);
-        signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
-        
+    signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
+    mode.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
-    }
+    return 0;
 }

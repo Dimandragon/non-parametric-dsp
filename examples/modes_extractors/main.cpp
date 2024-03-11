@@ -9,7 +9,7 @@ import <cstdlib>;
 int main(){
     NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> data;
 
-    for(int i = 0; i < 50; i++) {
+    for(int i = 0; i < 500; i++) {
         data.base->vec->push_back(std::rand() / 10000);
     }
 

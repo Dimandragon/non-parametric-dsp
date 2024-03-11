@@ -459,7 +459,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                 }
             } else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveDouble) {
                 for (auto i = 0; i < data.size(); i++) {
-                    auto approx_answer_right = static_cast<T>(0.0);
+                    auto approx_answer_right = 0.0;
                     auto old_approx_answer_right = approx_answer_right;
                     auto counter = 0;
                     while (approx_answer_right < std::numbers::pi * variability) {
@@ -471,9 +471,9 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     auto left_loss_right_edge = std::numbers::pi * variability - old_approx_answer_right;
                     auto right_loss_right_edge = approx_answer_right - std::numbers::pi * variability;
                     auto sum_loss_right_edge = left_loss_right_edge + right_loss_right_edge;
-                    auto right_edge = static_cast<T>(counter) - right_loss_right_edge / sum_loss_right_edge;
+                    auto right_edge = static_cast<double>(counter) - right_loss_right_edge / sum_loss_right_edge;
 
-                    auto approx_answer_left = static_cast<T>(0.0);
+                    auto approx_answer_left = static_cast<double>(0.0);
                     auto old_approx_answer_left = approx_answer_left;
                     counter = 0;
                     while (approx_answer_left < std::numbers::pi * variability) {
@@ -485,10 +485,10 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     auto left_loss_left_edge = std::numbers::pi * variability - old_approx_answer_left;
                     auto right_loss_left_edge = approx_answer_left - std::numbers::pi * variability;
                     auto sum_loss_left_edge = left_loss_left_edge + right_loss_left_edge;
-                    auto left_edge = static_cast<T>(counter) - right_loss_left_edge / sum_loss_left_edge;
+                    auto left_edge = static_cast<double>(counter) - right_loss_left_edge / sum_loss_left_edge;
 
-                    out[i].first = static_cast<T>(0.5 / left_edge) * variability;
-                    out[i].second = static_cast<T>(0.5 / right_edge) * variability;
+                    out[i].first = static_cast<double>(0.5 / left_edge) * variability;
+                    out[i].second = static_cast<double>(0.5 / right_edge) * variability;
                 }
             }
         }

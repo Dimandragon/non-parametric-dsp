@@ -205,3 +205,26 @@ target("filtering_non_opt_value_based")
     add_deps("matplot++_external")
     add_deps("non-parametric_dsp")
     add_deps("icecream")
+
+target("filtering_cascade")
+    set_kind("binary")
+    add_files("examples/filters/cascade_filter.cpp")
+    add_deps("matplot++_external")
+    add_deps("non-parametric_dsp")
+    add_deps("icecream")
+
+target("opt_filtering_cascade")
+    set_kind("binary")
+    add_files("examples/filters/opt_cascade_filter.cpp")
+    add_deps("matplot++_external")
+    add_deps("non-parametric_dsp")
+    add_deps("icecream")
+
+target("inst_ampl_normalizer")
+    set_kind("binary")
+    add_files("examples/inst_ampl_computers/inst_ampl_norm.cpp")
+    add_deps("matplot++_external")
+    add_deps("non-parametric_dsp")
+    add_deps("icecream")
+
+--target

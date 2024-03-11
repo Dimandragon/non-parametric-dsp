@@ -59,7 +59,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
             decltype(integrator), FILTERS::InstFreqKind::Average>
                 filter1;
 
-        FILTERS::NonOptPeriodBasedFilter<double, FILTERS::FilteringType::DerivativeBased,
+        FILTERS::NonOptPeriodBasedFilter<double, FILTERS::FilteringType::ValueBased,
             decltype(integrator), FILTERS::InstFreqKind::Average>
                 filter2;
 
@@ -302,21 +302,50 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
             INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveDouble>
                 inst_ampl_computer;
 
+  
+        NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<double, decltype(integrator), decltype(derivator),
+            NP_DSP::ONE_D::PHASE_COMPUTERS::InstFreqDerivativeBasedKind::DeriveDouble, decltype(phase_computer)>
+                inst_freq_computer_for_opt_filter = NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<double, decltype(integrator), decltype(derivator),
+                    NP_DSP::ONE_D::PHASE_COMPUTERS::InstFreqDerivativeBasedKind::DeriveDouble, 
+                        decltype(phase_computer)> (integrator, derivator, phase_computer);
 
-        /*FILTERS::OptPeriodBasedFilter<DataType, DataType, DataType, PHASE_COMPUTERS::ExtremumsKind::DerArctg,
-            FILTERS::FilteringType::DerivativeBased, decltype(integrator), decltype(derivator), FILTERS::InstFreqComputerKind::phase_based_time_average,
-                FILTERS::PhaseComputingKind::extremums_based_non_opt>
-                    filter = FILTERS::OptPeriodBasedFilter<DataType, DataType, DataType, PHASE_COMPUTERS::ExtremumsKind::DerArctg, FILTERS::FilteringType::DerivativeBased,
-                        decltype(integrator), decltype(derivator), FILTERS::InstFreqComputerKind::phase_based_time_average,
-                            FILTERS::PhaseComputingKind::extremums_based_non_opt>(integrator, derivator);*/
+        NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<double, decltype(integrator), decltype(derivator),
+            NP_DSP::ONE_D::PHASE_COMPUTERS::InstFreqDerivativeBasedKind::DeriveDouble, decltype(phase_computer_for_mode)>
+                inst_freq_computer_for_mode_for_opt_filter = NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased<double, decltype(integrator), 
+                    decltype(derivator), NP_DSP::ONE_D::PHASE_COMPUTERS::InstFreqDerivativeBasedKind::DeriveDouble, 
+                        decltype(phase_computer_for_mode)> (integrator, derivator, phase_computer_for_mode);
+        
+        NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+            NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased,
+                decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
+                    non_opt_filter = NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+                        NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased,
+                            decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
+                                (integrator);
 
-        FILTERS::NonOptPeriodBasedFilter<double, FILTERS::FilteringType::Median,
-            decltype(integrator), FILTERS::InstFreqKind::Double>
-                filter1;
+        NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+            NP_DSP::ONE_D::FILTERS::FilteringType::ValueBased,
+                decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
+                    non_opt_filter2 = NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+                        NP_DSP::ONE_D::FILTERS::FilteringType::ValueBased,
+                            decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
+                                (integrator);
+        
+        NP_DSP::ONE_D::FILTERS::CascadeFilter<double, decltype(non_opt_filter), 
+            decltype(non_opt_filter2)> filter2 = NP_DSP::ONE_D::FILTERS::CascadeFilter
+                <double, decltype(non_opt_filter), 
+                    decltype(non_opt_filter2)>(non_opt_filter, non_opt_filter2);
 
-        FILTERS::NonOptPeriodBasedFilter<double, FILTERS::FilteringType::ValueBased,
-            decltype(integrator), FILTERS::InstFreqKind::Double>
-                filter2;
+        /*NP_DSP::ONE_D::FILTERS::OptPeriodBasedFilterInstFreqDouble<double, decltype(cascade_filter), decltype(inst_freq_computer_for_opt_filter),
+            decltype(phase_computer), decltype(inst_freq_computer_for_mode_for_opt_filter), decltype(phase_computer_for_mode)> 
+                filter2 = NP_DSP::ONE_D::FILTERS::OptPeriodBasedFilterInstFreqDouble<double, decltype(cascade_filter), 
+                    decltype(inst_freq_computer_for_opt_filter), decltype(phase_computer), 
+                        decltype(inst_freq_computer_for_mode_for_opt_filter), decltype(phase_computer_for_mode)> 
+                            (cascade_filter, inst_freq_computer_for_opt_filter, phase_computer, 
+                                inst_freq_computer_for_mode_for_opt_filter, phase_computer_for_mode);*/
+
+        
+        //FILTERS::CascadeFilter
 
         ~MainExtractorDouble() {
             for (int i = 0; i < modes.size(); i++) {
@@ -422,27 +451,22 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                 auto size_data = data.size();
                 auto out_size = phases[iter_number]->size();
                 phase_computer.compute(data, *phases[iter_number], nullptr);
-                //phases[iter_number]->show(PlottingKind::Simple);
+                //
+                phases[iter_number]->show(PlottingKind::Simple);
 
                 inst_freq_computer.compute(*phases[iter_number], *inst_freqs[iter_number], nullptr);
-                //inst_freqs[iter_number]->show(PlottingKind::Simple);
-
-                //if (iter_number%2 == 0) {
-                //filter1.compute(data, *modes[iter_number], *inst_freqs[iter_number]);
-                //}
-                //else {
                 filter2.compute(data, *modes[iter_number], inst_freqs[iter_number]);
-                //}
 
-
-                //modes[iter_number]->show(PlottingKind::Simple);
+                //
+                modes[iter_number]->show(PlottingKind::Simple);
                 for (int i = 0; i < data.size(); i++) {
                     (*modes[iter_number])[i] = data[i] - (*modes[iter_number])[i];
                 }
                 for (int i = 0; i < data.size(); i++) {
                     data[i] = data[i] - (*modes[iter_number])[i];
                 }
-                //modes[iter_number]->show(PlottingKind::Simple);
+                //
+                modes[iter_number]->show(PlottingKind::Simple);
 
                 DataType computer_buffer;
                 for (int i = 0; i < data.size(); i++) {

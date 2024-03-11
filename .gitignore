@@ -8,3 +8,5 @@ CMakeFiles
 examples/utility/fft/images
 makefile
 *.svg
+/.cache
+clangd-trace.json

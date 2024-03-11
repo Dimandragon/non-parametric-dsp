@@ -28,6 +28,8 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
 
         constexpr static bool is_inst_ampl_computer = true;
 
+        constexpr static bool is_used_external_inst_freq = true;
+
         using BuffT = GenericSignal<SimpleVecWrapper<U>, true>;
         BuffT * inst_freq;
         using BuffTDouble = GenericSignal<SimpleVecWrapper<std::pair<U,U>>, true>;
@@ -100,6 +102,9 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
     public:
         constexpr static InstFreqDerivativeBasedKind kind = kind_e;
 
+        constexpr static bool is_inst_ampl_computer = true;
+        constexpr static bool is_used_external_inst_freq = false;
+
         using BuffT = GenericSignal<SimpleVecWrapper<U>, true>;
         BuffT inst_freq;
         using BuffTDouble = GenericSignal<SimpleVecWrapper<std::pair<U,U>>, true>;
@@ -166,6 +171,53 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
                     out[i] = computer_buffer->interpolate(i + 0.5 / inst_freq_double[i].second, SignalKind::Monotone) -
                              computer_buffer->interpolate(i - 0.5 / inst_freq_double[i].first, SignalKind::Monotone);
                 }
+            }
+        }
+    };
+
+    export
+    template<typename U, Integrator<U> Integrator, Derivator<U> Derivator, InstAmplComputer<U> InstAmplComputerT>
+    struct InstAmplNormalizator{
+        InstAmplComputerT * inst_ampl_computer;
+        Derivator * derivator;
+        Integrator * integrator;
+
+        GenericSignal<SimpleVecWrapper<U>, true> buffer2;
+
+        InstAmplNormalizator(Integrator & integrator, Derivator & derivator, InstAmplComputerT & inst_ampl_computer){
+            this->inst_ampl_computer = &inst_ampl_computer;
+            this->derivator = &derivator;
+            this->integrator = &integrator;
+        }
+
+        template<Signal DataT, Signal OutT, Signal ComputerBufferT>
+        void compute(DataT & data, OutT & out, ComputerBufferT & compute_buffer){
+            auto size = data.size();
+            if (buffer2.size() != size){
+                buffer2.base->vec->clear();
+                for(int i = 0; i < size; i++){
+                    buffer2.base->vec->push_back(0);
+                }
+            }
+            
+            inst_ampl_computer->compute(data, out, &compute_buffer);
+
+            derivator->compute(data, compute_buffer, nullptr);
+
+            auto avg = 0.0;
+            auto b = data[0];
+
+            for (int i = 0; i < size; i++){
+                avg += out[i] / size;
+            }
+
+            for (int i = 0; i < size; i++){
+                compute_buffer[i] /= (out[i] / avg);
+            }
+            integrator->compute(compute_buffer, out, nullptr);
+
+            for (int i = 0; i < size; i++){
+                out[i] += b;
             }
         }
     };

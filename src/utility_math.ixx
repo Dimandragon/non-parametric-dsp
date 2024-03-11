@@ -39,6 +39,40 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         }
         return error;
     }
+    export
+    template<typename T, typename data1T, typename data2T>
+    T signalsL2NormedDistance(const data1T& data1, const data2T& data2) {
+        double error = 0.0;
+        error = 0.0;
+        for (int i = 0; i < data1.size(); i++) {
+            error = error + std::sqrt((data1[i] - data2[i]) * (data1[i] - data2[i])) / data1.size();
+        }
+        return error;
+    }
+
+    export
+    template<typename T, typename data1T, typename data2T>
+    T signalsL2DistanceDouble(const data1T& data1, const data2T& data2) {
+        double error = 0.0;
+        error = 0.0;
+        for (int i = 0; i < data1.size(); i++) {
+            error = error + std::sqrt((data1[i].first - data2[i].first) * (data1[i].first - data2[i].first) + 
+                (data1[i].second - data2[i].second) * (data1[i].second - data2[i].second));
+        }
+        return error;
+    }
+
+    export
+    template<typename T, typename data1T, typename data2T>
+    T signalsL2NormedDistanceDouble(const data1T& data1, const data2T& data2) {
+        double error = 0.0;
+        error = 0.0;
+        for (int i = 0; i < data1.size(); i++) {
+            error = error + std::sqrt((data1[i].first - data2[i].first) * (data1[i].first - data2[i].first) + 
+                (data1[i].second - data2[i].second) * (data1[i].second - data2[i].second)) / data1.size();
+        }
+        return error;
+    }
 
     export
     template<typename xType, typename yType>
