@@ -43,7 +43,6 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
     template<typename T, typename data1T, typename data2T>
     T signalsL2NormedDistance(const data1T& data1, const data2T& data2) {
         double error = 0.0;
-        error = 0.0;
         for (int i = 0; i < data1.size(); i++) {
             error = error + std::sqrt((data1[i] - data2[i]) * (data1[i] - data2[i])) / data1.size();
         }

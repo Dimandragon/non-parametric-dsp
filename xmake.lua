@@ -227,4 +227,9 @@ target("inst_ampl_normalizer")
     add_deps("non-parametric_dsp")
     add_deps("icecream")
 
---target
+target("reqursive_opt_filtering")
+    set_kind("binary")
+    add_files("examples/filters/req_opt_filter.cpp")
+    add_deps("matplot++_external")
+    add_deps("non-parametric_dsp")
+    add_deps("icecream")

@@ -406,8 +406,6 @@ namespace NP_DSP::ONE_D::FILTERS {
                     static_cast<SimpleVecWrapper<T> *>(inst_freq_buffer2.base)->vec->push_back(0.0);
                 }
             }
-            //out.show(PlottingKind::Simple);
-            //mode.show(PlottingKind::Simple);
 
             if (inst_freq_computer_for_mode->is_phase_based()) {
                 //todo
@@ -473,27 +471,21 @@ namespace NP_DSP::ONE_D::FILTERS {
                 }
                 return false;
             }
-
-            //inst_freq_buffer.show(PlottingKind::Simple);
-            //inst_freq_buffer2.show(PlottingKind::Simple);
-
             if (iter_number == good_iter_number) {
-                inst_freq_cache.clear();
                 for (int i = 0; i < inst_freq_buffer.size(); i++) {
-                    inst_freq_cache.push_back(inst_freq_buffer[i]);
+                    inst_freq_cache[i] = inst_freq_buffer[i];
                 }
             }
 
             for (int i = 0; i < inst_freq_buffer.size(); i += std::rand() % (inst_freq_buffer.size() / 5)) {
-                //= i + std::rand() % (inst_freq_buffer.size()/5)){
-                double coeff1 = (std::rand() % 500) / 10.0;
-                double coeff2 = (std::rand() % 500) / 10.0;
+                //= i + (std::rand() + 1) % (inst_freq_buffer.size()/5)){
+                double coeff1 = (std::rand() % 300 + 1) / 10.0;
+                double coeff2 = (std::rand() % 300 + 1) / 10.0;
                 //double coeff1 = 1.0;
                 //double coeff2 = 1.0;
                 inst_freq_buffer[i] =
                         (inst_freq_buffer2[i] * coeff2 + inst_freq_buffer[i] * coeff1)
                         / (coeff1 + coeff2);
-                //inst_freq_buffer.show();
             }
 
             for (int i = 0; i < data.size(); i++) {
@@ -551,8 +543,6 @@ namespace NP_DSP::ONE_D::FILTERS {
             error_old = error;
             //IC(error);
 
-            //mode.show(PlottingKind::Simple);
-            //inst_freq_buffer.show(PlottingKind::Simple);
             if (error < error_threshold) {
                 for (int i = 0; i < data.size(); i++) {
                     out[i] = data[i] - mode[i];
@@ -564,12 +554,13 @@ namespace NP_DSP::ONE_D::FILTERS {
                 inst_freq_cache.push_back((*inst_freq_buffer)[i]);
             }
             for (int i = 0; i < inst_freq_buffer->size(); i += std::rand() % (inst_freq_buffer->size() / 5)) {
-                //= i + std::rand() % (inst_freq_buffer.size()/5)){
+                //= i + (std::rand() + 1) % (inst_freq_buffer.size()/5)){
                 //(*inst_freq_buffer)[i] =
                 //        (inst_freq_buffer2[i] + (*inst_freq_buffer)[i] * 10.) / 11.0;
-                //inst_freq_buffer.show();
-                double coeff1 = (std::rand() % 300) / 10.0;
-                double coeff2 = (std::rand() % 300) / 10.0;
+                double coeff1 = (std::rand() % 300 + 1) / 10.0;
+                double coeff2 = (std::rand() % 300 + 1) / 10.0;
+                //double coeff1 = 1.0;
+                //double coeff2 = 1.0;
                 (*inst_freq_buffer)[i] =
                         (inst_freq_buffer2[i] * coeff2 + (*inst_freq_buffer)[i] * coeff1)
                         / (coeff1 + coeff2);
@@ -713,7 +704,7 @@ namespace NP_DSP::ONE_D::FILTERS {
             }
 
             for (int i = 0; i < inst_freq_buffer.size(); i += std::rand() % (inst_freq_buffer.size() / 5)) {
-                double coeff = (std::rand() % 500) / 10.0;
+                double coeff = (std::rand() % 500 + 1) / 10.0;
                 inst_freq_buffer[i].first =
                         (inst_freq_buffer2[i].first + inst_freq_buffer[i].first * coeff)
                         / (coeff + 1.0);
@@ -815,9 +806,19 @@ namespace NP_DSP::ONE_D::FILTERS {
 
         //BufferT computer_buffer;
 
-        std::vector<double> inst_freq_cache;
+        std::vector<double> result_cache;
         
         constexpr static bool is_filter = true;
+
+        double error;
+        double error_treshhold = 0.1;
+        double error_treshhold_muller = 0.1;
+
+        size_t good_iter_number = 0;
+        size_t true_iter_number = 0;
+        size_t iter_number = 0;
+
+        double error_old = 0.0;
 
 
         FilterT * filter;
@@ -849,7 +850,16 @@ namespace NP_DSP::ONE_D::FILTERS {
 
         template<Signal DataType, Signal OutType, Signal OldResultType>
         bool computeIter(const DataType& data, OutType& result_buffer, OldResultType* computer_buffer){
+            iter_number++;
+            true_iter_number++;
             using T = typename OutType::SampleType;
+
+            if(result_cache.size()!=data.size()){
+                result_cache.clear();
+                for(auto i = 0; i < data.size(); i++){
+                    result_cache.push_back(0.0);
+                }
+            }
             
             if(prediction_mode.size() != data.size()){
                 prediction_mode.base->vec->clear();
@@ -881,7 +891,6 @@ namespace NP_DSP::ONE_D::FILTERS {
             for(auto i = 0; i < data.size(); i++){
                 prediction_mode[i] = data[i] - result_buffer[i];
             }
-            //prediction_mode.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
             if constexpr (InstFreqComputerForModeT::is_phase_based()){
                 if (prediction_phase().size()!= data.size){
@@ -908,15 +917,81 @@ namespace NP_DSP::ONE_D::FILTERS {
             }
 
             filter->compute(*computer_buffer, prediction_mode, &prediction_mode_inst_freq);
+            error = UTILITY_MATH::signalsL2NormedDistance
+                    <double, decltype(result_buffer), decltype(prediction_mode)>
+                    (result_buffer, prediction_mode);
 
-            int coeff1 = std::rand() % 30;
-            int coeff2 = std::rand() % 30;
+            if (error_old <= error){
+                if (static_cast<double>(true_iter_number) / static_cast<double>(iter_number)
+                    > 10 && iter_number > 50) {
+                    for(int i = 0; i < data.size(); i++){
+                        result_buffer[i] = result_cache[i];
+                    }
+                    return false;
+                }
+                if(iter_number - good_iter_number > 9){
+                    for(int i = 0; i < data.size(); i++){
+                        result_buffer[i] = result_cache[i];
+                    }
+                    iter_number = good_iter_number;
+                    return computeIter(data, result_buffer, computer_buffer);
+                }
+            }
+            else if(error < error_old){
+                //IC(error_old, error, error_treshhold);
+                error_old = error;
+                good_iter_number = iter_number;
+                
+                for (int i = 0; i < data.size(); i++){
+                    result_cache[i] = result_buffer[i];
+                }
+                if(static_cast<double>(true_iter_number) / static_cast<double>(iter_number)
+                    > 10 && iter_number > 50) {
+                    return false;
+                }
+
+            }
+
+            
+            
+
+            int coeff1 = std::rand() % 30 + 1;
+            int coeff2 = std::rand() % 30 + 1;
             for(int i = 0; i < data.size(); i++){
                 result_buffer[i] = (result_buffer[i] * coeff1 + prediction_mode[i] * coeff2) / (coeff1 + coeff2);
             }
             return true;
         }
+
+        template<Signal DataType, Signal OutType, Signal InstFreqT>
+        void compute(const DataType& data, OutType& result_buffer, InstFreqT* inst_freq){
+            iter_number = 0;
+            good_iter_number = 0;
+            true_iter_number = 0;
+            
+            //this->inst_freq_computer->compute(data, *inst_freq, &result_buffer);
+            this->filter->compute(data, result_buffer, inst_freq);
+
+            double der_avg = 0.0;
+            auto sum = 0.0;
+            for (int i = 1; i < data.size(); i++){
+                der_avg += std::abs((data[i] - result_buffer[i])-(data[i-1] - result_buffer[i-1])) / data.size();
+                sum += std::abs(data[i]);
+            }
+            error_old = sum * data.size();
+            der_avg = der_avg / data.size();
+
+            error_treshhold = der_avg * error_treshhold_muller;
+            
+            computeIter(data, result_buffer, inst_freq);
+
+            while(error > error_treshhold){
+                if(!computeIter(data, result_buffer, inst_freq)) break;
+            }
+        }   
     };
+
+
 
     export
     template<typename U, Filter<U> FilterFirstT, 
@@ -964,8 +1039,392 @@ namespace NP_DSP::ONE_D::FILTERS {
             for (int i = 0; i < data.size(); i++){
                 out[i] = data[i] - (mode[i] - buffer[i]);
             }
-
-
         }
+    };
+
+    export
+    template<typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT, Filter<U> FilterT, 
+        InstAmplComputer<U> InstAmplComputerT>
+    struct RecursiveFilterInstAmplChangesFithConstInstFreq{
+        using AdditionalDataType = SignalPrototype<U>;
+
+        using BufferT = GenericSignal<SimpleVecWrapper<U>, true>;
+
+        BufferT prediction_mode;
+        BufferT prediction_mode_inst_freq;
+        BufferT prediction_mode_ampl;
+        BufferT new_result;
+
+        static BufferT & prediction_phase(){
+            static BufferT * prediction_mode_phase = new BufferT;
+            return *prediction_mode_phase;
+        }
+
+        //BufferT computer_buffer;
+
+        std::vector<double> result_cache;
+        
+        constexpr static bool is_filter = true;
+
+        double error;
+        double error_treshhold = 0.1;
+        double error_treshhold_muller = 0.1;
+
+        size_t good_iter_number = 0;
+        size_t true_iter_number = 0;
+        size_t iter_number = 0;
+
+        double error_old = 0.0;
+
+
+        FilterT * filter;
+        InstAmplComputerT * inst_ampl_computer;
+        INST_AMPL_COMPUTERS::InstAmplNormalizator<double, IntegratorT, DerivatorT, InstAmplComputerT> 
+            * inst_ampl_normalizer;
+
+        RecursiveFilterInstAmplChangesFithConstInstFreq(IntegratorT & integrator, DerivatorT & derivator, 
+            FilterT & filter, InstAmplComputerT & inst_ampl_computer){
+            this->filter = &filter;
+            inst_ampl_normalizer = new INST_AMPL_COMPUTERS::InstAmplNormalizator
+                <double, IntegratorT, DerivatorT, InstAmplComputerT> (integrator, derivator, inst_ampl_computer);
+        }
+
+        ~RecursiveFilterInstAmplChangesFithConstInstFreq(){
+            delete inst_ampl_normalizer;
+        }
+
+        template<Signal DataType, Signal OutType, Signal OldResultType>
+        bool computeIter(const DataType& data, OutType& result_buffer, OldResultType* computer_buffer){
+            iter_number++;
+            true_iter_number++;
+            using T = typename OutType::SampleType;
+
+            if(result_cache.size()!=data.size()){
+                result_cache.clear();
+                for(auto i = 0; i < data.size(); i++){
+                    result_cache.push_back(0.0);
+                }
+            }
+            
+            if(prediction_mode.size() != data.size()){
+                prediction_mode.base->vec->clear();
+                for (auto i = 0; i < data.size(); i++){
+                    prediction_mode.base->vec->push_back(0.0);
+                }
+            }
+            if(prediction_mode_inst_freq.size() != data.size()){
+                prediction_mode_inst_freq.base->vec->clear();
+                for (auto i = 0; i < data.size(); i++){
+                    prediction_mode_inst_freq.base->vec->push_back(0.0);
+                }
+            }
+            if(prediction_mode_ampl.size() != data.size()){
+                prediction_mode_ampl.base->vec->clear();
+                for (auto i = 0; i < data.size(); i++){
+                    prediction_mode_ampl.base->vec->push_back(0.0);
+                }
+            }
+            for (auto i = 0; i < data.size(); i++){
+                prediction_mode_inst_freq[i] = 0.0;
+            }
+            for (auto i = 0; i < data.size(); i++){
+                prediction_mode_ampl[i] = 0.0;
+            }
+            for(auto i = 0; i < data.size(); i++){
+                prediction_mode[i] = data[i] - result_buffer[i];
+            }
+
+            for(int i = 0; i < data.size(); i++){
+                prediction_mode_inst_freq[i] = (*computer_buffer)[i];
+            }
+            //auto label = 0;
+            //IC(++label);
+            inst_ampl_normalizer->compute(prediction_mode, *computer_buffer, prediction_mode_ampl);
+
+            for(int i = 0; i < data.size(); i++){
+                (*computer_buffer)[i] = result_buffer[i] + (*computer_buffer)[i];
+            }
+            //IC(++label);
+            filter->compute(*computer_buffer, prediction_mode, &prediction_mode_inst_freq);
+            //IC(++label);
+            error = UTILITY_MATH::signalsL2NormedDistance
+                    <double, decltype(result_buffer), decltype(prediction_mode)>
+                    (result_buffer, prediction_mode);
+            //IC(error);
+
+            if (error_old <= error){
+                if (static_cast<double>(true_iter_number) / static_cast<double>(iter_number)
+                    > 10 && iter_number > 50) {
+                    for(int i = 0; i < data.size(); i++){
+                        result_buffer[i] = result_cache[i];
+                    }
+                    for(int i = 0; i < data.size(); i++){
+                        (*computer_buffer)[i] = prediction_mode_inst_freq[i];
+                    }
+                    return false;
+                }
+                if(iter_number - good_iter_number > 9){
+                    for(int i = 0; i < data.size(); i++){
+                        result_buffer[i] = result_cache[i];
+                    }
+                    iter_number = good_iter_number;
+                    for(int i = 0; i < data.size(); i++){
+                        (*computer_buffer)[i] = prediction_mode_inst_freq[i];
+                    }
+                    return computeIter(data, result_buffer, computer_buffer);
+                }
+            }
+            else if(error < error_old){
+                //IC(error_old, error, error_treshhold);
+                error_old = error;
+                good_iter_number = iter_number;
+                
+                for (int i = 0; i < data.size(); i++){
+                    result_cache[i] = result_buffer[i];
+                }
+                if(static_cast<double>(true_iter_number) / static_cast<double>(iter_number)
+                    > 10 && iter_number > 50) {
+                    for(int i = 0; i < data.size(); i++){
+                        (*computer_buffer)[i] = prediction_mode_inst_freq[i];
+                    }
+                    return false;
+                }
+
+            }
+
+            
+            
+
+            int coeff1 = std::rand() % 30 + 1;
+            int coeff2 = std::rand() % 30 + 1;
+            for(int i = 0; i < data.size(); i++){
+                result_buffer[i] = (result_buffer[i] * coeff1 + prediction_mode[i] * coeff2) / (coeff1 + coeff2);
+            }
+            for(int i = 0; i < data.size(); i++){
+                (*computer_buffer)[i] = prediction_mode_inst_freq[i];
+            }
+            return true;
+        }
+
+        template<Signal DataType, Signal OutType, Signal InstFreqT>
+        void compute(const DataType& data, OutType& result_buffer, InstFreqT* inst_freq){
+            iter_number = 0;
+            good_iter_number = 0;
+            true_iter_number = 0;
+            
+            //this->inst_freq_computer->compute(data, *inst_freq, &result_buffer);
+            this->filter->compute(data, result_buffer, inst_freq);
+
+            double der_avg = 0.0;
+            auto sum = 0.0;
+            for (int i = 1; i < data.size(); i++){
+                der_avg += std::abs((data[i] - result_buffer[i])-(data[i-1] - result_buffer[i-1])) / data.size();
+                sum += std::abs(data[i]);
+            }
+            error_old = sum * data.size();
+            der_avg = der_avg / data.size();
+
+            error_treshhold = der_avg * error_treshhold_muller;
+            
+            computeIter(data, result_buffer, inst_freq);
+
+            while(error > error_treshhold){
+                if(!computeIter(data, result_buffer, inst_freq)) break;
+            }
+        }   
+    };
+
+    export
+    template<typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT, Filter<U> FilterT, 
+        InstAmplComputer<U> InstAmplComputerT>
+    struct RecursiveFilterInstAmplChangesFithConstInstFreqDouble{
+        //todo
+        using AdditionalDataType = SignalPrototype<U>;
+
+        using BufferT = GenericSignal<SimpleVecWrapper<U>, true>;
+
+        BufferT prediction_mode;
+        BufferT prediction_mode_inst_freq;
+        BufferT prediction_mode_ampl;
+        BufferT new_result;
+
+        static BufferT & prediction_phase(){
+            static BufferT * prediction_mode_phase = new BufferT;
+            return *prediction_mode_phase;
+        }
+
+        //BufferT computer_buffer;
+
+        std::vector<double> result_cache;
+        
+        
+        constexpr static bool is_filter = true;
+
+        double error;
+        double error_treshhold = 0.1;
+        double error_treshhold_muller = 0.1;
+
+        size_t good_iter_number = 0;
+        size_t true_iter_number = 0;
+        size_t iter_number = 0;
+
+        double error_old = 0.0;
+
+
+        FilterT * filter;
+        InstAmplComputerT * inst_ampl_computer;
+        INST_AMPL_COMPUTERS::InstAmplNormalizator<double, IntegratorT, DerivatorT, InstAmplComputerT> 
+            * inst_ampl_normalizer;
+
+        RecursiveFilterInstAmplChangesFithConstInstFreqDouble(IntegratorT & integrator, DerivatorT & derivator, 
+            FilterT & filter, InstAmplComputerT & inst_ampl_computer){
+            this->filter = &filter;
+            inst_ampl_normalizer = new INST_AMPL_COMPUTERS::InstAmplNormalizator
+                <double, IntegratorT, DerivatorT, InstAmplComputerT> (integrator, derivator, inst_ampl_computer);
+        }
+
+        ~RecursiveFilterInstAmplChangesFithConstInstFreqDouble(){
+            delete inst_ampl_normalizer;
+        }
+
+        template<Signal DataType, Signal OutType, Signal OldResultType>
+        bool computeIter(const DataType& data, OutType& result_buffer, OldResultType* computer_buffer){
+            iter_number++;
+            true_iter_number++;
+            using T = typename OutType::SampleType;
+
+            if(result_cache.size()!=data.size()){
+                result_cache.clear();
+                for(auto i = 0; i < data.size(); i++){
+                    result_cache.push_back(0.0);
+                }
+            }
+            
+            if(prediction_mode.size() != data.size()){
+                prediction_mode.base->vec->clear();
+                for (auto i = 0; i < data.size(); i++){
+                    prediction_mode.base->vec->push_back(0.0);
+                }
+            }
+            if(prediction_mode_inst_freq.size() != data.size()){
+                prediction_mode_inst_freq.base->vec->clear();
+                for (auto i = 0; i < data.size(); i++){
+                    prediction_mode_inst_freq.base->vec->push_back(0.0);
+                }
+            }
+            if(prediction_mode_ampl.size() != data.size()){
+                prediction_mode_ampl.base->vec->clear();
+                for (auto i = 0; i < data.size(); i++){
+                    prediction_mode_ampl.base->vec->push_back(0.0);
+                }
+            }
+            for (auto i = 0; i < data.size(); i++){
+                prediction_mode_inst_freq[i] = 0.0;
+            }
+            for (auto i = 0; i < data.size(); i++){
+                prediction_mode_ampl[i] = 0.0;
+            }
+            for(auto i = 0; i < data.size(); i++){
+                prediction_mode[i] = data[i] - result_buffer[i];
+            }
+
+            for(int i = 0; i < data.size(); i++){
+                prediction_mode_inst_freq[i] = (*computer_buffer)[i];
+            }
+            //auto label = 0;
+            //IC(++label);
+            inst_ampl_normalizer->compute(prediction_mode, *computer_buffer, prediction_mode_ampl);
+
+            for(int i = 0; i < data.size(); i++){
+                (*computer_buffer)[i] = result_buffer[i] + (*computer_buffer)[i];
+            }
+            //IC(++label);
+            filter->compute(*computer_buffer, prediction_mode, &prediction_mode_inst_freq);
+            //IC(++label);
+            error = UTILITY_MATH::signalsL2NormedDistance
+                    <double, decltype(result_buffer), decltype(prediction_mode)>
+                    (result_buffer, prediction_mode);
+            //IC(error);
+
+            if (error_old <= error){
+                if (static_cast<double>(true_iter_number) / static_cast<double>(iter_number)
+                    > 10 && iter_number > 50) {
+                    for(int i = 0; i < data.size(); i++){
+                        result_buffer[i] = result_cache[i];
+                    }
+                    for(int i = 0; i < data.size(); i++){
+                        (*computer_buffer)[i] = prediction_mode_inst_freq[i];
+                    }
+                    return false;
+                }
+                if(iter_number - good_iter_number > 9){
+                    for(int i = 0; i < data.size(); i++){
+                        result_buffer[i] = result_cache[i];
+                    }
+                    iter_number = good_iter_number;
+                    for(int i = 0; i < data.size(); i++){
+                        (*computer_buffer)[i] = prediction_mode_inst_freq[i];
+                    }
+                    return computeIter(data, result_buffer, computer_buffer);
+                }
+            }
+            else if(error < error_old){
+                //IC(error_old, error, error_treshhold);
+                error_old = error;
+                good_iter_number = iter_number;
+                
+                for (int i = 0; i < data.size(); i++){
+                    result_cache[i] = result_buffer[i];
+                }
+                if(static_cast<double>(true_iter_number) / static_cast<double>(iter_number)
+                    > 10 && iter_number > 50) {
+                    for(int i = 0; i < data.size(); i++){
+                        (*computer_buffer)[i] = prediction_mode_inst_freq[i];
+                    }
+                    return false;
+                }
+
+            }
+
+            
+            
+
+            int coeff1 = std::rand() % 30 + 1;
+            int coeff2 = std::rand() % 30 + 1;
+            for(int i = 0; i < data.size(); i++){
+                result_buffer[i] = (result_buffer[i] * coeff1 + prediction_mode[i] * coeff2) / (coeff1 + coeff2);
+            }
+            for(int i = 0; i < data.size(); i++){
+                (*computer_buffer)[i] = prediction_mode_inst_freq[i];
+            }
+            return true;
+        }
+
+        template<Signal DataType, Signal OutType, Signal InstFreqT>
+        void compute(const DataType& data, OutType& result_buffer, InstFreqT* inst_freq){
+            iter_number = 0;
+            good_iter_number = 0;
+            true_iter_number = 0;
+            
+            //this->inst_freq_computer->compute(data, *inst_freq, &result_buffer);
+            this->filter->compute(data, result_buffer, inst_freq);
+
+            double der_avg = 0.0;
+            auto sum = 0.0;
+            for (int i = 1; i < data.size(); i++){
+                der_avg += std::abs((data[i] - result_buffer[i])-(data[i-1] - result_buffer[i-1])) / data.size();
+                sum += std::abs(data[i]);
+            }
+            error_old = sum * data.size();
+            der_avg = der_avg / data.size();
+
+            error_treshhold = der_avg * error_treshhold_muller;
+            
+            computeIter(data, result_buffer, inst_freq);
+
+            while(error > error_treshhold){
+                if(!computeIter(data, result_buffer, inst_freq)) break;
+            }
+        }   
     };
 }
