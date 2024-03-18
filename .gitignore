@@ -14,3 +14,4 @@ profile
 *.data
 *.old
 *.perf-folded
+FlameGraph/
