@@ -65,6 +65,9 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
 
         template<Signal DataType, Signal OutType, Signal ComputeBufferType>
         void compute(const DataType& data, OutType& out, ComputeBufferType * computer_buffer) {
+            for (int i = 0; i < out.size(); i++) {
+                out[i] = 0;
+            }
             derivator.compute(data, out, nullptr);
             for (int i = 0; i < out.size(); i++) {
                 out[i] = std::abs(out[i]) / 4;
@@ -76,13 +79,17 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
                 integrator.compute(out, *computer_buffer, nullptr);
                 for (int i = 0; i < out.size(); i++) {
                     out[i] = computer_buffer->interpolate(i + 0.5 / (*inst_freq)[i], SignalKind::Monotone) -
-                             computer_buffer->interpolate(i - 0.5 / (*inst_freq)[i], SignalKind::Monotone);
+                             computer_buffer->interpolate(i - 0.5 / (*inst_freq)[i], SignalKind::Monotone) - 
+                             std::abs(data.interpolate(i + 0.5 / (*inst_freq)[i], SignalKind::Monotone) - 
+                                data.interpolate(i - 0.5 / (*inst_freq)[i], SignalKind::Monotone)) / 4;
                 }
             } else if constexpr (kind == InstFreqDerivativeBasedKind::DeriveDouble) {
                 integrator.compute(out, *computer_buffer, nullptr);
                 for (int i = 0; i < out.size(); i++) {
                     out[i] = computer_buffer->interpolate(i + 0.5 / (*inst_freq_double)[i].second, SignalKind::Monotone) -
-                             computer_buffer->interpolate(i - 0.5 / (*inst_freq_double)[i].first, SignalKind::Monotone);
+                             computer_buffer->interpolate(i - 0.5 / (*inst_freq_double)[i].first, SignalKind::Monotone) - 
+                             std::abs(data.interpolate(i + 0.5 / (*inst_freq_double)[i].second, SignalKind::Monotone) - 
+                                data.interpolate(i - 0.5 / (*inst_freq_double)[i].first, SignalKind::Monotone)) / 4;
                 }
             }
         }
@@ -108,7 +115,7 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
         using BuffT = GenericSignal<SimpleVecWrapper<U>, true>;
         BuffT inst_freq;
         using BuffTDouble = GenericSignal<SimpleVecWrapper<std::pair<U,U>>, true>;
-        BuffTDouble * inst_freq_double;
+        BuffTDouble inst_freq_double;
 
         IntegratorT integrator;
         DerivatorT derivator;
@@ -135,26 +142,48 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
         void compute(const DataType& data, OutType& out, ComputerBufferType * computer_buffer) {
             using T = typename OutType::SampleType;
             if constexpr (std::convertible_to<typename InstFreqComputerType::AdditionalDataType, GENERAL::Nil>) {
-                if (inst_freq.size() != data.size()) {
-                    static_cast<SimpleVecWrapper<T> *>(inst_freq.base)->vec->clear();
-                    for (int i = 0; i < data.size(); i++) {
-                        static_cast<SimpleVecWrapper<T> *>(inst_freq.base)->vec->push_back(0.);
+                if constexpr (kind == InstFreqDerivativeBasedKind::DeriveDouble){
+                    if (inst_freq_double.size() != data.size()) {
+                        inst_freq_double.base->vec->clear();
+                        for (int i = 0; i < data.size(); i++) {
+                            inst_freq_double.base->vec->push_back({0.0, 0.0});
+                        }
                     }
+                    inst_freq_computer->compute(data, inst_freq_double, nullptr);
                 }
-                inst_freq_computer->compute(data, inst_freq, nullptr);
+                else{
+                    if (inst_freq.size() != data.size()) {
+                        static_cast<SimpleVecWrapper<T> *>(inst_freq.base)->vec->clear();
+                        for (int i = 0; i < data.size(); i++) {
+                            static_cast<SimpleVecWrapper<T> *>(inst_freq.base)->vec->push_back(0.);
+                        }
+                    }
+                    inst_freq_computer->compute(data, inst_freq, nullptr);
+                }
             } else {
-                if (inst_freq.size() != data.size()) {
-                    static_cast<SimpleVecWrapper<T> *>(inst_freq.base)->vec->clear();
-                    for (int i = 0; i < data.size(); i++) {
-                        static_cast<SimpleVecWrapper<T> *>(inst_freq.base)->vec->push_back(0.);
+                if constexpr (kind == InstFreqDerivativeBasedKind::DeriveDouble){
+                    if (inst_freq_double.size() != data.size()) {
+                        inst_freq_double.base->vec->clear();
+                        for (int i = 0; i < data.size(); i++) {
+                            inst_freq_double.base->vec->push_back({0.0, 0.0});
+                        }
                     }
+                    inst_freq_computer->compute(data, inst_freq_double, computer_buffer);
                 }
-                inst_freq_computer->compute(data, inst_freq, computer_buffer);
+                else{
+                    if (inst_freq.size() != data.size()) {
+                        static_cast<SimpleVecWrapper<T> *>(inst_freq.base)->vec->clear();
+                        for (int i = 0; i < data.size(); i++) {
+                            static_cast<SimpleVecWrapper<T> *>(inst_freq.base)->vec->push_back(0.);
+                        }
+                    }
+                    inst_freq_computer->compute(data, inst_freq, computer_buffer);
+                }
             }
 
             derivator.compute(data, out, nullptr);
             for (int i = 0; i < out.size(); i++) {
-                out[i] = std::abs(out[i]) / 4;
+                out[i] = std::abs(out[i]);
             }
 
             if constexpr (kind == InstFreqDerivativeBasedKind::Momental
@@ -162,14 +191,18 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
                           || kind == InstFreqDerivativeBasedKind::DeriveAverage) {
                 integrator.compute(out, *computer_buffer, nullptr);
                 for (int i = 0; i < out.size(); i++) {
-                    out[i] = computer_buffer->interpolate(i + 0.5 / inst_freq[i], SignalKind::Monotone) -
-                             computer_buffer->interpolate(i - 0.5 / inst_freq[i], SignalKind::Monotone);
+                    out[i] = (computer_buffer->interpolate(i + 0.5 / (inst_freq)[i], SignalKind::Monotone) -
+                             computer_buffer->interpolate(i - 0.5 / (inst_freq)[i], SignalKind::Monotone) - 
+                             std::abs(data.interpolate(i + 0.5 / (inst_freq)[i], SignalKind::Monotone) - 
+                                data.interpolate(i - 0.5 / (inst_freq)[i], SignalKind::Monotone))) / 4;
                 }
             } else if constexpr (kind == InstFreqDerivativeBasedKind::DeriveDouble) {
-                integrator.compute(out, computer_buffer, nullptr);
+                integrator.compute(out, *computer_buffer, nullptr);
                 for (int i = 0; i < out.size(); i++) {
-                    out[i] = computer_buffer->interpolate(i + 0.5 / inst_freq_double[i].second, SignalKind::Monotone) -
-                             computer_buffer->interpolate(i - 0.5 / inst_freq_double[i].first, SignalKind::Monotone);
+                    out[i] = (computer_buffer->interpolate(i + 0.5 / (inst_freq_double)[i].second, SignalKind::Monotone) -
+                             computer_buffer->interpolate(i - 0.5 / (inst_freq_double)[i].first, SignalKind::Monotone) - 
+                             std::abs(data.interpolate(i + 0.5 / (inst_freq_double)[i].second, SignalKind::Monotone) - 
+                                data.interpolate(i - 0.5 / (inst_freq_double)[i].first, SignalKind::Monotone))) / 4;
                 }
             }
         }
@@ -181,6 +214,8 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
         InstAmplComputerT * inst_ampl_computer;
         Derivator * derivator;
         Integrator * integrator;
+
+        double min_ampl = 1.0;
 
         GenericSignal<SimpleVecWrapper<U>, true> buffer2;
 
@@ -212,7 +247,9 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
             }
 
             for (int i = 0; i < size; i++){
-                compute_buffer[i] /= (out[i] / avg);
+                if (out[i] > min_ampl){
+                    compute_buffer[i] /= (out[i] / avg);
+                }
             }
             integrator->compute(compute_buffer, out, nullptr);
 

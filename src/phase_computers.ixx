@@ -33,7 +33,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
         void compute(const DataType& data, OutType& out, auto * nil) {
             if constexpr (kind_e == ExtremumsKind::DerArctg) {
                 derivator.compute(data, out, nullptr);
-                for (int i = 0; i < data.size(); i++) {
+                for (int i = 0; i < data.size(); i++){
                     out[i] = std::atan(out[i]);
                 }
             } else if constexpr (kind_e == ExtremumsKind::Simple) {
@@ -126,7 +126,8 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 }
             }
 
-            std::vector<int> extremums;
+            static std::vector<int> extremums;
+            extremums.clear();
             extremums.push_back(0);
             for (int i = 1; i < out.size() - 1; i++) {
                 if ((out[i] >= out[i - 1] &&
@@ -479,7 +480,6 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 out.size() - 1, UTILITY_MATH::linearInterpolate<int, double>
                 (support[support.size() - 2], support[support.size() - 1], out.size() - 1)
             };
-
             if constexpr (CONFIG::debug) {
                 IC(support);
             }

@@ -387,4 +387,16 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
             return result4;
         }
     }
+
+    export 
+    template<typename T>
+    T powFact(T a, T pow){
+        double result = 0.0;
+        for (int i = 0; i < a; i++)
+        {
+            double temp = i + 1;
+            result = result +  std::pow(temp, a);//temp.powf(pow);
+        }
+        return result;
+    }
 }

@@ -10,3 +10,7 @@ makefile
 *.svg
 /.cache
 clangd-trace.json
+profile
+*.data
+*.old
+*.perf-folded

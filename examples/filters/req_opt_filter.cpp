@@ -93,14 +93,12 @@ int main(){
         mode.base->vec->push_back(0);
     }
     inst_freq_computer.variability = 0.5;
-    signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
-    inst_freq_computer.compute(signal1, inst_freq_buffer, &compute_buffer);
-    //inst_freq_buffer.show(NP_DSP::ONE_D::PlottingKind::Simple);
-    //filter.compute(signal1, signal2, &inst_freq_buffer);
-    
-    //signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
+
     inst_freq_computer.compute(signal1, inst_freq_buffer, &compute_buffer);
     opt_filter.compute(signal1, signal2, &inst_freq_buffer);
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
-    
+    for (int i = 0; i < size; i++){
+        signal2[i] = signal1[i] - signal2[i];
+    }
+    signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
 }

@@ -1097,4 +1097,169 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
             }
         }
     };
+
+    export
+    template<Signal DataT, Signal OutT, Signal InstFreqT>
+    double InstFreqNorm(const DataT & data, OutT & out, const InstFreqT & inst_freq, 
+        std::vector<double> & freq_conv, std::vector<double> & freq_conv_image){
+        freq_conv_image.clear();
+        double freq_avg = 0.0;
+        for (int i = 0; i < data.size(); i++){
+            freq_avg += inst_freq[i];
+        }
+        freq_avg = freq_avg / data.size();
+
+        size_t iter_predict = 0;
+        double temp = 0.0;
+        double temp1;
+        while (iter_predict != out.size()){
+            if (iter_predict != 0){
+                freq_avg = std::sqrt(freq_avg*freq_avg / data.size() / data.size() * iter_predict * iter_predict);
+            }
+            iter_predict = 0;
+            double temp = 0.0;
+            while (temp <= (static_cast<double>(data.size()) - 1.0)){
+                temp1 = freq_avg / inst_freq.interpolate(temp, SignalKind::Universal);//linear_interpolate(freq_arr, temp);
+                temp = temp + temp1;
+                iter_predict++;
+            }
+        }
+
+        temp = 0.0;
+        auto counter = 0;
+        while (temp<=(data.size()-1.0)){
+            temp1 = freq_avg / inst_freq.interpolate(temp, SignalKind::Universal);
+            //out_signal.push(linear_interpolate(signal_in, temp));
+            if(counter == out.size()){
+                break;
+            }
+            out[counter] = data.interpolate(temp, SignalKind::Universal);
+            //freq_conv_image.push(temp1 * linear_interpolate(freq_conv, temp));
+            freq_conv_image.push_back(temp1 * UTILITY_MATH::linearInterpolate<double, double>({static_cast<int>(temp), freq_conv[static_cast<int>(temp)]},
+                {static_cast<int>(temp) + 1, freq_conv[static_cast<int>(temp + 1)]}, temp));
+            temp = temp + temp1;
+            counter++;
+        }
+
+        std::swap(freq_conv, freq_conv_image);
+        freq_conv_image.clear();
+        return freq_avg;
+    }
+
+    export
+    template<Signal DataT, Signal OutT, Signal InstFreqT>
+    double InstFreqNormDouble(const DataT & data, const OutT & out, const InstFreqT & inst_freq, 
+        std::vector<double> & freq_conv, std::vector<double> & freq_conv_image){
+        
+        auto val_expr = [&](size_t idx) {
+            return ((*inst_freq)[idx].first + (*inst_freq)[idx].second)/ 2.0;;
+        };
+        auto size_expr = [&]() {
+            return data.size();
+        };
+        
+        ExpressionWrapper<double, size_t,
+            decltype(val_expr), GENERAL::Nil, decltype(size_expr), false>
+                inst_freq_expr(val_expr, size_expr);
+
+        const GenericSignal<decltype(inst_freq_expr), false> inst_freq_e(inst_freq_expr);
+        
+        freq_conv_image.clear();
+        double freq_avg = 0.0;
+        for (int i = 0; i < data.size(); i++){
+            freq_avg += inst_freq_e[i];
+        }
+        freq_avg = freq_avg / data.size();
+        
+        
+
+        size_t iter_predict = 0;
+        double temp = 0.0;
+        double temp1;
+        while (iter_predict != out.size()){
+            freq_avg = std::sqrt(freq_avg*freq_avg / data.size() / data.size() * iter_predict * iter_predict);
+            iter_predict = 0;
+            double temp = 0.0;
+            while (temp <= (static_cast<double>(data.size()) - 1.0)){
+                temp1 = freq_avg / inst_freq_e.interpolate(temp, SignalKind::Universal);//linear_interpolate(freq_arr, temp);
+                temp = temp + temp1;
+                iter_predict++;
+            }
+        }
+
+        temp = 0.0;
+        auto counter = 0;
+        while (temp<=data.size()-1.0){
+            temp1 = freq_avg / inst_freq_e.interpolate(temp, SignalKind::Universal);
+            //out_signal.push(linear_interpolate(signal_in, temp));
+            if(counter = out.size()){
+                break;
+            }
+            out[counter] = data.interpolate(temp, SignalKind::Universal);
+            //freq_conv_image.push(temp1 * linear_interpolate(freq_conv, temp));
+            freq_conv_image.push_back(UTILITY_MATH::linearInterpolate<double, double>({static_cast<int>(temp), freq_conv[static_cast<int>(temp)]},
+                {static_cast<int>(temp) + 1, freq_conv[static_cast<int>(temp + 1)]}, temp));
+            temp = temp + temp1;
+            counter++;
+        }
+
+        std::swap(freq_conv, freq_conv_image);
+        freq_conv_image.clear();
+        return freq_avg;
+    }
+
+    export
+    template<Signal DataT, Signal OutT>
+    void backInstFreqNorm(DataT const & data, OutT & out, std::vector<double> & freq_conv){
+        double temp = 0.0;
+        double temp1 = 0.0;
+        double sum = 0.0;
+
+        for (int i = 0; i < freq_conv.size(); i++){
+            sum += freq_conv[i];
+        }
+        size_t iter_predict = 0;
+
+        while (temp <= (data.size() - 1)){
+            temp1 = 1.0 / UTILITY_MATH::linearInterpolate<double, double>({static_cast<int>(temp), freq_conv[static_cast<int>(temp)]},
+                {static_cast<int>(temp) + 1, freq_conv[static_cast<int>(temp) + 1]}, temp);
+            
+            if (0.0 == UTILITY_MATH::linearInterpolate<double, double>({static_cast<int>(temp), freq_conv[static_cast<int>(temp)]},
+                {static_cast<int>(temp) + 1, freq_conv[static_cast<int>(temp) + 1]}, temp))
+            {
+                temp = temp + 1.0;
+            }
+            else{
+                temp = temp + temp1;
+                iter_predict = iter_predict+1;
+            }
+        }
+
+        double one = 1.0;
+        one = one / data.size() * iter_predict;
+        temp = 0.0;
+        size_t counter = 0;
+        while (temp <= static_cast<double>(data.size()) - 1.0){
+            temp1 = one / UTILITY_MATH::linearInterpolate<double, double>({static_cast<int>(temp), freq_conv[static_cast<int>(temp)]},
+                {static_cast<int>(temp) + 1, freq_conv[static_cast<int>(temp) + 1]}, temp);
+            if (0.0 == UTILITY_MATH::linearInterpolate<double, double>({static_cast<int>(temp), freq_conv[static_cast<int>(temp)]},
+                {static_cast<int>(temp) + 1, freq_conv[static_cast<int>(temp) + 1]}, temp))
+            {
+                temp = temp + 1.0;
+            }
+            else{
+                //arrout.push(linear_interpolate::<T>(arrin, temp));
+                if (counter < data.size()){
+                    out[counter] = data.interpolate(temp, SignalKind::Universal);
+                    counter++;
+                    temp = temp + temp1;
+                }
+                else{
+                    break;
+                }
+            }
+        }
+    }
+
+    
 }

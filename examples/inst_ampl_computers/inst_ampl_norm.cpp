@@ -16,12 +16,13 @@ int main(){
     SignalT signal3;
     SignalT compute_buffer;
     NP_DSP::ONE_D::INTEGRATORS::Riman<NP_DSP::ONE_D::INTEGRATORS::PolygonType::ByPoint> integrator;
-    NP_DSP::ONE_D::DERIVATORS::FinniteDifference<NP_DSP::ONE_D::DERIVATORS::FinniteDifferenceType::Central> derivator;
+    NP_DSP::ONE_D::DERIVATORS::FinniteDifference<NP_DSP::ONE_D::DERIVATORS::FinniteDifferenceType::Backward> derivator;
 
-    auto size = 5000;
+    auto size = 200;
 
     for (auto i = 0; i < size; i++){
-        signal1.base->vec->push_back(std::sin(static_cast<double>(i) / 50.) * i + i + std::sin(static_cast<double>(i) / 700.) * i);
+        //signal1.base->vec->push_back(std::sin(static_cast<double>(i) / 50.) * i + i + std::sin(static_cast<double>(i) / 700.) * i);
+        signal1.base->vec->push_back(std::rand());
         signal2.base->vec->push_back(0);
         signal3.base->vec->push_back(0);
         compute_buffer.base->vec->push_back(0);
@@ -49,7 +50,7 @@ int main(){
 
     inst_ampl_computer.compute(signal1, signal2, &signal3);
     signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
-    //signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
+    signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
     derivator.compute(signal1, compute_buffer, nullptr);
 
@@ -73,11 +74,13 @@ int main(){
         signal3[i] += b;
     }
 
-    signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
+    //signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
     inst_ampl_normalizer.compute(signal1, signal2, signal3);
 
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
+    inst_ampl_computer.compute(signal2, signal1, &signal3);
+    signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
     return 0;
 }

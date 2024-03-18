@@ -6,10 +6,18 @@ set_languages("c++23")
 --xmake f --cxx=clang++ --cc=clang -m debug --debugger=lldb-16
 --xmake project -k compile_commands
 
+--add_requires("libomp")
+--add_requires("libtorch")
+
 target("icecream")
     set_kind("headeronly")
     --add_includedirs("$(projectdir)/icecream-cpp", {public = true})
     add_includedirs("$(projectdir)/my_icecream", {public = true})
+
+target("monster")
+    set_kind("headeronly")
+    --add_includedirs("$(projectdir)/icecream-cpp", {public = true})
+    add_includedirs("$(projectdir)/monster_include", {public = true})
 
 task("build matplot++")
     on_run(function()
@@ -52,6 +60,20 @@ target("non-parametric_dsp")
     add_deps("matplot++_external")
     add_deps("icecream")
 
+target("signals-tokenizer")
+    set_kind("static")
+    add_files("src/encodings_generator.ixx")
+    add_deps("non-parametric_dsp")
+    add_deps("monster")
+    --add_deps("libomp")
+    --add_deps("libtorch")
+
+--target("torch-base-example")
+    --set_kind("binary")
+    --add_files("examples/torch/dcgan.cpp")
+    --add_deps("non-parametric_dsp")
+    --add_deps("pocketfft")
+    --add_deps("matplot++_external")
 
 target("fft-example")
     set_kind("binary")
@@ -233,3 +255,18 @@ target("reqursive_opt_filtering")
     add_deps("matplot++_external")
     add_deps("non-parametric_dsp")
     add_deps("icecream")
+
+target("inst_freq_normalizer")
+    set_kind("binary")
+    add_files("examples/utility_math/inst_freq_norm.cpp")
+    add_deps("matplot++_external")
+    add_deps("non-parametric_dsp")
+    add_deps("icecream")
+
+target("filtering_non_opt_average_based")
+    set_kind("binary")
+    add_files("examples/filters/non_opt_average_based.cpp")
+    add_deps("matplot++_external")
+    add_deps("non-parametric_dsp")
+    add_deps("icecream")
+    add_deps("monster")
