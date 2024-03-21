@@ -1,31 +1,29 @@
-module;
+#pragma once
 
 #include "icecream.hpp"
 
-export module inst_freq_computers;
-
-import <matplot/matplot.h>;
-import npdsp_concepts;
-import signals;
-import derivators;
-import integrators;
-import <cmath>;
-import <numbers>;
-import <vector>;
-import <utility>;
-import utility_math;
-import approximators;
-import <optional>;
-import npdsp_config;
-import <complex>;
-export import phase_computers;
-import utility_math;
+#include <phase_computers.hpp>
+#include <matplot/matplot.h>
+#include <npdsp_concepts.hpp>
+#include <signals.hpp>
+#include <derivators.hpp>
+#include <integrators.hpp>
+#include <cmath>
+#include <numbers>
+#include <vector>
+#include <utility>
+#include <utility_math.hpp>
+#include <approximators.hpp>
+#include <optional>
+#include <npdsp_config.hpp>
+#include <complex>
+#include <utility_math.hpp>
 
 namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
-    export
+    
     using InstFreqDerivativeBasedKind = PHASE_COMPUTERS::InstFreqDerivativeBasedKind;
 
-    export
+    
     template<typename U, Integrator<U> IntegratorT,
         Derivator<U> DerivatorT, InstFreqDerivativeBasedKind kind>
     struct DerivativeBased {
@@ -140,7 +138,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         }
     };
 
-    export
+    
     template<typename U, Integrator<U> IntegratorT,
         Derivator<U> DerivatorT, InstFreqDerivativeBasedKind kind>
     struct ComputedOnPhase {
@@ -355,7 +353,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         }
     };
 
-    export
+    
     template<typename U, Integrator<U> IntegratorT,
         Derivator<U> DerivatorT, InstFreqDerivativeBasedKind kind, PhaseComputer<U> PhaseComputerT>
     struct PhaseBased {
@@ -494,7 +492,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         }
     };
 
-    export
+    
     template<typename U, Integrator<U> IntegratorT,
         Derivator<U> DerivatorT, InstFreqDerivativeBasedKind kind>
     struct DerivativeBasedWithExternalOptParametr {
@@ -610,9 +608,9 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         }
     };
 
-    export enum class ExtremumsBasedComputeInstFreqKind { Simple, Linear };
+     enum class ExtremumsBasedComputeInstFreqKind { Simple, Linear };
 
-    export
+    
     template<ExtremumsBasedComputeInstFreqKind compute_kind>
     struct ExtremumsBased {
         using AdditionalDataType = GENERAL::Nil;
@@ -787,7 +785,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         }
     };
 
-    export
+    
     template<typename U, Integrator<U> IntegratorT,
         Derivator<U> DerivatorT, InstFreqDerivativeBasedKind kind>
     struct PeriodAndExtremumsBased {
@@ -989,7 +987,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         }
     };
 
-    export
+    
     template<typename U, Integrator<U> IntegratorT,
         Derivator<U> DerivatorT, InstFreqDerivativeBasedKind kind>
     struct PeriodAndExtremumsBasedExternal {
@@ -1098,7 +1096,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         }
     };
 
-    export
+    
     template<Signal DataT, Signal OutT, Signal InstFreqT>
     double InstFreqNorm(const DataT & data, OutT & out, const InstFreqT & inst_freq, 
         std::vector<double> & freq_conv, std::vector<double> & freq_conv_image){
@@ -1146,7 +1144,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         return freq_avg;
     }
 
-    export
+    
     template<Signal DataT, Signal OutT, Signal InstFreqT>
     double InstFreqNormDouble(const DataT & data, const OutT & out, const InstFreqT & inst_freq, 
         std::vector<double> & freq_conv, std::vector<double> & freq_conv_image){
@@ -1208,7 +1206,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         return freq_avg;
     }
 
-    export
+    
     template<Signal DataT, Signal OutT>
     void backInstFreqNorm(DataT const & data, OutT & out, std::vector<double> & freq_conv){
         double temp = 0.0;

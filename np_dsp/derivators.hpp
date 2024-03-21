@@ -1,18 +1,17 @@
-module;
+#pragma once
 
 #include "icecream.hpp"
 
-export module derivators;
 
-import <cstddef>;
-import <utility>;
+#include <cstddef>
+#include <utility>
 
-import npdsp_concepts;
+#include <npdsp_concepts.hpp>
 
 namespace NP_DSP::ONE_D::DERIVATORS {
-    export enum class FinniteDifferenceType { Forward, Central, Backward };
+     enum class FinniteDifferenceType { Forward, Central, Backward };
 
-    export
+    
     template<FinniteDifferenceType different_t>
     struct FinniteDifference {
         constexpr static bool is_derivator = true;

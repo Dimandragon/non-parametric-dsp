@@ -27,7 +27,7 @@ task("build matplot++")
 target("matplot++_external")
     set_kind("headeronly")
     --on_load(function(target)
-        --import("core.base.task")
+        --#include("core.base.task")
         --task.run("build matplot++")
     --end)
     add_headerfiles("$(projectdir)/matplotplusplus/source/matplot/matplot.h", {public = true})
@@ -49,20 +49,23 @@ target("pocketfft")
 
 
 target("non-parametric_dsp")
-    set_kind("static")
-    add_files("src/npdsp_concepts.ixx", "src/signals.ixx", "src/derivators.ixx",
-            "src/integrators.ixx", "src/filters.ixx", "src/inst_freq_computers.ixx",
-            "src/utility_math.ixx", "src/approximators.ixx", "src/config.ixx", 
-            "src/phase_computers.ixx", "src/inst_ampl_computers.ixx"
-            ,"src/modes_extractors.ixx"
-            )
+    set_kind("headeronly")
+    --add_headerfiles("src/npdsp_concepts.hpp", "src/signals.hpp", "src/derivators.hpp",
+    --        "src/integrators.hpp", "src/filters.hpp", "src/inst_freq_computers.hpp",
+    --        "src/utility_math.hpp", "src/approximators.hpp", "src/config.hpp", 
+    --        "src/phase_computers.hpp", "src/inst_ampl_computers.hpp"
+    --        ,"src/modes_extractors.hpp", {public = true}
+    --        )
+    add_includedirs("np_dsp", {public = true})
+
     add_deps("pocketfft")
     add_deps("matplot++_external")
     add_deps("icecream")
 
 target("signals-tokenizer")
-    set_kind("static")
-    add_files("src/encodings_generator.ixx")
+    set_kind("headeronly")
+    --add_headerfiles("src/encodings_generator.hpp")
+    add_includedirs("tokenizer", {public = true})
     add_deps("non-parametric_dsp")
     add_deps("monster")
     --add_deps("libomp")

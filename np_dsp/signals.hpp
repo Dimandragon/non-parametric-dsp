@@ -1,28 +1,26 @@
-module;
+#pragma once
 
 #include "icecream.hpp"
 
-export module signals;
+#include <matplot/matplot.h>
 
-import <matplot/matplot.h>;
+#include <vector>
+#include <tuple>
+#include <cassert>
+#include <cstddef>
+#include <utility>
+#include <type_traits>
+#include <optional>
+#include <memory>
+#include <iostream>
+#include <complex>
 
-import <vector>;
-import <tuple>;
-import <cassert>;
-import <cstddef>;
-import <utility>;
-import <type_traits>;
-import <optional>;
-import <memory>;
-import <iostream>;
-import <complex>;
-
-import npdsp_concepts;
-import utility_math;
-import npdsp_config;
+#include <npdsp_concepts.hpp>
+#include <utility_math.hpp>
+#include <npdsp_config.hpp>
 
 namespace NP_DSP::ONE_D {
-    export
+    
     template<typename T>
     struct SimpleVecWrapper {
         bool has_ovnership = false;
@@ -64,7 +62,7 @@ namespace NP_DSP::ONE_D {
 
     static_assert(is_signal_base_first<SimpleVecWrapper<int>>);
 
-    export
+    
     template<typename T, typename IdxT, typename DataValExpr,
         typename DataRefExpr, typename SizeExpr, bool is_writeble_b>
     struct ExpressionWrapper {
@@ -112,7 +110,7 @@ namespace NP_DSP::ONE_D {
         }
     };
 
-    export
+    
     template<typename T, typename IdxT, typename DataValExpr,
         typename SizeExpr>
     struct ExpressionWrapper<T, IdxT, DataValExpr,
@@ -151,9 +149,9 @@ namespace NP_DSP::ONE_D {
         }
     };
 
-    //export enum class SignalKind {Monotone, Stohastic, Harmonic, Smooth};
+    // enum class SignalKind {Monotone, Stohastic, Harmonic, Smooth};
 
-    export
+    
     template<SignalBase BaseT, bool is_writable_b>
     struct GenericSignal {
         bool has_ovnership = false;
@@ -461,7 +459,7 @@ namespace NP_DSP::ONE_D {
         }
     };
 
-    export
+    
     template<SignalBase BaseT>
     struct GenericSignal<BaseT, false> {
         bool has_ovnership = false;

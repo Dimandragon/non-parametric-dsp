@@ -1,26 +1,26 @@
-module;
+#pragma once
+
 #include <icecream.hpp>
 
-import approximators;
-import npdsp_concepts;
-import npdsp_config;
-import <utility>;
-import <vector>;
-import <cmath>;
-import <numbers>;
-import <complex>;
-import utility_math;
+#include <approximators.hpp>
+#include <npdsp_concepts.hpp>
+#include <npdsp_config.hpp>
+#include <utility>
+#include <vector>
+#include <cmath>
+#include <numbers>
+#include <complex>
+#include <utility_math.hpp>
 
-export module phase_computers;
 
 namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
-    export
+    
     enum class InstFreqDerivativeBasedKind { Momental, TimeAverage, DeriveAverage, DeriveDouble };
 
-    export
+    
     enum class ExtremumsKind { Simple, DerArctg };
 
-    export
+    
     template<typename U, ExtremumsKind kind_e, Derivator<U> DerivatorT>
     struct ExtremumsBasedNonOpt {
         using AdditionalDataType = GENERAL::Nil;
@@ -197,7 +197,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
         }
     };
 
-    export
+    
     template<typename U,
         ExtremumsKind kind_e, Integrator<U> IntegratorT, Derivator<U> DerivatorT>
     struct ExtremumsBasedUsingFS {
@@ -387,7 +387,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
     };
 
 
-    export
+    
     template<typename U,
         ExtremumsKind kind_e, Integrator<U> IntegratorT, Derivator<U> DerivatorT>
     struct ArctgScaledToExtremums {
@@ -540,7 +540,7 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
         }
     };
 
-    export
+    
     template<typename U,
         Integrator<U> IntegratorT, Derivator<U> DerivatorT, InstFreqDerivativeBasedKind kind>
     struct ArctgScaledToExtremumsSquare {

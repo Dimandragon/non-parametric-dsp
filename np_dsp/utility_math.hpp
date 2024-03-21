@@ -1,25 +1,23 @@
-module;
+#pragma once
 
 #include "pocketfft_hdronly.h"
 #include "icecream.hpp"
 
-export module utility_math;
+#include <utility>
+#include <complex>
+#include <vector>
 
-import <utility>;
-import <complex>;
-import <vector>;
-
-import npdsp_concepts;
-import npdsp_config;
+#include <npdsp_concepts.hpp>
+#include <npdsp_config.hpp>
 
 namespace NP_DSP::ONE_D::UTILITY_MATH {
-    export
+    
     template<typename T>
     T complexL2(std::complex<T> a, std::complex<T> b) {
         return (a.imag() - b.imag()) * (a.imag() - b.imag()) + (a.real() - b.real()) * (a.real() - b.real());
     }
 
-    export
+    
     template<typename T>
     T pairL2(std::pair<T, T> a, std::pair<T, T> b) {
         return (a.first - b.first) * (a.first - b.first) + (a.second - b.second) * (a.second - b.second);
@@ -29,7 +27,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         return 1 / std::cos(z_r);
     }
 
-    export
+    
     template<typename T, typename data1T, typename data2T>
     T signalsL2Distance(const data1T& data1, const data2T& data2) {
         double error = 0.0;
@@ -39,7 +37,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         }
         return error;
     }
-    export
+    
     template<typename T, typename data1T, typename data2T>
     T signalsL2NormedDistance(const data1T& data1, const data2T& data2) {
         double error = 0.0;
@@ -49,7 +47,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         return error;
     }
 
-    export
+    
     template<typename T, typename data1T, typename data2T>
     T signalsL2DistanceDouble(const data1T& data1, const data2T& data2) {
         double error = 0.0;
@@ -61,7 +59,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         return error;
     }
 
-    export
+    
     template<typename T, typename data1T, typename data2T>
     T signalsL2NormedDistanceDouble(const data1T& data1, const data2T& data2) {
         double error = 0.0;
@@ -73,7 +71,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         return error;
     }
 
-    export
+    
     template<typename xType, typename yType>
     yType linearInterpolate(std::pair<xType, yType> point1, std::pair<xType, yType> point2, xType x_in) {
         auto dx = point2.first - point1.first;
@@ -84,7 +82,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         return point1.second + dy * (x_in - point1.first) / dx;
     }
 
-    export
+    
     template<typename xType, typename yType>
     xType backLinearInterpolate(std::pair<xType, yType> point1, std::pair<xType, yType> point2, yType y_in) {
         auto dx = point2.first - point1.first;
@@ -95,7 +93,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         return point1.first + dx * (y_in - point1.second) / dy;
     }
 
-    export
+    
     template<typename T>
     void fftc2c(std::vector<std::complex<T>> const& data_in, std::vector<std::complex<T>>& data_out) {
         auto len = data_in.size();
@@ -114,7 +112,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
                        data_in.data(), data_out.data(), (T) 1.0 / (T) len);
     }
 
-    export
+    
     template<typename T>
     void ifftc2c(std::vector<std::complex<T>> const& data_in, std::vector<std::complex<T>>& data_out) {
         auto len = data_in.size();
@@ -133,7 +131,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
                        data_in.data(), data_out.data(), static_cast<T>(1));
     }
 
-    export
+    
     template<Signal DataT, Signal OutT, typename T>
     void fftc2c(const DataT& in, OutT& out) {
         //using T = typename OutT::SampleType;
@@ -163,7 +161,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         }
     }
 
-    export
+    
     template<Signal DataT, Signal OutT, typename T>
     void ifftc2c(const DataT& in, OutT& out) {
         auto len = in.size();
@@ -191,7 +189,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         }
     }
 
-    export
+    
     template<Signal DataT1, Signal DataT2, Signal OutT>
     void fastConvolution(DataT1& in1, DataT2& in2, OutT& out) {
         using T = typename OutT::SampleType;
@@ -238,7 +236,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         }
     }
 
-    export
+    
     template<typename T>
     void fftc2c(std::vector<std::complex<T>> const& data_in, std::vector<std::complex<T>>& data_out, size_t len,
                 size_t pad) {
@@ -257,7 +255,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
                        data_in.data() + pad, data_out.data() + pad, ((T) 1.0) / ((T) len));
     }
 
-    export
+    
     template<typename T>
     void ifftc2c(std::vector<std::complex<T>> const& data_in, std::vector<std::complex<T>>& data_out, size_t len,
                  size_t pad) {
@@ -277,7 +275,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
     }
 
 
-    export
+    
     template<typename TIndex, SignalBase Base, typename TValue>
     std::pair<TIndex, TIndex> interpoationSearch(Base data, TIndex idx1, TIndex idx2, TValue value) {
         //todo interpolate or values limits
@@ -311,7 +309,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         return {idx1, idx2};
     }
 
-    export
+    
     template<typename TIndex, typename TValue, typename IdxLambdaT>
     std::pair<TIndex, TIndex> interpoationSearch(TIndex idx1, TIndex idx2, TValue value, IdxLambdaT idx_lambda) {
         //todo interpolate or values limits
@@ -347,7 +345,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         return {idx1, idx2};
     }
 
-    export
+    
     template<typename T>
     std::pair<T, T> convertFSampleC2T(std::complex<T> sample) {
         return std::pair{
@@ -356,7 +354,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         };
     }
 
-    export
+    
     template<typename T>
     std::complex<T> convertFSampleT2C(std::pair<T, T> sample) {
         T theta = sample.second;
@@ -388,7 +386,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         }
     }
 
-    export 
+     
     template<typename T>
     T powFact(T a, T pow){
         double result = 0.0;

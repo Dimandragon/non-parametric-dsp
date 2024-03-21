@@ -1,10 +1,10 @@
 #include <icecream.hpp>
 
-import modes_extractors;
-import signals;
-import npdsp_concepts;
-import <vector>;
-import <cstdlib>;
+#include <modes_extractors.hpp>
+#include <signals.hpp>
+#include <npdsp_concepts.hpp>
+#include <vector>
+#include <cstdlib>
 
 int main(){
     NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> data;

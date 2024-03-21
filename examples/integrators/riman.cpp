@@ -1,9 +1,9 @@
-import signals;
-import integrators;
-import <cmath>;
-import <vector>;
-import npdsp_concepts;
-import <string>;
+#include <signals.hpp>
+#include <integrators.hpp>
+#include <cmath>
+#include <vector>
+#include <npdsp_concepts.hpp>
+#include <string>
 
 int main(){
     NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> signal1;

@@ -1,21 +1,19 @@
-module;
+#pragma once
 
 #include <icecream.hpp>
 
-export module modes_extractors;
-
-import npdsp_concepts;
-import signals;
-import <vector>;
-import inst_ampl_computers;
-import phase_computers;
-import inst_freq_computers;
-import filters;
-import integrators;
-import derivators;
+#include <npdsp_concepts.hpp>
+#include <signals.hpp>
+#include <vector>
+#include <inst_ampl_computers.hpp>
+#include <phase_computers.hpp>
+#include <inst_freq_computers.hpp>
+#include <filters.hpp>
+#include <integrators.hpp>
+#include <derivators.hpp>
 
 namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
-    export
+    
     struct SimpleExtractorConfig {
         using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         DataType data;
@@ -89,7 +87,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
     };
 
-    export
+    
     struct SimpleExtractorDoubleConfig {
         using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         using InstFreqType = GenericSignal<SimpleVecWrapper<std::pair<double, double>>, true>;
@@ -189,7 +187,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
     };
 
-    export
+    
     struct AmplOptExtractorDoubleConfig {
         using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         using InstFreqType = GenericSignal<SimpleVecWrapper<std::pair<double, double>>, true>;
@@ -305,7 +303,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
     };
 
-    export
+    
     struct FreqOptExtractorDoubleConfig {
         using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         using InstFreqType = GenericSignal<SimpleVecWrapper<std::pair<double, double>>, true>;
@@ -429,7 +427,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         //todo test
     };
     
-    export
+    
     struct FreqAmplOptExtractorDoubleConfig {
         using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         using InstFreqType = GenericSignal<SimpleVecWrapper<std::pair<double, double>>, true>;
@@ -549,7 +547,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
     };
 
-    export
+    
     struct AmplOptExtractorConfig {
         using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         DataType data;
@@ -734,7 +732,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
     };
 
 
-    export
+    
     struct AmplOptExtractorDoubleAlternationFreqConfig {
         using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         using InstFreqType = GenericSignal<SimpleVecWrapper<std::pair<double, double>>, true>;
@@ -862,7 +860,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
     };
 
-    export struct ByIterStopFunc{
+     struct ByIterStopFunc{
         size_t max_iter_number = 50;
         template<typename Config>
         bool CheckStop(size_t iter_number, Config & config){
@@ -873,7 +871,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
     };
 
-    export struct BySizeLogStopFunc{
+     struct BySizeLogStopFunc{
         double log_muller = 1;
 
         template<typename Config>
@@ -885,7 +883,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
     };
 
-    export struct ByMaxPhaseStopFunc{
+     struct ByMaxPhaseStopFunc{
         double min_phase = 6.28;
 
         template<typename Config>
@@ -898,7 +896,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
     };
     
-    export
+    
     template<typename Config, typename Stop>
     void computeReq(Config & config, Stop & stop){
         size_t iter_number = 0;
@@ -1043,7 +1041,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
     }
 
-    export
+    
     template<typename Config, typename Stop>
     void computeReqDouble(Config & config, Stop & stop){
         size_t iter_number = 0;
@@ -1219,7 +1217,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
     }
 
-    export
+    
     template<typename Config, typename Stop>
     void computeReqCascade(Config & config, Stop & stop){
         size_t iter_number = 0;
@@ -1379,7 +1377,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
     }
 
-    export
+    
     template<typename Config, typename Stop>
     void computeReqDoubleCascade(Config & config, Stop & stop){
         size_t iter_number = 0;

@@ -1,16 +1,14 @@
-module;
+#pragma once
 
-export module integrators;
+#include <cstddef>
+#include <utility>
 
-import <cstddef>;
-import <utility>;
-
-import npdsp_concepts;
+#include <npdsp_concepts.hpp>
 
 namespace NP_DSP::ONE_D::INTEGRATORS {
-    export enum class PolygonType { ByPoint, ByAverage };
+     enum class PolygonType { ByPoint, ByAverage };
 
-    export
+    
     template<PolygonType polygon_t>
     struct Riman {
         constexpr static bool is_integrator = true;

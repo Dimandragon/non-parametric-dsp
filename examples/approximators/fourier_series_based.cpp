@@ -1,17 +1,17 @@
 #include <icecream.hpp>
 
-import signals;
-import approximators;
-import <cmath>;
-import <vector>;
-import npdsp_concepts;
-import <string>;
-import <cstdlib>;
-import <complex>;
-import <iostream>;
-import <matplot/matplot.h>;
-import <string>;
-import utility_math;
+#include <signals.hpp>
+#include <approximators.hpp>
+#include <cmath>
+#include <vector>
+#include <npdsp_concepts.hpp>
+#include <string>
+#include <cstdlib>
+#include <complex>
+#include <iostream>
+#include <matplot/matplot.h>
+#include <string>
+#include <utility_math.hpp>
 
 void createFill(auto & signal){
     for (auto i = 0; i < signal.size(); i++){

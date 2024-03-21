@@ -1,19 +1,17 @@
-module;
+#pragma once
 
-export module inst_ampl_computers;
-
-import npdsp_concepts;
-import utility_math;
-import inst_freq_computers;
-import <cmath>;
-import <utility>;
-import signals;
-import <vector>;
-import <type_traits>;
-import <concepts>;
+#include <npdsp_concepts.hpp>
+#include <utility_math.hpp>
+#include <inst_freq_computers.hpp>
+#include <cmath>
+#include <utility>
+#include <signals.hpp>
+#include <vector>
+#include <type_traits>
+#include <concepts>
 
 namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
-    export
+    
     template<typename U,
         Integrator<U> IntegratorT, Derivator<U> DerivatorT,
             INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind kind_e>
@@ -95,7 +93,7 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
         }
     };
 
-    export
+    
     template<typename U, Integrator<U> IntegratorT,
         Derivator<U> DerivatorT,
         InstFreqComputer<U> InstFreqComputerType,
@@ -208,7 +206,7 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
         }
     };
 
-    export
+    
     template<typename U, Integrator<U> Integrator, Derivator<U> Derivator, InstAmplComputer<U> InstAmplComputerT>
     struct InstAmplNormalizator{
         InstAmplComputerT * inst_ampl_computer;

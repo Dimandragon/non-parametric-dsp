@@ -1,23 +1,21 @@
-module;
+#pragma once
 
 #include <icecream.hpp>
 
-export module approximators;
-
-import npdsp_concepts;
-import npdsp_config;
-import <vector>;
-import <complex>;
-import utility_math;
-import <numbers>;
-import npdsp_config;
-import <string>;
-import <matplot/matplot.h>;
+#include <npdsp_concepts.hpp>
+#include <npdsp_config.hpp>
+#include <vector>
+#include <complex>
+#include <utility_math.hpp>
+#include <numbers>
+#include <npdsp_config.hpp>
+#include <string>
+#include <matplot/matplot.h>
 
 namespace NP_DSP::ONE_D::APPROX {
-    export enum class FSApproxKind { Simple, Positive };
+     enum class FSApproxKind { Simple, Positive };
 
-    export
+    
     template<typename LossFunc, typename StopPointFunc, FSApproxKind kind_v, typename BySampleLoss>
     struct FourierSeriesBased {
         using Loss = LossFunc;

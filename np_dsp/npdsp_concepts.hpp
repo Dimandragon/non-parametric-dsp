@@ -1,25 +1,23 @@
-module;
+#pragma once
 
-export module npdsp_concepts;
-
-import <concepts>;
-import <tuple>;
-import <type_traits>;
-import <cstddef>;
-import <optional>;
-import <string>;
-import <utility>;
-import <vector>;
-import <matplot/matplot.h>;
+#include <concepts>
+#include <tuple>
+#include <type_traits>
+#include <cstddef>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+#include <matplot/matplot.h>
 
 
 namespace NP_DSP{
     namespace GENERAL
     {
-        export
+        
         struct Nil{};
 
-        export
+        
         template<typename T>
         struct Tag {
             using type = T;
@@ -28,7 +26,7 @@ namespace NP_DSP{
         template <typename T>
         constexpr bool is_any_type = true;
 
-        export
+        
         template <typename T>
         constexpr bool is_complex = requires(T data)
         {
@@ -38,7 +36,7 @@ namespace NP_DSP{
     }
 
     namespace ONE_D{
-        export
+        
         template <typename T>
         constexpr bool is_signal_base_first
                 = requires (T signal, T::IdxType idx)
@@ -56,7 +54,7 @@ namespace NP_DSP{
             { signal.size() } -> std::convertible_to<size_t>;
         };
 
-        export
+        
         template <typename T>
         constexpr bool is_signal_base_second
                 = requires (T signal, T::IdxType idx)
@@ -75,14 +73,14 @@ namespace NP_DSP{
 
 
 
-        export
+        
         template <typename T>
         concept SignalBase = is_signal_base_second<T> || is_signal_base_first<T>;
 
-        export enum class SignalKind {Monotone, Stohastic, Harmonic, Smooth, Universal};
-        export enum class PlottingKind {Simple, Interpolate};
+         enum class SignalKind {Monotone, Stohastic, Harmonic, Smooth, Universal};
+         enum class PlottingKind {Simple, Interpolate};
 
-        export
+        
         template <typename T>
         constexpr bool is_signal = requires(T signal, size_t idx, std::optional<typename T::IdxType> idx1,
         T::SampleType value, PlottingKind kind, const std::string & filename, const std::string & format, SignalKind s_kind) {
@@ -107,21 +105,21 @@ namespace NP_DSP{
             { signal.show(kind, filename, format) };
         };
 
-        export
+        
         template<typename T>
         concept Signal = is_signal<T>;
 
-        export
+        
         template <typename T>
         constexpr bool is_signal_wrapper = requires{
             requires is_signal<T> || std::is_same_v<GENERAL::Nil, T>;
         };
 
-        export
+        
         template <typename T>
         concept SignalWrapper = is_signal_wrapper<T>;
 
-        export
+        
         template <typename T>
         class SignalBasePrototype{
         public:
@@ -138,7 +136,7 @@ namespace NP_DSP{
             SignalBasePrototype(const SignalBasePrototype & other){std::unreachable();}
         };
 
-        export
+        
         template <typename T>
         class SignalPrototype {
         public:
@@ -382,7 +380,7 @@ namespace NP_DSP{
             static_assert(is_signal<SignalPrototype<double>>);
         };
 
-        export
+        
         template <typename T, typename SampleType>
         constexpr bool is_derivator = requires(T derivator, const SignalPrototype<SampleType> & data, SignalPrototype<SampleType> & out,
                 SignalPrototype<SampleType> * additional_data)
@@ -395,11 +393,11 @@ namespace NP_DSP{
             derivator.compute(data, out, additional_data);
         };
 
-        export
+        
         template <typename T, typename SampleType>
         concept Derivator = is_derivator<T, SampleType>;
 
-        export
+        
         template <typename T, typename SampleType>
         constexpr bool is_integrator = requires(T integrator, const SignalPrototype<SampleType> & data, SignalPrototype<SampleType> & out,
                 SignalPrototype<SampleType> * additional_data)
@@ -411,11 +409,11 @@ namespace NP_DSP{
             integrator.compute(data, out, additional_data);
         };
 
-        export
+        
         template <typename T, typename SampleType>
         concept Integrator = is_integrator<T, SampleType>;
 
-        export
+        
         template <typename T, typename SampleType>
         constexpr bool is_modes_extracor = requires (T modes_extractor, const SignalPrototype<SampleType> & data, SignalPrototype<SampleType> & out,
                 SignalPrototype<SampleType> * additional_data)
@@ -427,11 +425,11 @@ namespace NP_DSP{
             modes_extractor.compute(data, out, additional_data);
         };
 
-        export
+        
         template<typename T, typename SampleType>
         concept ModeExtractor = is_modes_extracor<T, SampleType>;
 
-        export 
+         
         template <typename T, typename SampleType>
         constexpr bool is_phase_computer
                 = requires (T phase_computer, const SignalPrototype<SampleType> & data,
@@ -444,11 +442,11 @@ namespace NP_DSP{
             phase_computer.compute(data, inst_freq, additional_data);
         };
 
-        export
+        
         template<typename T, typename SampleType>
         concept PhaseComputer = is_phase_computer<T, SampleType>;
 
-        export
+        
         template <typename T, typename SampleType>
         constexpr bool is_mode_graber = requires(T mode_graber, SignalPrototype<SampleType> & data, const SignalPrototype<SampleType> & mode,
                 SignalPrototype<SampleType> * additional_data)
@@ -460,11 +458,11 @@ namespace NP_DSP{
             mode_graber.compute(data, mode, additional_data);
         };
 
-        export
+        
         template<typename T, typename SampleType>
         concept ModeGraber = is_mode_graber<T, SampleType>;
 
-        export
+        
         template<typename T, typename SampleType>
         constexpr bool is_inst_freq_computer =
                 requires (T inst_freq_computer, const SignalPrototype<SampleType> & data, SignalPrototype<SampleType> & inst_freq,
@@ -478,11 +476,11 @@ namespace NP_DSP{
             inst_freq_computer.compute(data, inst_freq, additional_data);
         };
 
-        export
+        
         template<typename T, typename SampleType>
         concept InstFreqComputer = is_inst_freq_computer<T, SampleType>;
 
-        export
+        
         template<typename T, typename SampleType>
         constexpr bool is_inst_ampl_computer =
                 requires (T inst_ampl_computer, const SignalPrototype<SampleType> & data, SignalPrototype<SampleType> & inst_ampl,
@@ -494,11 +492,11 @@ namespace NP_DSP{
             inst_ampl_computer.compute(data, inst_ampl, additional_data);
         };
 
-        export
+        
         template<typename T, typename SampleType>
         concept InstAmplComputer = is_inst_ampl_computer<T, SampleType>;
 
-        export
+        
         template<typename T, typename SampleType>
         constexpr bool is_filter = requires (T filter, const SignalPrototype<SampleType> & data, SignalPrototype<SampleType> & out,
                 SignalPrototype<SampleType> * additional_data)
@@ -509,12 +507,12 @@ namespace NP_DSP{
             filter.compute(data, out, additional_data);
         };
 
-        export
+        
         template<typename T, typename SampleType>
         concept Filter = is_filter<T, SampleType>;
 
 
-        export
+        
         template<typename T, typename SampleType>
         constexpr bool is_signal_approximator =
                 requires(T & approximator, T::Loss loss, T::StopPoint stop_point, T::ApproxModel model, T::IdxType idx, T::SampleType max_error){

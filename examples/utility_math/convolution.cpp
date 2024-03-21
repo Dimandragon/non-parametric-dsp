@@ -1,12 +1,12 @@
 //
 // Created by dmitry on 18.02.24.
 //
-import utility_math;
-import signals;
-import npdsp_concepts;
-import <vector>;
-import <complex>;
-import <cstdlib>;
+#include <utility_math.hpp>
+#include <signals.hpp>
+#include <npdsp_concepts.hpp>
+#include <vector>
+#include <complex>
+#include <cstdlib>
 
 int main(){
     NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> signal1;

@@ -4,14 +4,14 @@
 #include "pocketfft_hdronly.h"
 #include <matplot/matplot.h>
 
-import utility_math;
-import <iostream>;
+#include <utility_math.hpp>
+#include <iostream>
 
 //using namespace std;
 using namespace pocketfft;
 
 // floating point RNG which is good enough for simple demos
-// Do not use for anything important!
+// Do not use for anything #includeant!
 inline double simple_drand()
 {
     constexpr double norm = 1./RAND_MAX;

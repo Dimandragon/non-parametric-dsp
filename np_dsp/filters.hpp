@@ -1,30 +1,28 @@
-module;
+#pragma once
 
 #include <icecream.hpp>
 
-export module filters;
-
-import <complex>;
-import npdsp_concepts;
-import signals;
-import <utility>;
-import integrators;
-import <string>;
-import inst_freq_computers;
-import utility_math;
-import <concepts>;
-import phase_computers;
-import <vector>;
-import <algorithm>;
-import inst_ampl_computers;
+#include <complex>
+#include <npdsp_concepts.hpp>
+#include <signals.hpp>
+#include <utility>
+#include <integrators.hpp>
+#include <string>
+#include <inst_freq_computers.hpp>
+#include <utility_math.hpp>
+#include <concepts>
+#include <phase_computers.hpp>
+#include <vector>
+#include <algorithm>
+#include <inst_ampl_computers.hpp>
 
 
 namespace NP_DSP::ONE_D::FILTERS {
-    export enum class InstFreqKind { Average, Double };
+     enum class InstFreqKind { Average, Double };
 
-    export enum class FilteringType { DerivativeBased, ValueBased, AverageBased, Median, ValueBasedSmart, DerivativeBasedSmart };
+     enum class FilteringType { DerivativeBased, ValueBased, AverageBased, Median, ValueBasedSmart, DerivativeBasedSmart };
 
-    export
+    
     template<typename U, FilteringType filtering_type_k,
         Integrator<U> IntegratorT, InstFreqKind inst_freq_k>
     struct NonOptPeriodBasedFilter {
@@ -387,10 +385,10 @@ namespace NP_DSP::ONE_D::FILTERS {
         }
     };
 
-    export
+    
     enum class PhaseComputingKind { extremums_based_non_opt, arctg_scaled };
 
-    export
+    
     template<typename U, Filter<U> FilterT, InstFreqComputer<U> InstFreqComputerT,
         PhaseComputer<U> PhaseComputerT, InstFreqComputer<U> InstFreqComputerForModeT, 
         PhaseComputer<U> PhaseComputerForModeT>
@@ -640,7 +638,7 @@ namespace NP_DSP::ONE_D::FILTERS {
     };
 
 
-    export
+    
     template<typename U, Filter<U> FilterT, InstFreqComputer<U> InstFreqComputerT,
         PhaseComputer<U> PhaseComputerT, InstFreqComputer<U> InstFreqComputerForModeT, 
         PhaseComputer<U> PhaseComputerForModeT>
@@ -890,7 +888,7 @@ namespace NP_DSP::ONE_D::FILTERS {
     };
 
 
-    export
+    
     template<typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT, Filter<U> FilterT, 
         InstFreqComputer<U> InstFreqComputerT, 
             PhaseComputer<U> PhaseComputerT, InstAmplComputer<U> InstAmplComputerT,
@@ -1106,7 +1104,7 @@ namespace NP_DSP::ONE_D::FILTERS {
 
 
 
-    export
+    
     template<typename U, Filter<U> FilterFirstT, 
         Filter<U> FilterSeconT>
     struct CascadeFilter{
@@ -1154,7 +1152,7 @@ namespace NP_DSP::ONE_D::FILTERS {
         }
     };
 
-    export
+    
     template<typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT, Filter<U> FilterT, 
         InstAmplComputer<U> InstAmplComputerT>
     struct RecursiveFilterInstAmplChangesFithConstInstFreq{
@@ -1355,7 +1353,7 @@ namespace NP_DSP::ONE_D::FILTERS {
         }   
     };
 
-    export
+    
     template<typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT, Filter<U> FilterT, 
         InstAmplComputer<U> InstAmplComputerT>
     struct RecursiveFilterInstAmplChangesFithConstInstFreqDouble{
@@ -1566,7 +1564,7 @@ namespace NP_DSP::ONE_D::FILTERS {
 
 
 
-    export
+    
     template<typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT, Filter<U> FilterT, 
             PhaseComputer<U> PhaseComputerT, InstAmplComputer<U> InstAmplComputerT,
                 InstFreqComputer<U> InstFreqComputerForModeT>

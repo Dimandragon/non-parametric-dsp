@@ -1,12 +1,12 @@
-import phase_computers;
-import signals;
-import integrators;
-import derivators;
-import <cmath>;
-import <vector>;
-import npdsp_concepts;
-import <string>;
-import <complex>;
+#include <phase_computers.hpp>
+#include <signals.hpp>
+#include <integrators.hpp>
+#include <derivators.hpp>
+#include <cmath>
+#include <vector>
+#include <npdsp_concepts.hpp>
+#include <string>
+#include <complex>
 
 int main(){
     NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> signal1;

@@ -1,11 +1,11 @@
-import signals;
-import integrators;
-import derivators;
-import inst_freq_computers;
-import <cmath>;
-import <vector>;
-import npdsp_concepts;
-import <string>;
+#include <signals.hpp>
+#include <integrators.hpp>
+#include <derivators.hpp>
+#include <inst_freq_computers.hpp>
+#include <cmath>
+#include <vector>
+#include <npdsp_concepts.hpp>
+#include <string>
 
 int main(){
     NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> signal1;

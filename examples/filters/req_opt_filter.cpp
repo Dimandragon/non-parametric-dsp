@@ -1,14 +1,14 @@
-import signals;
-import integrators;
-import derivators;
-import inst_freq_computers;
-import phase_computers;
-import inst_ampl_computers;
-import <cmath>;
-import <vector>;
-import npdsp_concepts;
-import <string>;
-import filters;
+#include <signals.hpp>
+#include <integrators.hpp>
+#include <derivators.hpp>
+#include <inst_freq_computers.hpp>
+#include <phase_computers.hpp>
+#include <inst_ampl_computers.hpp>
+#include <cmath>
+#include <vector>
+#include <npdsp_concepts.hpp>
+#include <string>
+#include <filters.hpp>
 
 #include <icecream.hpp>
 

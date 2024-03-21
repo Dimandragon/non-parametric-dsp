@@ -1,13 +1,13 @@
 #include "icecream.hpp"
 
-import <cmath>;
-import <vector>;
-import <matplot/matplot.h>;
-import <iostream>;
+#include <cmath>
+#include <vector>
+#include <matplot/matplot.h>
+#include <iostream>
 
-import signals;
-import npdsp_concepts;
-import npdsp_config;
+#include <signals.hpp>
+#include <npdsp_concepts.hpp>
+#include <npdsp_config.hpp>
 
 int main(){
     std::vector<double> mydata = {};

@@ -1,15 +1,15 @@
 #include <cmath>
 #include <icecream.hpp>
 
-import signals; 
-import utility_math;
-import inst_freq_computers;
-import utility_math;
-import derivators;
-import integrators;
-import npdsp_concepts;
-import <vector>;
-import <complex>;
+#include <signals.hpp> 
+#include <utility_math.hpp>
+#include <inst_freq_computers.hpp>
+#include <utility_math.hpp>
+#include <derivators.hpp>
+#include <integrators.hpp>
+#include <npdsp_concepts.hpp>
+#include <vector>
+#include <complex>
 
 int main(){
     using DataT = NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true>; 

@@ -1,17 +1,16 @@
-module;
+#pragma once
 
-//#include <monster.hpp>
-import modes_extractors;
-import npdsp_concepts;
-import <cmath>;
-import <vector>;
-import <numbers>;
 
-export module encodings_generators;
+#include <modes_extractors.hpp>
+#include <npdsp_concepts.hpp>
+#include <cmath>
+#include <vector>
+#include <numbers>
+
 
 using namespace NP_DSP::ONE_D;
 
-export struct SimpleTokenizer{
+ struct SimpleTokenizer{
     //size_t encodding_size;
     double max_value;
     double n = 10000;

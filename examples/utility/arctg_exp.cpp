@@ -1,12 +1,12 @@
 #include <icecream.hpp>
 
-import <vector>;
-import signals;
-import derivators;
-import <cmath>;
-import npdsp_concepts;
-import filters;
-import integrators;
+#include <vector>
+#include <signals.hpp>
+#include <derivators.hpp>
+#include <cmath>
+#include <npdsp_concepts.hpp>
+#include <filters.hpp>
+#include <integrators.hpp>
 
 int main(){
     NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> data;
