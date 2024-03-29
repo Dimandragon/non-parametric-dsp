@@ -245,9 +245,9 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
                                 (integrator);
 
-        NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesFithConstInstFreqDouble<double, decltype(integrator), decltype(derivator),
+        NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesWithConstInstFreqDouble<double, decltype(integrator), decltype(derivator),
         decltype(non_opt_filter), decltype(inst_ampl_computer_for_filtering)> filter1 =
-                NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesFithConstInstFreqDouble<double, decltype(integrator), decltype(derivator),
+                NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesWithConstInstFreqDouble<double, decltype(integrator), decltype(derivator),
         decltype(non_opt_filter), decltype(inst_ampl_computer_for_filtering)> (integrator, derivator, non_opt_filter, inst_ampl_computer_for_filtering);
 
         //NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesDouble<double, decltype(integrator), decltype(derivator),
@@ -646,10 +646,10 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         FILTERS::CascadeFilter<double, decltype(non_opt_filter), 
             decltype(non_opt_filter2)>(non_opt_filter, non_opt_filter2);
 
-        FILTERS::RecursiveFilterInstAmplChangesFithConstInstFreq<double, decltype(integrator), decltype(derivator),
+        FILTERS::RecursiveFilterInstAmplChangesWithConstInstFreq<double, decltype(integrator), decltype(derivator),
             decltype(cascade_filter), decltype(inst_ampl_computer_for_filter)> 
                 filter = 
-        FILTERS::RecursiveFilterInstAmplChangesFithConstInstFreq<double, decltype(integrator), decltype(derivator),
+        FILTERS::RecursiveFilterInstAmplChangesWithConstInstFreq<double, decltype(integrator), decltype(derivator),
             decltype(cascade_filter), decltype(inst_ampl_computer_for_filter)> 
                     (integrator, derivator, cascade_filter, inst_ampl_computer_for_filter);
 
@@ -803,9 +803,9 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                 <double, decltype(non_opt_filter), 
                     decltype(non_opt_filter2)>(non_opt_filter, non_opt_filter2);
 
-        NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesFithConstInstFreqDouble<double, decltype(integrator), decltype(derivator),
+        NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesWithConstInstFreqDouble<double, decltype(integrator), decltype(derivator),
         decltype(cascade_filter), decltype(inst_ampl_computer_for_filtering)> filter1 =
-                NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesFithConstInstFreqDouble<double, decltype(integrator), decltype(derivator),
+                NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesWithConstInstFreqDouble<double, decltype(integrator), decltype(derivator),
         decltype(cascade_filter), decltype(inst_ampl_computer_for_filtering)> (integrator, derivator, cascade_filter, inst_ampl_computer_for_filtering);   
         
         /*NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesDouble<double, decltype(integrator), decltype(derivator),

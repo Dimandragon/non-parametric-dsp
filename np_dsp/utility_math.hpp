@@ -16,7 +16,6 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
     T complexL2(std::complex<T> a, std::complex<T> b) {
         return (a.imag() - b.imag()) * (a.imag() - b.imag()) + (a.real() - b.real()) * (a.real() - b.real());
     }
-
     
     template<typename T>
     T pairL2(std::pair<T, T> a, std::pair<T, T> b) {

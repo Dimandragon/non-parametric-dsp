@@ -5,14 +5,12 @@
 #include <matplot/matplot.h>
 
 #include <vector>
-#include <tuple>
 #include <cassert>
 #include <cstddef>
 #include <utility>
 #include <type_traits>
 #include <optional>
 #include <memory>
-#include <iostream>
 #include <complex>
 
 #include <npdsp_concepts.hpp>
@@ -189,7 +187,7 @@ namespace NP_DSP::ONE_D {
             return base->size();
         }
 
-        void show(PlottingKind kind) {
+        void show(PlottingKind kind) const {
             if (kind == PlottingKind::Interpolate) {
                 std::vector<SampleType> plotting_data = {};
                 int i = -size();

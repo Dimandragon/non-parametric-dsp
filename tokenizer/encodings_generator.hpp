@@ -7,7 +7,6 @@
 #include <vector>
 #include <numbers>
 
-
 using namespace NP_DSP::ONE_D;
 
  struct SimpleTokenizer{
@@ -188,7 +187,6 @@ using namespace NP_DSP::ONE_D;
                     return out[encodding_size * i + idx];
 
                 };
-
             }
         }
         else{

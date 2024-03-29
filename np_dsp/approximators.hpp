@@ -8,7 +8,6 @@
 #include <complex>
 #include <utility_math.hpp>
 #include <numbers>
-#include <npdsp_config.hpp>
 #include <string>
 #include <matplot/matplot.h>
 

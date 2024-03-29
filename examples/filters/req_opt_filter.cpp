@@ -72,7 +72,7 @@ int main(){
                 (integrator, derivator, cascade_filter, inst_freq_computer, phase_computer, inst_ampl_computer,
                     inst_freq_computer_for_mode, phase_computer_for_mode);*/
 
-    NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesFithConstInstFreq<double, decltype(integrator), decltype(derivator),
+    NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesWithConstInstFreq<double, decltype(integrator), decltype(derivator),
         decltype(cascade_filter), decltype(inst_ampl_computer)> filter
                 (integrator, derivator, cascade_filter, inst_ampl_computer);          
 

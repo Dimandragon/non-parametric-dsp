@@ -8,6 +8,7 @@
 #include <string>
 #include <inst_ampl_computers.hpp>
 #include <phase_computers.hpp>
+#include <filters.hpp>
 
 int main(){
     NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> signal1;
@@ -29,7 +30,7 @@ int main(){
     }
 
     NP_DSP::ONE_D::PHASE_COMPUTERS::ExtremumsBasedNonOpt
-        <double, NP_DSP::ONE_D::PHASE_COMPUTERS::ExtremumsKind::DerArctg, decltype(derivator)>
+        <double, NP_DSP::ONE_D::PHASE_COMPUTERS::ExtremumsKind::Simple, decltype(derivator)>
             phase_computer;
 
     NP_DSP::ONE_D::INST_FREQ_COMPUTERS::PhaseBased
@@ -45,8 +46,13 @@ int main(){
 
     static_assert(NP_DSP::ONE_D::is_inst_ampl_computer<decltype(inst_ampl_computer), double>);
     
-    NP_DSP::ONE_D::INST_AMPL_COMPUTERS::InstAmplNormalizator<double, decltype(integrator), decltype(derivator), 
+    NP_DSP::ONE_D::FILTERS::InstAmplNormalizator<double, decltype(integrator), decltype(derivator), 
         decltype(inst_ampl_computer)> inst_ampl_normalizer(integrator, derivator, inst_ampl_computer);
+
+    auto inst_ampl_normalizer2 = NP_DSP::ONE_D::FILTERS::InstAmplNormalizatorUsingInstFreq
+        <double, decltype(integrator), decltype(derivator), decltype(inst_ampl_computer),
+            false, false, decltype(signal1)>(integrator, derivator, inst_ampl_computer);
+
 
     inst_ampl_computer.compute(signal1, signal2, &signal3);
     signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
@@ -76,8 +82,11 @@ int main(){
 
     //signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
-    inst_ampl_normalizer.compute(signal1, signal2, signal3);
+    inst_freq_computer.compute(signal1, compute_buffer, &signal2);
+    inst_ampl_normalizer2.inst_freq = &compute_buffer;
+    inst_ampl_normalizer2.compute(signal1, signal2, signal3);
 
+    IC(*(signal2.base->vec));
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
     inst_ampl_computer.compute(signal2, signal1, &signal3);
     signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);

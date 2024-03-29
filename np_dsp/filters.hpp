@@ -8,10 +8,8 @@
 #include <utility>
 #include <integrators.hpp>
 #include <string>
-#include <inst_freq_computers.hpp>
 #include <utility_math.hpp>
 #include <concepts>
-#include <phase_computers.hpp>
 #include <vector>
 #include <algorithm>
 #include <inst_ampl_computers.hpp>
@@ -386,6 +384,367 @@ namespace NP_DSP::ONE_D::FILTERS {
     };
 
     
+    template<typename U, InstAmplComputer<U> InstAmplComputerT, Signal InstFreqT, Filter<U> FilterT>
+    struct InstAmplNormalizatorNaive{
+        InstAmplComputerT * inst_ampl_computer;
+
+        double min_ampl = 10.0;
+
+        InstFreqT * inst_freq;
+        FilterT * filter;
+
+        GenericSignal<SimpleVecWrapper<U>, true> buffer2;
+
+        InstAmplNormalizatorNaive(InstAmplComputerT & inst_ampl_computer, FilterT & filter){
+            this->inst_ampl_computer = &inst_ampl_computer;
+            this->filter = &filter;
+        }
+
+        template<Signal DataT, Signal OutT, Signal ComputerBufferT>
+        void compute(const DataT & data, OutT & out, ComputerBufferT & compute_buffer){
+            if constexpr (InstAmplComputerT::is_used_external_inst_freq){
+                inst_ampl_computer->inst_freq = inst_freq;
+            }
+            auto size = data.size();
+            if (buffer2.size() != size){
+                buffer2.base->vec->clear();
+                for(int i = 0; i < size; i++){
+                    buffer2.base->vec->push_back(0);
+                }
+            }
+            
+            inst_ampl_computer->compute(data, buffer2, &compute_buffer);
+            //auto old_muller = filter->period_muller;
+            //filter->period_muller = 2.0;
+            filter->compute(buffer2, out, inst_freq);
+            //filter->period_muller = old_muller;
+
+            auto avg = 0.0;
+            for (int i = 0; i < size; i++){
+                avg += out[i] / size;
+            }
+            for (int i = 0; i < size; i++){
+                if (out[i] > min_ampl){
+                    compute_buffer[i] = data[i] / (out[i] / avg);
+                }
+                else{
+                    compute_buffer[i] = data[i]  / (min_ampl / avg);
+                }
+            }
+
+            for (int i = 0; i < size; i++){
+                out[i] = compute_buffer[i];
+            }
+        }
+
+        template<Signal DataT, Signal OutT, Signal ComputerBufferT>
+        double computeGetAvg(const DataT & data, OutT & out, ComputerBufferT & compute_buffer){
+            auto size = data.size();
+            if (buffer2.size() != size){
+                buffer2.base->vec->clear();
+                for(int i = 0; i < size; i++){
+                    buffer2.base->vec->push_back(0);
+                }
+            }
+            
+            inst_ampl_computer->compute(data, buffer2, &compute_buffer);
+            //auto old_muller = filter->period_muller;
+            //filter->period_muller = 2.0;
+            filter->compute(buffer2, out, inst_freq);
+            //filter->period_muller = old_muller;
+
+            auto avg = 0.0;
+            for (int i = 0; i < size; i++){
+                avg += out[i] / size;
+            }
+            for (int i = 0; i < size; i++){
+                if (out[i] > min_ampl){
+                    compute_buffer[i] = data[i] / (out[i] / avg);
+                }
+                else{
+                    compute_buffer[i] = data[i]  / (min_ampl / avg);
+                }
+            }
+            for (int i = 0; i < size; i++){
+                out[i] = compute_buffer[i];
+            }
+
+            return avg;
+        }
+
+        template<Signal DataT, Signal OutT, Signal ComputerBufferT>
+        void computeWithExternalAvg(const DataT & data, OutT & out, ComputerBufferT & compute_buffer, double avg){
+            auto size = data.size();
+            if (buffer2.size() != size){
+                buffer2.base->vec->clear();
+                for(int i = 0; i < size; i++){
+                    buffer2.base->vec->push_back(0);
+                }
+            }
+            
+            inst_ampl_computer->compute(data, buffer2, &compute_buffer);
+            //auto old_muller = filter->period_muller;
+            //filter->period_muller = 2.0;
+            filter->compute(buffer2, out, inst_freq);
+            //filter->period_muller = old_muller;
+            out.show(PlottingKind::Simple);
+            
+            for (int i = 0; i < size; i++){
+                if (out[i] > min_ampl){
+                    compute_buffer[i] = data[i] / (out[i] / avg);
+                }
+                else{
+                    compute_buffer[i] = data[i]  / (min_ampl / avg);
+                }
+            }
+            for (int i = 0; i < size; i++){
+                out[i] = compute_buffer[i];
+            }
+        }
+    };
+
+    
+    template<typename U, InstAmplComputer<U> InstAmplComputerT, Signal InstFreqT, Filter<U> FilterT>
+    struct InstAmplNormalizatorNaiveReqursive{
+        InstAmplNormalizatorNaive<U, InstAmplComputerT, InstFreqT, FilterT>
+            single_normalizer;
+
+        InstFreqT * inst_freq;
+        Filter filter;
+        NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> mode;
+        int iters_count = 50;
+
+        template <Signal DataT, Signal OutT, Signal ComputeBufferT>
+        void compute(const DataT & data, OutT & out, ComputeBufferT * compute_buffer){
+            if (mode.size() != data.size()){
+                mode.base->vec->clear();
+                for (int i = 0; i < data.size(); i++){
+                    mode.base->vec->push_back(0.0);
+                }
+            }
+            
+            filter->compute(data, mode, inst_freq);
+
+            for (int i = 0; i < data.size(); i++){
+                mode[i] = data[i] - mode[i];
+            }
+            single_normalizer.inst_freq = inst_freq;
+            double avg = single_normalizer.computeGetAvg(mode[i], out, compute_buffer);
+            for (int i = 0; i < iters_count / 2; i++){
+                single_normalizer.computeWithExternalAvg(out, mode[i], compute_buffer, avg);
+                
+            }
+        }
+
+    }
+
+    template<typename U, Integrator<U> Integrator, Derivator<U> Derivator, InstAmplComputer<U> InstAmplComputerT>
+    struct InstAmplNormalizator{
+        InstAmplComputerT * inst_ampl_computer;
+        Derivator * derivator;
+        Integrator * integrator;
+
+        double min_ampl = 1.0;
+
+        GenericSignal<SimpleVecWrapper<U>, true> buffer2;
+
+        InstAmplNormalizator(Integrator & integrator, Derivator & derivator, InstAmplComputerT & inst_ampl_computer){
+            this->inst_ampl_computer = &inst_ampl_computer;
+            this->derivator = &derivator;
+            this->integrator = &integrator;
+        }
+
+        template<Signal DataT, Signal OutT, Signal ComputerBufferT>
+        void compute(const DataT & data, OutT & out, ComputerBufferT & compute_buffer){
+            auto size = data.size();
+            if (buffer2.size() != size){
+                buffer2.base->vec->clear();
+                for(int i = 0; i < size; i++){
+                    buffer2.base->vec->push_back(0);
+                }
+            }
+            
+            inst_ampl_computer->compute(data, out, &compute_buffer);
+
+                derivator->compute(data, compute_buffer, nullptr);
+
+                auto avg = 0.0;
+                auto b = data[0];
+
+                for (int i = 0; i < size; i++){
+                    avg += out[i] / size;
+                }
+
+                for (int i = 0; i < size; i++){
+                    if (out[i] > min_ampl){
+                        compute_buffer[i] /= (out[i] / avg);
+                    }
+                    else{
+                        compute_buffer[i] /= (min_ampl / avg);
+                    }
+                }
+                integrator->compute(compute_buffer, out, nullptr);
+
+                for (int i = 0; i < size; i++){
+                    out[i] += b;
+                }
+            
+        }
+    };
+
+    template<typename U, Integrator<U> Integrator, Derivator<U> Derivator, 
+        InstAmplComputer<U> InstAmplComputerT, bool is_double, 
+            bool remove_big_der_before_derivating, Signal InstFreqT>
+    struct InstAmplNormalizatorUsingInstFreq{
+        InstAmplComputerT * inst_ampl_computer;
+        Derivator * derivator;
+        Integrator * integrator;
+        InstFreqT * inst_freq;
+
+        double min_ampl = 1.0;
+
+        GenericSignal<SimpleVecWrapper<U>, true> buffer2;
+
+        InstAmplNormalizatorUsingInstFreq(Integrator & integrator, Derivator & derivator, InstAmplComputerT & inst_ampl_computer){
+            this->inst_ampl_computer = &inst_ampl_computer;
+            this->derivator = &derivator;
+            this->integrator = &integrator;
+        }
+
+        template<Signal DataT, Signal OutT, Signal ComputerBufferT>
+        void compute(const DataT & data, OutT & out, ComputerBufferT & compute_buffer){
+            auto size = data.size();
+            if (buffer2.size() != size){
+                buffer2.base->vec->clear();
+                for(int i = 0; i < size; i++){
+                    buffer2.base->vec->push_back(0);
+                }
+            }
+
+            if constexpr (remove_big_der_before_derivating){
+                /*std::vector<U> buffer;
+                
+                for (int i = 0; i < data.size(); i++){
+                    double big_der;
+                    if constexpr (is_double){
+                        big_der = (data.interpolate
+                            (i + 0.5/inst_freq_computer[i].second, SignalKind::Universal) -
+                            data.interpolate(i - 0.5/inst_freq_computer[i].first, SignalKind::Universal)) 
+                            * inst_freq_computer[i];
+                    }
+                    else{
+                        big_der = (data.interpolate
+                            (i + 0.5/inst_freq_computer[i], SignalKind::Universal) -
+                            data.interpolate(i - 0.5/inst_freq_computer[i], SignalKind::Universal)) 
+                            * inst_freq_computer[i];
+                    }
+                    buffer.push_back(big_der);
+                    out[i] = data[i] - big_der;
+                }
+                auto b = out[0];
+                derivator->compute(out, compute_buffer, nullptr);
+                //todo resolve this conflict
+                GenericSignal<SimpleVecWrapper<double>, true> computer_buffer2;
+                for (int i = 0; i < data.size(); i++){
+                    computer_buffer2.base->vec->push_back(0.0);
+                }
+
+                inst_ampl_computer->compute(data, out, &computer_buffer2);
+                auto avg = 0.0;
+                for (int i = 0; i < size; i++){
+                    avg += out[i] / size;
+                }
+                for (int i = 0; i < size; i++){
+                    if (out[i] > min_ampl){
+                        compute_buffer[i] /= (out[i] / avg);
+                    }
+                }
+                
+                integrator->compute(compute_buffer, out, nullptr);
+                for (int i = 0; i < size; i++){
+                    out[i] += buffer[i];
+                }*/
+            }
+            else{
+                std::vector<U> buffer;
+                inst_ampl_computer->compute(data, out, &compute_buffer);
+                derivator->compute(data, compute_buffer, nullptr);
+                IC(*(data.base->vec));
+                data.show(PlottingKind::Simple);
+                IC(*(out.base->vec));
+                out.show(PlottingKind::Simple);
+                IC(*(compute_buffer.base->vec));
+                compute_buffer.show(PlottingKind::Simple);
+
+                for (int i = 0; i < data.size(); i++){
+                    double big_der;
+                    if constexpr (is_double){
+                        big_der = (data.interpolate
+                            (i + 0.5/(*inst_freq)[i].second, SignalKind::Universal) -
+                            data.interpolate(i - 0.5/(*inst_freq)[i].first, SignalKind::Universal)) 
+                            / (0.5 / (*inst_freq)[i].first + 0.5 / (*inst_freq)[i].second);
+                    }
+                    else{
+                        big_der = (data.interpolate
+                            (i + 0.5/(*inst_freq)[i], SignalKind::Universal) -
+                            data.interpolate(i - 0.5/(*inst_freq)[i], SignalKind::Universal)) 
+                            * (*inst_freq)[i];
+                    }
+                    buffer.push_back(big_der);
+                    compute_buffer[i] = compute_buffer[i] - big_der;
+                }
+                IC(*(inst_freq->base->vec));
+                IC(buffer);
+                matplot::plot(buffer);
+                matplot::show();
+
+                IC(*(compute_buffer.base->vec));
+                compute_buffer.show(PlottingKind::Simple);
+
+                auto avg = 0.0;
+                auto b = data[0];
+                for (int i = 0; i < size; i++){
+                    if (out[i] > min_ampl){
+                        avg += out[i];
+                    }
+                    else{
+                        avg += min_ampl;
+                    }
+                }
+                /*auto size_norm = 0;
+                for (int i = 0; i < size; i++){
+                    if (out[i] > min_ampl){
+                        size_norm++;
+                    }
+                }*/
+                avg /= size;
+                for (int i = 0; i < size; i++){
+                    if (out[i] > min_ampl){
+                        compute_buffer[i] /= (out[i] / avg);
+                    }
+                    else{
+                        compute_buffer[i] /= (min_ampl / avg);
+                    }
+                }
+                IC(*(compute_buffer.base->vec));
+                compute_buffer.show(PlottingKind::Simple);
+                for (int i = 0; i < data.size(); i++){
+                    compute_buffer[i] += buffer[i]; 
+                }
+                IC(*(compute_buffer.base->vec));
+                compute_buffer.show(PlottingKind::Simple); 
+                integrator->compute(compute_buffer, out, nullptr);
+                IC(*(out.base->vec));
+                out.show(PlottingKind::Simple);
+                for (int i = 0; i < size; i++){
+                    out[i] += b;
+                }
+                IC(*(out.base->vec));
+                out.show(PlottingKind::Simple);
+            }
+        }
+    };
+
     enum class PhaseComputingKind { extremums_based_non_opt, arctg_scaled };
 
     
@@ -933,7 +1292,7 @@ namespace NP_DSP::ONE_D::FILTERS {
         PhaseComputerT * phase_computer;
         PhaseComputerForModeT * phase_computer_for_mode;
         InstAmplComputerT * inst_ampl_computer;
-        INST_AMPL_COMPUTERS::InstAmplNormalizator<double, IntegratorT, DerivatorT, InstAmplComputerT> 
+        InstAmplNormalizator<double, IntegratorT, DerivatorT, InstAmplComputerT> 
             * inst_ampl_normalizer;
 
         RecursiveFilterInstAmplChanges(IntegratorT & integrator, DerivatorT & derivator, 
@@ -946,7 +1305,7 @@ namespace NP_DSP::ONE_D::FILTERS {
             this->inst_freq_computer_for_mode = &inst_freq_computer_for_mode;
             this->phase_computer = &phase_computer;
             this->phase_computer_for_mode = &phase_computer_for_mode;
-            inst_ampl_normalizer = new INST_AMPL_COMPUTERS::InstAmplNormalizator
+            inst_ampl_normalizer = new InstAmplNormalizator
                 <double, IntegratorT, DerivatorT, InstAmplComputerT> (integrator, derivator, inst_ampl_computer);
         }
 
@@ -1115,6 +1474,8 @@ namespace NP_DSP::ONE_D::FILTERS {
         FilterFirstT * filter_first;
         FilterSeconT * filter_second;
 
+        double period_muller = 1.0; //todo remove cratch
+
         CascadeFilter(FilterFirstT & filter_first,
             FilterSeconT & filter_second){
 
@@ -1155,7 +1516,7 @@ namespace NP_DSP::ONE_D::FILTERS {
     
     template<typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT, Filter<U> FilterT, 
         InstAmplComputer<U> InstAmplComputerT>
-    struct RecursiveFilterInstAmplChangesFithConstInstFreq{
+    struct RecursiveFilterInstAmplChangesWithConstInstFreq{
         using AdditionalDataType = SignalPrototype<U>;
 
         using BufferT = GenericSignal<SimpleVecWrapper<U>, true>;
@@ -1188,19 +1549,20 @@ namespace NP_DSP::ONE_D::FILTERS {
         double error_old = 0.0;
 
 
+
         FilterT * filter;
         InstAmplComputerT * inst_ampl_computer;
-        INST_AMPL_COMPUTERS::InstAmplNormalizator<double, IntegratorT, DerivatorT, InstAmplComputerT> 
+        InstAmplNormalizatorNaive<double, InstAmplComputerT, BufferT, FilterT> 
             * inst_ampl_normalizer;
 
-        RecursiveFilterInstAmplChangesFithConstInstFreq(IntegratorT & integrator, DerivatorT & derivator, 
+        RecursiveFilterInstAmplChangesWithConstInstFreq(IntegratorT & integrator, DerivatorT & derivator, 
             FilterT & filter, InstAmplComputerT & inst_ampl_computer){
             this->filter = &filter;
-            inst_ampl_normalizer = new INST_AMPL_COMPUTERS::InstAmplNormalizator
-                <double, IntegratorT, DerivatorT, InstAmplComputerT> (integrator, derivator, inst_ampl_computer);
+            inst_ampl_normalizer = new InstAmplNormalizatorNaive
+                <double, InstAmplComputerT, BufferT, FilterT> (inst_ampl_computer, filter);
         }
 
-        ~RecursiveFilterInstAmplChangesFithConstInstFreq(){
+        ~RecursiveFilterInstAmplChangesWithConstInstFreq(){
             delete inst_ampl_normalizer;
         }
 
@@ -1220,6 +1582,7 @@ namespace NP_DSP::ONE_D::FILTERS {
                 }
                 return false;
             }
+            result_buffer.show(PlottingKind::Simple);
 
             if(result_cache.size()!=data.size()){
                 result_cache.clear();
@@ -1256,18 +1619,25 @@ namespace NP_DSP::ONE_D::FILTERS {
                 prediction_mode[i] = data[i] - result_buffer[i];
             }
 
+            prediction_mode.show(PlottingKind::Simple);
+
             for(int i = 0; i < data.size(); i++){
                 prediction_mode_inst_freq[i] = (*computer_buffer)[i];
             }
             //auto label = 0;
             //IC(++label);
+
             inst_ampl_normalizer->compute(prediction_mode, *computer_buffer, prediction_mode_ampl);
+
+            computer_buffer->show(PlottingKind::Simple);
 
             for(int i = 0; i < data.size(); i++){
                 (*computer_buffer)[i] = result_buffer[i] + (*computer_buffer)[i];
             }
             //IC(++label);
+            computer_buffer->show(PlottingKind::Simple);
             filter->compute(*computer_buffer, prediction_mode, &prediction_mode_inst_freq);
+            prediction_mode.show(PlottingKind::Simple);
             //IC(++label);
             error = UTILITY_MATH::signalsL2NormedDistance
                     <double, decltype(result_buffer), decltype(prediction_mode)>
@@ -1319,6 +1689,7 @@ namespace NP_DSP::ONE_D::FILTERS {
                 double coeff2 = (std::rand() % 300 + 1) / 10.0;
                 result_buffer[i] = (result_buffer[i] * coeff1 + prediction_mode[i] * coeff2) / (coeff1 + coeff2);
             }
+            result_buffer.show(PlottingKind::Simple);
             for(int i = 0; i < data.size(); i++){
                 (*computer_buffer)[i] = prediction_mode_inst_freq[i];
             }
@@ -1356,7 +1727,7 @@ namespace NP_DSP::ONE_D::FILTERS {
     
     template<typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT, Filter<U> FilterT, 
         InstAmplComputer<U> InstAmplComputerT>
-    struct RecursiveFilterInstAmplChangesFithConstInstFreqDouble{
+    struct RecursiveFilterInstAmplChangesWithConstInstFreqDouble{
         //todo
         using AdditionalDataType = SignalPrototype<U>;
 
@@ -1393,17 +1764,17 @@ namespace NP_DSP::ONE_D::FILTERS {
 
         FilterT * filter;
         InstAmplComputerT * inst_ampl_computer;
-        INST_AMPL_COMPUTERS::InstAmplNormalizator<double, IntegratorT, DerivatorT, InstAmplComputerT> 
+        InstAmplNormalizator<double, IntegratorT, DerivatorT, InstAmplComputerT> 
             * inst_ampl_normalizer;
 
-        RecursiveFilterInstAmplChangesFithConstInstFreqDouble(IntegratorT & integrator, DerivatorT & derivator, 
+        RecursiveFilterInstAmplChangesWithConstInstFreqDouble(IntegratorT & integrator, DerivatorT & derivator, 
             FilterT & filter, InstAmplComputerT & inst_ampl_computer){
             this->filter = &filter;
-            inst_ampl_normalizer = new INST_AMPL_COMPUTERS::InstAmplNormalizator
+            inst_ampl_normalizer = new InstAmplNormalizator
                 <double, IntegratorT, DerivatorT, InstAmplComputerT> (integrator, derivator, inst_ampl_computer);
         }
 
-        ~RecursiveFilterInstAmplChangesFithConstInstFreqDouble(){
+        ~RecursiveFilterInstAmplChangesWithConstInstFreqDouble(){
             delete inst_ampl_normalizer;
         }
 
@@ -1607,7 +1978,7 @@ namespace NP_DSP::ONE_D::FILTERS {
         PhaseComputerT * phase_computer;
         //PhaseComputerForModeT * phase_computer_for_mode;
         InstAmplComputerT * inst_ampl_computer;
-        INST_AMPL_COMPUTERS::InstAmplNormalizator<double, IntegratorT, DerivatorT, InstAmplComputerT> 
+        InstAmplNormalizator<double, IntegratorT, DerivatorT, InstAmplComputerT> 
             * inst_ampl_normalizer;
 
         RecursiveFilterInstAmplChangesDouble(IntegratorT & integrator, DerivatorT & derivator, 
@@ -1617,7 +1988,7 @@ namespace NP_DSP::ONE_D::FILTERS {
             this->filter = &filter;
             this->inst_freq_computer_for_mode = &inst_freq_computer_for_mode;
             this->phase_computer = &phase_computer;
-            inst_ampl_normalizer = new INST_AMPL_COMPUTERS::InstAmplNormalizator
+            inst_ampl_normalizer = new InstAmplNormalizator
                 <double, IntegratorT, DerivatorT, InstAmplComputerT> (integrator, derivator, inst_ampl_computer);
         }
 
@@ -1779,6 +2150,4 @@ namespace NP_DSP::ONE_D::FILTERS {
             }
         }   
     };
-
-
 }

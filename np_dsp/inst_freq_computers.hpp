@@ -3,21 +3,16 @@
 #include "icecream.hpp"
 
 #include <phase_computers.hpp>
-#include <matplot/matplot.h>
 #include <npdsp_concepts.hpp>
 #include <signals.hpp>
-#include <derivators.hpp>
-#include <integrators.hpp>
 #include <cmath>
 #include <numbers>
 #include <vector>
 #include <utility>
 #include <utility_math.hpp>
 #include <approximators.hpp>
-#include <optional>
 #include <npdsp_config.hpp>
 #include <complex>
-#include <utility_math.hpp>
 
 namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
     

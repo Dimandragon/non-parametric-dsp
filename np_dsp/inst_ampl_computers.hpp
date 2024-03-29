@@ -1,13 +1,10 @@
 #pragma once
 
 #include <npdsp_concepts.hpp>
-#include <utility_math.hpp>
 #include <inst_freq_computers.hpp>
 #include <cmath>
 #include <utility>
 #include <signals.hpp>
-#include <vector>
-#include <type_traits>
 #include <concepts>
 
 namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
@@ -76,18 +73,18 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
                           || kind == InstFreqDerivativeBasedKind::DeriveAverage) {
                 integrator.compute(out, *computer_buffer, nullptr);
                 for (int i = 0; i < out.size(); i++) {
-                    out[i] = computer_buffer->interpolate(i + 0.5 / (*inst_freq)[i], SignalKind::Monotone) -
-                             computer_buffer->interpolate(i - 0.5 / (*inst_freq)[i], SignalKind::Monotone) - 
-                             std::abs(data.interpolate(i + 0.5 / (*inst_freq)[i], SignalKind::Monotone) - 
-                                data.interpolate(i - 0.5 / (*inst_freq)[i], SignalKind::Monotone)) / 4;
+                    out[i] = (computer_buffer->interpolate(i + 0.5 / (*inst_freq)[i], SignalKind::Monotone) -
+                             computer_buffer->interpolate(i - 0.5 / (*inst_freq)[i], SignalKind::Monotone)) / 4 ;//- 
+                            // std::abs(data.interpolate(i + 0.5 / (*inst_freq)[i], SignalKind::Monotone) - 
+                            //    data.interpolate(i - 0.5 / (*inst_freq)[i], SignalKind::Monotone)) / 4;
                 }
             } else if constexpr (kind == InstFreqDerivativeBasedKind::DeriveDouble) {
                 integrator.compute(out, *computer_buffer, nullptr);
                 for (int i = 0; i < out.size(); i++) {
-                    out[i] = computer_buffer->interpolate(i + 0.5 / (*inst_freq_double)[i].second, SignalKind::Monotone) -
-                             computer_buffer->interpolate(i - 0.5 / (*inst_freq_double)[i].first, SignalKind::Monotone) - 
-                             std::abs(data.interpolate(i + 0.5 / (*inst_freq_double)[i].second, SignalKind::Monotone) - 
-                                data.interpolate(i - 0.5 / (*inst_freq_double)[i].first, SignalKind::Monotone)) / 4;
+                    out[i] = (computer_buffer->interpolate(i + 0.5 / (*inst_freq_double)[i].second, SignalKind::Monotone) -
+                             computer_buffer->interpolate(i - 0.5 / (*inst_freq_double)[i].first, SignalKind::Monotone)) / 4;//- 
+                            // std::abs(data.interpolate(i + 0.5 / (*inst_freq_double)[i].second, SignalKind::Monotone) - 
+                            //    data.interpolate(i - 0.5 / (*inst_freq_double)[i].first, SignalKind::Monotone)) / 4;
                 }
             }
         }
@@ -190,70 +187,21 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
                 integrator.compute(out, *computer_buffer, nullptr);
                 for (int i = 0; i < out.size(); i++) {
                     out[i] = (computer_buffer->interpolate(i + 0.5 / (inst_freq)[i], SignalKind::Monotone) -
-                             computer_buffer->interpolate(i - 0.5 / (inst_freq)[i], SignalKind::Monotone) - 
-                             std::abs(data.interpolate(i + 0.5 / (inst_freq)[i], SignalKind::Monotone) - 
-                                data.interpolate(i - 0.5 / (inst_freq)[i], SignalKind::Monotone))) / 4;
+                             computer_buffer->interpolate(i - 0.5 / (inst_freq)[i], SignalKind::Monotone)) / 4;// - 
+                             //std::abs(data.interpolate(i + 0.5 / (inst_freq)[i], SignalKind::Universal) - 
+                             //   data.interpolate(i - 0.5 / (inst_freq)[i], SignalKind::Universal))) / 4;
                 }
             } else if constexpr (kind == InstFreqDerivativeBasedKind::DeriveDouble) {
                 integrator.compute(out, *computer_buffer, nullptr);
                 for (int i = 0; i < out.size(); i++) {
                     out[i] = (computer_buffer->interpolate(i + 0.5 / (inst_freq_double)[i].second, SignalKind::Monotone) -
-                             computer_buffer->interpolate(i - 0.5 / (inst_freq_double)[i].first, SignalKind::Monotone) - 
-                             std::abs(data.interpolate(i + 0.5 / (inst_freq_double)[i].second, SignalKind::Monotone) - 
-                                data.interpolate(i - 0.5 / (inst_freq_double)[i].first, SignalKind::Monotone))) / 4;
+                             computer_buffer->interpolate(i - 0.5 / (inst_freq_double)[i].first, SignalKind::Monotone)) / 4;//- 
+                             //std::abs(data.interpolate(i + 0.5 / (inst_freq_double)[i].second, SignalKind::Universal) - 
+                               // data.interpolate(i - 0.5 / (inst_freq_double)[i].first, SignalKind::Universal))) / 4;
                 }
             }
         }
     };
 
     
-    template<typename U, Integrator<U> Integrator, Derivator<U> Derivator, InstAmplComputer<U> InstAmplComputerT>
-    struct InstAmplNormalizator{
-        InstAmplComputerT * inst_ampl_computer;
-        Derivator * derivator;
-        Integrator * integrator;
-
-        double min_ampl = 1.0;
-
-        GenericSignal<SimpleVecWrapper<U>, true> buffer2;
-
-        InstAmplNormalizator(Integrator & integrator, Derivator & derivator, InstAmplComputerT & inst_ampl_computer){
-            this->inst_ampl_computer = &inst_ampl_computer;
-            this->derivator = &derivator;
-            this->integrator = &integrator;
-        }
-
-        template<Signal DataT, Signal OutT, Signal ComputerBufferT>
-        void compute(DataT & data, OutT & out, ComputerBufferT & compute_buffer){
-            auto size = data.size();
-            if (buffer2.size() != size){
-                buffer2.base->vec->clear();
-                for(int i = 0; i < size; i++){
-                    buffer2.base->vec->push_back(0);
-                }
-            }
-            
-            inst_ampl_computer->compute(data, out, &compute_buffer);
-
-            derivator->compute(data, compute_buffer, nullptr);
-
-            auto avg = 0.0;
-            auto b = data[0];
-
-            for (int i = 0; i < size; i++){
-                avg += out[i] / size;
-            }
-
-            for (int i = 0; i < size; i++){
-                if (out[i] > min_ampl){
-                    compute_buffer[i] /= (out[i] / avg);
-                }
-            }
-            integrator->compute(compute_buffer, out, nullptr);
-
-            for (int i = 0; i < size; i++){
-                out[i] += b;
-            }
-        }
-    };
 }
