@@ -506,6 +506,8 @@ namespace NP_DSP::ONE_D::FILTERS {
     
     template<typename U, InstAmplComputer<U> InstAmplComputerT, Signal InstFreqT, Filter<U> FilterT>
     struct InstAmplNormalizatorNaiveReqursive{
+        //todo
+        /*
         InstAmplNormalizatorNaive<U, InstAmplComputerT, InstFreqT, FilterT>
             single_normalizer;
 
@@ -535,8 +537,9 @@ namespace NP_DSP::ONE_D::FILTERS {
                 
             }
         }
+        */
 
-    }
+    };
 
     template<typename U, Integrator<U> Integrator, Derivator<U> Derivator, InstAmplComputer<U> InstAmplComputerT>
     struct InstAmplNormalizator{
