@@ -1,0 +1,6 @@
+[
+{
+  "directory": "/home/dmitry/projects/non-parametric-dsp",
+  "arguments": ["clang++", "-c", "-Qunused-arguments", "-m64", "-g", "-O0", "-std=c++23", "-Inp_dsp", "-Ipocketfft", "-o", "build/.objs/main_extractor_example/linux/x86_64/debug/example/main.cpp.o", "example/main.cpp"],
+  "file": "example/main.cpp"
+}]
