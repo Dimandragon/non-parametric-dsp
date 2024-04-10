@@ -1,7 +1,4 @@
 #pragma once
-
-#include <icecream.hpp>
-
 #include <npdsp_concepts.hpp>
 #include <signals.hpp>
 #include <vector>
@@ -11,6 +8,7 @@
 #include <filters.hpp>
 #include <integrators.hpp>
 #include <derivators.hpp>
+#include <iostream>
 
 namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
     
@@ -178,7 +176,6 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
 
         bool stop(size_t iter_number) {
-            IC(iter_number, (*phases[iter_number])[data.size()-1]);
             if ((*phases[iter_number])[data.size() - 1] < std::numbers::pi * 2.0) {
                 return true;
             } else {
@@ -310,7 +307,6 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
 
         bool stop(size_t iter_number) {
-            IC(iter_number, (*phases[iter_number])[data.size()-1]);
             if ((*phases[iter_number])[data.size() - 1] < std::numbers::pi * 2.0) {
                 return true;
             } else {
@@ -433,7 +429,6 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
 
         bool stop(size_t iter_number) {
-            IC(iter_number, (*phases[iter_number])[data.size()-1]);
             if ((*phases[iter_number])[data.size() - 1] < std::numbers::pi * 2.0) {
                 return true;
             } else {
@@ -677,7 +672,6 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
 
         bool stop(size_t iter_number) {
-            IC(iter_number, (*phases[iter_number])[data.size()-1]);
             if ((*phases[iter_number])[data.size() - 1] < std::numbers::pi * 2.0) {
                 return true;
             } else {
@@ -789,7 +783,6 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
 
         bool stop(size_t iter_number) {
-            IC(iter_number, (*phases[iter_number])[data.size()-1]);
             if ((*phases[iter_number])[data.size() - 1] < std::numbers::pi * 2.0) {
                 return true;
             } else {
@@ -1648,7 +1641,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
 
                 phase_computer_simple.compute(data, *phases[iter_number], nullptr);
 
-                std::cout << "compute first phase  " << iter_number << std::endl;
+                //std::cout << "compute first phase  " << iter_number << std::endl;
                 phases[iter_number]->show(PlottingKind::Simple);
 
                 if((*phases[iter_number])[data.size() - 1] > 6.28){

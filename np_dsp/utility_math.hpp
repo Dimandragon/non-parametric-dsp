@@ -1,7 +1,6 @@
 #pragma once
 
 #include "pocketfft_hdronly.h"
-#include "icecream.hpp"
 
 #include <utility>
 #include <complex>
@@ -30,7 +29,6 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
     template<typename T, typename data1T, typename data2T>
     T signalsL2Distance(const data1T& data1, const data2T& data2) {
         double error = 0.0;
-        error = 0.0;
         for (int i = 0; i < data1.size(); i++) {
             error = error + std::sqrt((data1[i] - data2[i]) * (data1[i] - data2[i]));
         }
@@ -50,7 +48,6 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
     template<typename T, typename data1T, typename data2T>
     T signalsL2DistanceDouble(const data1T& data1, const data2T& data2) {
         double error = 0.0;
-        error = 0.0;
         for (int i = 0; i < data1.size(); i++) {
             error = error + std::sqrt((data1[i].first - data2[i].first) * (data1[i].first - data2[i].first) + 
                 (data1[i].second - data2[i].second) * (data1[i].second - data2[i].second));
@@ -62,7 +59,6 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
     template<typename T, typename data1T, typename data2T>
     T signalsL2NormedDistanceDouble(const data1T& data1, const data2T& data2) {
         double error = 0.0;
-        error = 0.0;
         for (int i = 0; i < data1.size(); i++) {
             error = error + std::sqrt((data1[i].first - data2[i].first) * (data1[i].first - data2[i].first) + 
                 (data1[i].second - data2[i].second) * (data1[i].second - data2[i].second)) / data1.size();
@@ -326,7 +322,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
             }
             auto idx_new = static_cast<TIndex>(idx1 + dx * (value - idx_lambda(idx1)) / dy);
             if constexpr (CONFIG::debug) {
-                std::string mark = "creating idx_new in interpolation search";
+                //std::string mark = "creating idx_new in interpolation search";
                 IC(idx1, idx2, dx, dy, idx_new);
             }
             if (idx_lambda(idx_new) > value) {

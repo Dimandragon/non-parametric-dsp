@@ -1,7 +1,4 @@
 #pragma once
-
-#include <icecream.hpp>
-
 #include <complex>
 #include <npdsp_concepts.hpp>
 #include <signals.hpp>
@@ -524,32 +521,9 @@ namespace NP_DSP::ONE_D::FILTERS {
                         }
                     }
                 }
-                /*std::vector<double> plotting_vector;
-                for(int i = 0; i < data.size(); i++){
-                    plotting_vector.push_back(filter_non_local_afr[i].real());
-                }
-                matplot::plot(plotting_vector);
-                matplot::hold(true);
-                for(int i = 0; i < data.size(); i++){
-                    plotting_vector[i] = (filter_non_local_afr[i].imag());
-                }
-                matplot::plot(plotting_vector);
-                matplot::hold(false);
-                matplot::show();*/
 
                 UTILITY_MATH::ifftc2c(filter_non_local_afr, filter);
 
-                /*for(int i = 0; i < data.size(); i++){
-                    plotting_vector[i] = (filter[i].real());
-                }
-                matplot::plot(plotting_vector);
-                matplot::hold(true);
-                for(int i = 0; i < data.size(); i++){
-                    plotting_vector[i] = (filter[i].imag());
-                }
-                matplot::plot(plotting_vector);
-                matplot::hold(false);
-                matplot::show();*/
 
                 double freq = UTILITY_MATH::getFreqByIdx(data.size(), freq_idx);
                 double width = 1.0 / freq * width_muller;
@@ -577,30 +551,7 @@ namespace NP_DSP::ONE_D::FILTERS {
                     filter[i] = {re, im};
                 }
 
-                /*for(int i = 0; i < data.size(); i++){
-                    plotting_vector[i] = (filter[i].real());
-                }
-                matplot::plot(plotting_vector);
-                matplot::hold(true);
-                for(int i = 0; i < data.size(); i++){
-                    plotting_vector[i] = (filter[i].imag());
-                }
-                matplot::plot(plotting_vector);
-                matplot::hold(false);
-                matplot::show();*/
-
                 UTILITY_MATH::fftc2c(filter, filter_non_local_afr);
-                /*for(int i = 0; i < data.size(); i++){
-                    plotting_vector[i] = (filter_non_local_afr[i].real());
-                }
-                matplot::plot(plotting_vector);
-                matplot::hold(true);
-                for(int i = 0; i < data.size(); i++){
-                    plotting_vector[i] = (filter_non_local_afr[i].imag());
-                }
-                matplot::plot(plotting_vector);
-                matplot::hold(false);
-                matplot::show();*/
 
                 UTILITY_MATH::fftc2c(buffer1, buffer2);
 
@@ -1117,13 +1068,6 @@ namespace NP_DSP::ONE_D::FILTERS {
                     buffer.push_back(big_der);
                     compute_buffer[i] = compute_buffer[i] - big_der;
                 }
-                //IC(*(inst_freq->base->vec));
-                //IC(buffer);
-                //matplot::plot(buffer);
-                //matplot::show();
-
-                //IC(*(compute_buffer.base->vec));
-                //compute_buffer.show(PlottingKind::Simple);
 
                 auto avg = 0.0;
                 auto b = data[0];

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "icecream.hpp"
-
 #include <phase_computers.hpp>
 #include <npdsp_concepts.hpp>
 #include <signals.hpp>
@@ -861,9 +859,6 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     accum += add_error[i] + (extremums_freq[i] - out[i]) * (extremums_freq[i] - out[i]) / 1000;
                     /// data[i];
                 }
-                if constexpr (CONFIG::debug) {
-                    IC(accum);
-                }
                 return accum;
             };
 
@@ -945,9 +940,6 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                 for (auto i = 0; i < extremums_freq.size(); i++) {
                     accum += add_error[i] + (extremums_freq[i] - out[i]) * (extremums_freq[i] - out[i]) / 1000;
                     /// data[i];
-                }
-                if constexpr (CONFIG::debug) {
-                    IC(accum);
                 }
                 return accum;
             };
@@ -1054,9 +1046,6 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                         accum += (extremums_freq[i] - out[i] * external_opt_parametr[i])
                                 * (extremums_freq[i] - out[i] * external_opt_parametr[i]) / 1000 / out[i];
                     }
-                }
-                if constexpr (CONFIG::debug) {
-                    IC(accum);
                 }
                 return accum;
             };
@@ -1185,7 +1174,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         while (temp<=data.size()-1.0){
             temp1 = freq_avg / inst_freq_e.interpolate(temp, SignalKind::Universal);
             //out_signal.push(linear_interpolate(signal_in, temp));
-            if(counter = out.size()){
+            if(counter == out.size()){
                 break;
             }
             out[counter] = data.interpolate(temp, SignalKind::Universal);

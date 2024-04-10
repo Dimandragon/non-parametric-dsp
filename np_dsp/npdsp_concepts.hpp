@@ -7,7 +7,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <matplot/matplot.h>
 
 namespace NP_DSP{
     namespace GENERAL
@@ -180,199 +179,14 @@ namespace NP_DSP{
             virtual T interpolate(double idx, SignalKind kind) const = 0;
 
             virtual void show(PlottingKind kind){
-                if constexpr (GENERAL::is_complex<T>) {
-                    if (kind == PlottingKind::Interpolate){
-                        std::vector<double> plotting_data = {};
-                        int i = -size();
-                        while(i < static_cast<int>(size() * 2)){
-                            ++i;
-                            plotting_data.push_back(interpolate(static_cast<double>(i), SignalKind::Stohastic).real());
-                        }
-                        matplot::plot(plotting_data);
-                        matplot::hold(matplot::on);
-                        plotting_data.clear();
-                        while(i < static_cast<int>(size() * 2)){
-                            ++i;
-                            plotting_data.push_back(interpolate(static_cast<double>(i), SignalKind::Stohastic).imag());
-                        }
-                        matplot::plot(plotting_data);
-                        matplot::hold(matplot::off);
-                        matplot::show();
-                    }
-                    /*else if (kind == PlottingKind::Simple){
-                        std::vector<double> plotting_data = {};
-                        for (auto i = 0; i < base->size(); ++i){
-                            auto sample = (*base)[i];
-                            plotting_data.push_back(sample.real());
-                        }
-                        matplot::plot(plotting_data);
-                        matplot::hold(matplot::on);
-                        plotting_data.clear();
-                        for (auto i = 0; i < base->size(); ++i){
-                            auto sample = (*base)[i];
-                            plotting_data.push_back(sample.imag());
-                        }
-                        matplot::plot(plotting_data);
-                        matplot::hold(matplot::off);
-                        matplot::show();
-                    }*/
-                }
-                else{
-                    if (kind == PlottingKind::Interpolate){
-                        std::vector<SampleType> plotting_data = {};
-                        int i = -size();
-                        while(i < static_cast<int>(size() * 2)){
-                            ++i;
-                            plotting_data.push_back(interpolate(static_cast<double>(i), SignalKind::Stohastic));
-                        }
-                        matplot::plot(plotting_data);
-                        matplot::show();
-                    }
-                    else if (kind == PlottingKind::Simple){
-                        std::vector<SampleType> plotting_data = {};
-                        for (auto i = 0; i < base->size(); ++i){
-                            auto sample = (*base)[i];
-                            plotting_data.push_back(sample);
-                        }
-                        matplot::plot(plotting_data);
-                        matplot::show();
-                    }
-                }
+
             }
 
-            void show() {
-                show(PlottingKind::Simple);
-            }
+            void show() {}
 
-            virtual void show(PlottingKind kind, const std::string & filename, const std::string & format) const {
-                if constexpr (GENERAL::is_complex<T>) {
-                    if (kind == PlottingKind::Interpolate){
-                        std::vector<double> plotting_data = {};
-                        int i = -size();
-                        while(i < static_cast<int>(size() * 2)){
-                            ++i;
-                            plotting_data.push_back(interpolate(static_cast<double>(i), SignalKind::Stohastic).real());
-                        }
-                        matplot::plot(plotting_data);
-                        matplot::hold(matplot::on);
-                        plotting_data.clear();
-                        while(i < static_cast<int>(size() * 2)){
-                            ++i;
-                            plotting_data.push_back(interpolate(static_cast<double>(i), SignalKind::Stohastic).imag());
-                        }
-                        matplot::plot(plotting_data);
-                        matplot::hold(matplot::off);
-                        matplot::show();
-                        matplot::save(filename, format);
-                    }
-                    else if (kind == PlottingKind::Simple){
-                        std::vector<double> plotting_data = {};
-                        for (auto i = 0; i < base->size(); ++i){
-                            auto sample = (*base)[i];
-                            plotting_data.push_back(sample.real());
-                        }
-                        matplot::plot(plotting_data);
-                        matplot::hold(matplot::on);
-                        plotting_data.clear();
-                        for (auto i = 0; i < base->size(); ++i){
-                            auto sample = (*base)[i];
-                            plotting_data.push_back(sample.imag());
-                        }
-                        matplot::plot(plotting_data);
-                        matplot::hold(matplot::off);
-                        matplot::show();
-                        matplot::save(filename, format);
-                    }
-                }
-                else{
-                    if (kind == PlottingKind::Interpolate){
-                        std::vector<SampleType> plotting_data = {};
-                        int i = -size();
-                        while(i < static_cast<int>(size() * 2)){
-                            ++i;
-                            plotting_data.push_back(interpolate(static_cast<double>(i), SignalKind::Stohastic));
-                        }
-                        matplot::plot(plotting_data);
-                        matplot::show();
-                        matplot::save(filename, format);
-                    }
-                    else if (kind == PlottingKind::Simple){
-                        std::vector<SampleType> plotting_data = {};
-                        for (auto i = 0; i < base->size(); ++i){
-                            auto sample = (*base)[i];
-                            plotting_data.push_back(sample);
-                        }
-                        matplot::plot(plotting_data);
-                        matplot::show();
-                        matplot::save(filename, format);
-                    }
-                }
-            }
+            virtual void show(PlottingKind kind, const std::string & filename, const std::string & format) const {}
 
-            virtual void show(PlottingKind kind, const std::string & filename) const {
-                if constexpr (GENERAL::is_complex<T>) {
-                    if (kind == PlottingKind::Interpolate){
-                        std::vector<double> plotting_data = {};
-                        int i = -size();
-                        while(i < static_cast<int>(size() * 2)){
-                            ++i;
-                            plotting_data.push_back(interpolate(static_cast<double>(i), SignalKind::Stohastic).real());
-                        }
-                        matplot::plot(plotting_data);
-                        matplot::hold(matplot::on);
-                        plotting_data.clear();
-                        while(i < static_cast<int>(size() * 2)){
-                            ++i;
-                            plotting_data.push_back(interpolate(static_cast<double>(i), SignalKind::Stohastic).imag());
-                        }
-                        matplot::plot(plotting_data);
-                        matplot::hold(matplot::off);
-                        matplot::show();
-                        matplot::save(filename);
-                    }
-                    else if (kind == PlottingKind::Simple){
-                        std::vector<double> plotting_data = {};
-                        for (auto i = 0; i < base->size(); ++i){
-                            auto sample = (*base)[i];
-                            plotting_data.push_back(sample.real());
-                        }
-                        matplot::plot(plotting_data);
-                        matplot::hold(matplot::on);
-                        plotting_data.clear();
-                        for (auto i = 0; i < base->size(); ++i){
-                            auto sample = (*base)[i];
-                            plotting_data.push_back(sample.imag());
-                        }
-                        matplot::plot(plotting_data);
-                        matplot::hold(matplot::off);
-                        matplot::show();
-                        matplot::save(filename);
-                    }
-                }
-                else{
-                    if (kind == PlottingKind::Interpolate){
-                        std::vector<SampleType> plotting_data = {};
-                        int i = -size();
-                        while(i < static_cast<int>(size() * 2)){
-                            ++i;
-                            plotting_data.push_back(interpolate(static_cast<double>(i), SignalKind::Stohastic));
-                        }
-                        matplot::plot(plotting_data);
-                        matplot::show();
-                        matplot::save(filename);
-                    }
-                    else if (kind == PlottingKind::Simple){
-                        std::vector<SampleType> plotting_data = {};
-                        for (auto i = 0; i < base->size(); ++i){
-                            auto sample = (*base)[i];
-                            plotting_data.push_back(sample);
-                        }
-                        matplot::plot(plotting_data);
-                        matplot::show();
-                        matplot::save(filename);
-                    }
-                }
-            }
+            virtual void show(PlottingKind kind, const std::string & filename) const {}
         };
         struct details {
             static_assert(is_signal<SignalPrototype<double>>);

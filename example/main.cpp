@@ -1,5 +1,3 @@
-#include <icecream.hpp>
-
 #include <modes_extractors.hpp>
 #include <signals.hpp>
 #include <npdsp_concepts.hpp>
@@ -13,8 +11,8 @@ int main(){
         data.base->vec->push_back(std::rand());
     }
 
-    IC(*data.base->vec);
-    data.show(NP_DSP::ONE_D::PlottingKind::Simple);
+    //IC(*data.base->vec);
+    //data.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
     NP_DSP::ONE_D::MODES_EXTRACTORS::InstFreqNormSincExtractor extractor;
     extractor.locality_coeff = 2.5;
@@ -22,19 +20,13 @@ int main(){
     //NP_DSP::ONE_D::MODES_EXTRACTORS::ByIterStopFunc stop;
     //data.show(NP_DSP::ONE_D::PlottingKind::Simple);
     //extractor.load(data);
-    
+
 
     //data.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
     extractor.compute(data);
     //NP_DSP::ONE_D::MODES_EXTRACTORS::computeReqDouble(extractor, stop);
-    IC(extractor.modes.size());
-    for(int i = 0; i < extractor.modes.size(); i++) {
-        extractor.modes[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
-        extractor.phases[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
-        extractor.inst_freqs[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
-        extractor.inst_ampls[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
-    }
+    std::cout << extractor.modes.size() << std::endl;
 
     return 0;
 }

@@ -1,8 +1,4 @@
 #pragma once
-
-#include "icecream.hpp"
-
-
 #include <cstddef>
 #include <utility>
 
