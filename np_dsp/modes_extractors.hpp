@@ -1821,7 +1821,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
 
         FILTERS::SincResLocalFilter<double> filter;
 
-        template<Signal DataT>
+        template<typename DataT>
         void compute(const DataT & data_in){
             filter.locality_coeff = locality_coeff;
             size_t iter_number = 0;
@@ -1993,6 +1993,25 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                     return;
                 }
             }
+        }
+
+        int getModesCount(){
+            return static_cast<int>(modes.size());
+        }
+        int getDataSize(){
+            return static_cast<int>(modes[0]->size());
+        }
+        std::vector<double> getMode(int idx){
+            return *(modes[idx]->base->vec);
+        }
+        std::vector<double> getInstFreq(int idx){
+            return *(inst_freqs[idx]->base->vec);
+        }
+        std::vector<double> getInstAmpl(int idx){
+            return *(inst_ampls[idx]->base->vec);
+        }
+        std::vector<double> getPhase(int idx){
+            return *(phases[idx]->base->vec);
         }
     };
 }
