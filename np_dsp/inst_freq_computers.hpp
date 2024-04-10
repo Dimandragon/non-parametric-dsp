@@ -1244,6 +1244,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                 //arrout.push(linear_interpolate::<T>(arrin, temp));
                 if (counter < data.size()){
                     out[counter] = data.interpolate(temp, SignalKind::Universal);
+                    //IC(counter, temp, out[counter]);
                     counter++;
                     temp = temp + temp1;
                 }

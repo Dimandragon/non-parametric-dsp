@@ -203,5 +203,82 @@ namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
         }
     };
 
-    
+    template<UTILITY_MATH::HTKind ht_kind>
+    struct HilbertTransformBased{
+        std::vector<std::complex<double>> buffer;
+        std::vector<std::complex<double>> specter;
+
+        using AdditionalDataType = GENERAL::Nil;
+
+        constexpr static bool is_inst_ampl_computer = true;
+        constexpr static bool is_used_external_inst_freq = false;
+
+        UTILITY_MATH::HTKind kind = ht_kind;
+
+        template<Signal DataT, Signal OutT>
+        void compute(const DataT & data, OutT & out, std::nullptr_t nil){
+            if (buffer.size() != data.size()){
+                buffer.clear();
+                for (int i = 0; i < data.size(); i++){
+                    buffer.push_back({data[i], 0.0});
+                }
+            }
+            else{
+                for (int i = 0; i < data.size(); i++){
+                    buffer[i] = {data[i], 0.0};
+                }
+            }
+            if (specter.size() != data.size()){
+                specter.clear();
+                for (int i = 0; i < data.size(); i++){
+                    specter.push_back({data[i], 0.0});
+                }
+            }
+            else{
+                for (int i = 0; i < data.size(); i++){
+                    specter[i] = {data[i], 0.0};
+                }
+            }
+            
+            UTILITY_MATH::hilbertTransformConst<DataT, OutT, ht_kind>
+                (data, out, specter, buffer);
+
+            for(int i = 0; i < data.size(); i++){
+                out[i] = std::sqrt(out[i] * out[i] + data[i] * data[i]); //todo
+            }
+        }
+
+        template<Signal DataT, Signal OutT, typename NilT>
+        void compute(const DataT & data, OutT & out, NilT * nil){
+            if (buffer.size() != data.size()){
+                buffer.clear();
+                for (int i = 0; i < data.size(); i++){
+                    buffer.push_back({data[i], 0.0});
+                }
+            }
+            else{
+                for (int i = 0; i < data.size(); i++){
+                    buffer[i] = {data[i], 0.0};
+                }
+            }
+            if (specter.size() != data.size()){
+                specter.clear();
+                for (int i = 0; i < data.size(); i++){
+                    specter.push_back({data[i], 0.0});
+                }
+            }
+            else{
+                for (int i = 0; i < data.size(); i++){
+                    specter[i] = {data[i], 0.0};
+                }
+            }
+            
+            UTILITY_MATH::hilbertTransformConst<DataT, OutT, ht_kind>
+                (data, out, specter, buffer);
+
+            for(int i = 0; i < data.size(); i++){
+                out[i] = std::sqrt(out[i] * out[i] + data[i] * data[i]); //todo
+            }
+        }
+    };
 }

@@ -41,9 +41,11 @@ int main(){
                     inst_freq_computer
                         (integrator, derivator, phase_computer);
 
-    NP_DSP::ONE_D::INST_AMPL_COMPUTERS::DerivativeBasedUsingExternalInstFreq<double, decltype(integrator), decltype(derivator),
+    /*NP_DSP::ONE_D::INST_AMPL_COMPUTERS::DerivativeBasedUsingExternalInstFreq<double, decltype(integrator), decltype(derivator),
         NP_DSP::ONE_D::INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage>
-            inst_ampl_computer(integrator, derivator, inst_freq_buffer);
+            inst_ampl_computer(integrator, derivator, inst_freq_buffer);*/
+    NP_DSP::ONE_D::INST_AMPL_COMPUTERS::HilbertTransformBased
+        <NP_DSP::ONE_D::UTILITY_MATH::HTKind::Mull> inst_ampl_computer;
 
 
     NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
@@ -51,11 +53,18 @@ int main(){
             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average>
                 non_opt_filter(integrator);
 
-    NP_DSP::ONE_D::FILTERS::InstAmplNormalizatorNaive<double, decltype(inst_ampl_computer)
+    /*NP_DSP::ONE_D::FILTERS::InstAmplNormalizatorNaive<double, decltype(inst_ampl_computer)
         , decltype(inst_freq_buffer), decltype(non_opt_filter)> 
+        naive_normalizer(inst_ampl_computer, non_opt_filter);*/
+
+    NP_DSP::ONE_D::FILTERS::InstAmplNormalizatorNaive<double, decltype(inst_ampl_computer),
+        decltype(inst_freq_buffer), decltype(non_opt_filter)> 
         naive_normalizer(inst_ampl_computer, non_opt_filter);
 
-    
+    NP_DSP::ONE_D::FILTERS::InstAmplNormalizatorNaiveReqursive
+        <double, decltype(naive_normalizer), SignalT, 
+            decltype(non_opt_filter)> inst_ampl_req_norm(naive_normalizer, inst_freq_buffer,
+                non_opt_filter);
 
     auto size = 200;
     for (auto i = 0; i < size; i++){
@@ -77,7 +86,15 @@ int main(){
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
     naive_normalizer.inst_freq = &inst_freq_buffer;
-    double avg = naive_normalizer.computeGetAvg(signal2, signal3, compute_buffer);
+    inst_ampl_req_norm.inst_freq = &inst_freq_buffer;
+    inst_ampl_req_norm.compute(signal2, signal3,
+        &compute_buffer);
+    //naive_normalizer.compute(signal2, signal3,
+             //compute_buffer);
+
+    signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
+    
+    /*double avg = naive_normalizer.computeGetAvg(signal2, signal3, compute_buffer);
     IC(avg);
     signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
     for(;;){
@@ -85,7 +102,7 @@ int main(){
         signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
         naive_normalizer.computeWithExternalAvg(signal2, signal3, compute_buffer, avg);
         signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
-    }   
+    }
 
-    return 0;
+    return 0;*/
 }

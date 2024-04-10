@@ -206,6 +206,30 @@ namespace NP_DSP::ONE_D {
                 matplot::plot(plotting_data);
                 matplot::show();
             }
+            else if (kind == PlottingKind::Spectre){
+                std::vector<std::complex<double>> spectre;
+                std::vector<std::complex<double>> fft_vec;
+
+                for (int i = 0; i < base->size(); i++){
+                    spectre.push_back({0.0, 0.0});
+                    fft_vec.push_back((*base)[i]);
+                }
+
+                UTILITY_MATH::fftc2c(fft_vec, spectre);
+
+                std::vector<double> plotting_vec_re;
+                std::vector<double> plotting_vec_im;
+
+                for (int i = 0; i < base->size(); i++){
+                    plotting_vec_re.push_back(spectre[i].real());
+                    plotting_vec_im.push_back(spectre[i].imag());
+                }
+                matplot::plot(plotting_vec_re);
+                matplot::hold(true);
+                matplot::plot(plotting_vec_im);
+                matplot::hold(false);
+                matplot::show();
+            }
         }
 
         void show(PlottingKind kind, const std::string& filename, const std::string& format) const {
@@ -250,6 +274,7 @@ namespace NP_DSP::ONE_D {
                 matplot::show();
                 matplot::save(filename);
             }
+
         }
 
 
@@ -305,13 +330,13 @@ namespace NP_DSP::ONE_D {
                 else{
                     if (idx <= size_l - 2){
                         return UTILITY_MATH::linearInterpolate<double, SampleType>(
-                            {static_cast<double>(idx), (*base)[static_cast<int64_t>(idx)]},
-                            {static_cast<double>(idx + 1), (*base)[idx + 1]}, static_cast<double>(idx));
+                            {static_cast<int64_t>(idx), (*base)[static_cast<int64_t>(idx)]},
+                            {static_cast<int64_t>(idx + 1), (*base)[static_cast<int64_t>(idx) + 1]}, static_cast<double>(idx));
                     }
                     else{
                         return UTILITY_MATH::linearInterpolate<double, SampleType>(
-                            {static_cast<double>(size() - 2), (*base)[size() - 2]},
-                            {static_cast<double>(size() - 1), (*base)[size() - 1]}, static_cast<double>(idx));
+                            {static_cast<int64_t>(size() - 2), (*base)[size() - 2]},
+                            {static_cast<int64_t>(size() - 1), (*base)[size() - 1]}, static_cast<double>(idx));
                     }
                 }
             }
@@ -447,7 +472,7 @@ namespace NP_DSP::ONE_D {
             auto idx_lambda = [&](int idx) {
                 return interpolate(idx, SignalKind::Monotone);
             };
-            std::pair<int, int> idxes = ONE_D::UTILITY_MATH::interpoationSearch(*idx1, *idx2, value, idx_lambda);
+            std::pair<int, int> idxes = ONE_D::UTILITY_MATH::interpolationSearch(*idx1, *idx2, value, idx_lambda);
             if constexpr (CONFIG::debug) {
                 std::string mark = "find monotone";
                 IC(mark, idxes.first, idxes.second, value);
@@ -692,7 +717,7 @@ namespace NP_DSP::ONE_D {
             auto idx_lambda = [&](int idx) {
                 return interpolate(idx, SignalKind::Monotone);
             };
-            std::pair<int, int> idxes = UTILITY_MATH::interpoationSearch(*idx1, *idx2, value, idx_lambda);
+            std::pair<int, int> idxes = UTILITY_MATH::interpolationSearch(*idx1, *idx2, value, idx_lambda);
             if constexpr (CONFIG::debug) {
                 std::string mark = "find monotone";
                 IC(mark, idxes.first, idxes.second, value);

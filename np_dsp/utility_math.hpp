@@ -190,7 +190,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
 
     
     template<Signal DataT1, Signal DataT2, Signal OutT>
-    void fastConvolution(DataT1& in1, DataT2& in2, OutT& out) {
+    void fastConvolution(const DataT1& in1, const DataT2& in2, OutT& out) {
         using T = typename OutT::SampleType;
         std::vector<std::complex<T>> data_in1;
         std::vector<std::complex<T>> data_in2;
@@ -237,8 +237,8 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
 
     
     template<typename T>
-    void fftc2c(std::vector<std::complex<T>> const& data_in, std::vector<std::complex<T>>& data_out, size_t len,
-                size_t pad) {
+    void fftc2c(std::vector<std::complex<T>> const& data_in, 
+        std::vector<std::complex<T>>& data_out, size_t len, size_t pad) {
         pocketfft::shape_t shape{len};
         pocketfft::stride_t stridef(shape.size());
         size_t tmpf = sizeof(std::complex<T>);
@@ -276,7 +276,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
 
     
     template<typename TIndex, SignalBase Base, typename TValue>
-    std::pair<TIndex, TIndex> interpoationSearch(Base data, TIndex idx1, TIndex idx2, TValue value) {
+    std::pair<TIndex, TIndex> interpolationSearch(Base data, TIndex idx1, TIndex idx2, TValue value) {
         //todo interpolate or values limits
         if (idx1 > idx2) {
             auto buffer = idx1;
@@ -310,7 +310,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
 
     
     template<typename TIndex, typename TValue, typename IdxLambdaT>
-    std::pair<TIndex, TIndex> interpoationSearch(TIndex idx1, TIndex idx2, TValue value, IdxLambdaT idx_lambda) {
+    std::pair<TIndex, TIndex> interpolationSearch(TIndex idx1, TIndex idx2, TValue value, IdxLambdaT idx_lambda) {
         //todo interpolate or values limits
         if (idx1 > idx2) {
             auto buffer = idx1;
@@ -392,8 +392,230 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         for (int i = 0; i < a; i++)
         {
             double temp = i + 1;
-            result = result +  std::pow(temp, a);//temp.powf(pow);
+            result = result + std::pow(temp, a);//temp.powf(pow);
         }
         return result;
+    }
+
+    enum class HTKind{Add, AddRepl, Mull, MullRepl};
+
+    size_t getUniqueSpecterSamplesCount(size_t signal_size){
+        return signal_size / 2 + signal_size % 2;
+    }
+
+    double getFreqByIdx(int len, int idx) {
+        return static_cast<double>(idx) / len;
+    }
+
+    int getIdxByFreq(int len, double freq){
+        if (freq == 0.0){
+            return 0;
+        }
+        else{
+            return static_cast<int>(freq * len);
+        }
+    }
+    double getIdxByFreqD(int len, double freq){
+        if (freq == 0.0){
+            return 0;
+        }
+        else{
+            return freq * len;
+        }
+    }
+
+    struct ftResamplingData{
+        int new_idx;
+        int new_size;
+        int old_size;
+    };
+
+    ftResamplingData getResamplingSize(int len, double freq){
+        ftResamplingData result;
+        result.old_size = len;
+        double old_idx = getIdxByFreqD(len, freq);
+        auto old_idx_i = static_cast<int>(old_idx);
+        if (old_idx == old_idx_i){
+            result.new_size = len;
+            result.new_idx = old_idx_i;
+            return result;
+        }
+        auto idx_new = static_cast<double>(old_idx_i + 1);
+        result.new_idx = static_cast<int>(idx_new);
+        result.new_size = static_cast<int>(static_cast<double>(len) / old_idx * idx_new);
+        return result;
+    }
+
+    template<Signal DataT, Signal OutT, HTKind kind>
+    void hilbertTransform(DataT & data, OutT & out, 
+        std::vector<std::complex<double>> & specter, 
+            std::vector<std::complex<double>> & buffer)
+    {
+        for (int i = 0; i < data.size(); i++){
+            buffer[i] = {data[i], 0.0};
+        }
+        
+        fftc2c(buffer, specter);
+
+        auto size = data.size();
+        for (int i = 1; i < data.size() / 2 + data.size() % 2; i++){
+            if constexpr (kind == HTKind::Mull || kind == HTKind::MullRepl){
+                specter[i] = specter[i] * 2.0;
+            }
+            else if constexpr (kind == HTKind::Add || kind == HTKind::AddRepl){
+                specter[i] += specter[size - i];
+            }
+            
+            specter[size - i] = specter[size - i] * 0.0;
+        }
+
+        ifftc2c(specter, buffer);
+
+        for (int i = 0; i < data.size(); i++){
+            if constexpr (kind == HTKind::AddRepl || kind == HTKind::MullRepl){
+                data[i] = buffer[i].real();
+            }
+            out[i] = buffer[i].imag();
+        }
+    }
+
+    template<Signal DataT, Signal OutT, HTKind kind>
+    void hilbertTransformConst(const DataT & data, OutT & out, 
+        std::vector<std::complex<double>> & specter, 
+            std::vector<std::complex<double>> & buffer)
+    {
+        for (int i = 0; i < data.size(); i++){
+            buffer[i] = {data[i], 0.0};
+        }
+        
+        fftc2c(buffer, specter);
+
+        auto size = data.size();
+        for (int i = 1; i < data.size() / 2 + data.size() % 2; i++){
+            if constexpr (kind == HTKind::Mull || kind == HTKind::MullRepl){
+                specter[i] = specter[i] * 2.0;
+            }
+            else if constexpr (kind == HTKind::Add || kind == HTKind::AddRepl){
+                specter[i] += specter[size - i];
+            }
+            
+            specter[size - i] = specter[size - i] * 0.0;
+        }
+
+        ifftc2c(specter, buffer);
+
+        for (int i = 0; i < data.size(); i++){
+            out[i] = buffer[i].imag();
+        }
+    }
+
+    template<Signal DataT, Signal OutT, Signal Weights, HTKind kind>
+    void WeightedHilbertTransform(DataT & data, OutT & out, 
+        std::vector<std::complex<double>> & specter, 
+            std::vector<std::complex<double>> & buffer,
+            const Weights & weights)
+    {
+        for (int i = 0; i < data.size(); i++){
+            buffer[i] = {data[i], 0.0};
+        }
+        
+        fftc2c(buffer, specter);
+
+        auto size = data.size();
+        for (int i = 1; i < data.size() / 2 + data.size() % 2; i++){
+            if constexpr (kind == HTKind::Mull || kind == HTKind::MullRepl){
+                specter[i] = specter[i] * (1.0 + weights[i]);
+            }
+            else if constexpr (kind == HTKind::Add || kind == HTKind::AddRepl){
+                specter[i] += specter[size - i] * weights[i];
+            }
+            
+            specter[size - i] = specter[size - i] * (1.0 - weights[i]);
+        }
+
+        ifftc2c(specter, buffer);
+
+        for (int i = 0; i < data.size(); i++){
+            if constexpr (kind == HTKind::AddRepl || kind == HTKind::MullRepl){
+                data[i] = buffer[i].real();
+            }
+            out[i] = buffer[i].imag();
+        }
+
+        //todo test
+    }
+
+    template<Signal DataT, Signal OutT, HTKind kind>
+    void WeightedHilbertTransformConst(const DataT & data, OutT & out, 
+        std::vector<std::complex<double>> & specter, 
+            std::vector<std::complex<double>> & buffer,
+            const std::vector<double> & weights)
+    {
+        for (int i = 0; i < data.size(); i++){
+            buffer[i] = {data[i], 0.0};
+        }
+        
+        fftc2c(buffer, specter);
+
+        auto size = data.size();
+        for (int i = 1; i < data.size() / 2 + data.size() % 2; i++){
+            if constexpr (kind == HTKind::Mull || kind == HTKind::MullRepl){
+                specter[i] = specter[i] * (1.0 + weights[i]);
+            }
+            else if constexpr (kind == HTKind::Add || kind == HTKind::AddRepl){
+                specter[i] += specter[size - i] * weights[i];
+            }
+            
+            specter[size - i] = specter[size - i] * (1.0 - weights[i]);
+        }
+
+        ifftc2c(specter, buffer);
+
+        for (int i = 0; i < data.size(); i++){
+            out[i] = buffer[i].imag();
+        }
+
+        //todo test
+    }
+    template<typename T, Signal SignalT>
+    void resampling(SignalT & data, std::vector<T> & out, size_t target_size){
+        auto size = data.size();
+        out.clear();
+        double step = static_cast<double>(size - 1) / static_cast<double>(target_size - 1);
+        for (int i = 0; i < target_size; i++){
+            IC(data.interpolate(static_cast<double>(i) * step, SignalKind::Universal), i, i * step);
+            out.push_back(data.interpolate(static_cast<double>(i) * step, SignalKind::Universal));
+        }
+    }
+
+    struct circleExtendResult{
+        int freq_idx;
+        int pad;
+    };
+
+    template<typename T, Signal SignalT>
+    circleExtendResult circleExtend(SignalT & data, std::vector<T> & out, double target_freq){
+        out.clear();
+        ftResamplingData res_data =
+                getResamplingSize(data.size(), target_freq);
+        int pad = (res_data.new_size - data.size()) / 2;
+        for (int i = 0; i < pad; i++){
+            out.push_back(data[data.size() - pad + i]);
+            //IC(data.size() - pad + i);
+        }
+        for (int i = pad; i < data.size() + pad; i++){
+            out.push_back(data[i - pad]);
+            //IC(i - pad);
+        }
+        for (int i = data.size() + pad; i < res_data.new_size; i++){
+            out.push_back(data[i - data.size() - pad]);
+            //IC(i - data.size() - pad);
+        }
+        //IC(res_data.new_size, out.size());
+        circleExtendResult res;
+        res.freq_idx = res_data.new_idx;
+        res.pad = pad;
+
+        return res;
     }
 }

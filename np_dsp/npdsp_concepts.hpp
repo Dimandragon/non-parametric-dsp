@@ -9,7 +9,6 @@
 #include <vector>
 #include <matplot/matplot.h>
 
-
 namespace NP_DSP{
     namespace GENERAL
     {
@@ -77,7 +76,7 @@ namespace NP_DSP{
         concept SignalBase = is_signal_base_second<T> || is_signal_base_first<T>;
 
          enum class SignalKind {Monotone, Stohastic, Harmonic, Smooth, Universal};
-         enum class PlottingKind {Simple, Interpolate};
+         enum class PlottingKind {Simple, Interpolate, Spectre};
 
         
         template <typename T>
@@ -200,7 +199,7 @@ namespace NP_DSP{
                         matplot::hold(matplot::off);
                         matplot::show();
                     }
-                    else if (kind == PlottingKind::Simple){
+                    /*else if (kind == PlottingKind::Simple){
                         std::vector<double> plotting_data = {};
                         for (auto i = 0; i < base->size(); ++i){
                             auto sample = (*base)[i];
@@ -216,7 +215,7 @@ namespace NP_DSP{
                         matplot::plot(plotting_data);
                         matplot::hold(matplot::off);
                         matplot::show();
-                    }
+                    }*/
                 }
                 else{
                     if (kind == PlottingKind::Interpolate){

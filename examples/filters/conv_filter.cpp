@@ -4,6 +4,7 @@
 #include <vector>
 #include <complex>
 #include <cstdlib>
+#include <filters.hpp>
 
 int main(){
     NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> signal1;
@@ -22,9 +23,15 @@ int main(){
 
     signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
-    NP_DSP::ONE_D::UTILITY_MATH::fastConvolution(signal1, signal2, signal1);
+    //NP_DSP::ONE_D::UTILITY_MATH::fastConvolution(signal1, signal2, signal1);
+    NP_DSP::ONE_D::FILTERS::NonLocalNonOptFiltering<double,
+            NP_DSP::ONE_D::FILTERS::NonLocalFilteringType::Conv> filter;
 
-    signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
+    filter.conv_filter_len = 10;
+
+    filter.compute(signal1, signal3, signal2);
+
+    signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
     return 0;
 }

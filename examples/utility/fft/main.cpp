@@ -54,7 +54,7 @@ template<typename T1, typename T2> long double l2err
 
 int main()
 {
-    size_t len = 100;
+    size_t len = 101;
 
     shape_t shape{len};
     stride_t stridef(shape.size());
@@ -133,9 +133,11 @@ int main()
     c2c(shape, stridef, stridef, axes, BACKWARD,
         resf.data(), dataf.data(), 1.f);
     NP_DSP::ONE_D::UTILITY_MATH::fftc2c(resf2, dataf2);
+    // 
 
     for (auto i = 0; i < resf.size(); i++){
-        std::cout << resf[i] << " " << resf2[i] << "    ";
+        std::cout << resf[i] << " " ;//<< resf2[i] << "    "; 
+        //при четной длине первый коэффициент не входит в симметрию
     }
     std::cout << std::endl;
 

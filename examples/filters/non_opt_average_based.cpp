@@ -41,7 +41,7 @@ int main(){
     NP_DSP::ONE_D::FILTERS::CascadeFilter<double, decltype(non_opt_filter), 
         decltype(non_opt_filter)> cascade_filter(non_opt_filter, non_opt_filter);
 
-    non_opt_filter.period_muller = 1.6;
+    non_opt_filter.period_muller = 1.0;
 
     signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
     

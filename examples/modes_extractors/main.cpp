@@ -14,23 +14,26 @@ int main(){
     }
 
     IC(*data.base->vec);
-
-    NP_DSP::ONE_D::MODES_EXTRACTORS::SimpleExtractorDoubleConfig extractor;
-    NP_DSP::ONE_D::MODES_EXTRACTORS::ByIterStopFunc stop;
     data.show(NP_DSP::ONE_D::PlottingKind::Simple);
-    extractor.load(data);
+
+    NP_DSP::ONE_D::MODES_EXTRACTORS::InstFreqNormSincExtractor extractor;
+    extractor.locality_coeff = 2.5;
+    //extractor.non_opt_filter.period_muller = 1.0;
+    //NP_DSP::ONE_D::MODES_EXTRACTORS::ByIterStopFunc stop;
+    //data.show(NP_DSP::ONE_D::PlottingKind::Simple);
+    //extractor.load(data);
     
 
     //data.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
-    //extractor.compute();
-    NP_DSP::ONE_D::MODES_EXTRACTORS::computeReqDoubleCascade(extractor, stop);
-    
+    extractor.compute(data);
+    //NP_DSP::ONE_D::MODES_EXTRACTORS::computeReqDouble(extractor, stop);
+    IC(extractor.modes.size());
     for(int i = 0; i < extractor.modes.size(); i++) {
         extractor.modes[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
         extractor.phases[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
-        //extractor.inst_freqs[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
-        //extractor.inst_ampls[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
+        extractor.inst_freqs[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
+        extractor.inst_ampls[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
     }
 
     return 0;

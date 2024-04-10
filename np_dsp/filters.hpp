@@ -16,68 +16,90 @@
 
 
 namespace NP_DSP::ONE_D::FILTERS {
-     enum class InstFreqKind { Average, Double };
+    enum class InstFreqKind { Average, Double };
 
-     enum class FilteringType { DerivativeBased, ValueBased, AverageBased, Median, ValueBasedSmart, DerivativeBasedSmart };
+    enum class FilteringType { DerivativeBased, ValueBased, AverageBased, Median, ValueBasedSmart, DerivativeBasedSmart };
 
+    enum class MaskKind {Gaussian, Triangle, Flat};
+
+    
+
+    template<Signal MaskT>
+    int generateConvMask(double inst_freq, double period_muller,
+                         MaskT & mask, MaskKind kind, double pow){
+        //todo
+        double period = 1.0 / inst_freq * period_muller;
+        size_t mask_size = period;
+        mask.base->vec->clear();
+        for (int i = 0; i < mask_size; i++){
+            mask.base->vec->push_back(0.0);
+        }
+        if (kind == MaskKind::Gaussian){
+            double width = period * period_muller;
+            double c = width / 2.35482;
+            double a = 1.0 / (2.506628275 * c);
+            //double b = width / 2.0;
+
+            for (int i = 0; i < 2; i++){
+                mask.base->vec->push_back(0.0);
+            }
+
+            int width_i = static_cast<int>(width) + 2;
+            double b = static_cast<double>(width_i) / 2.0 - 0.5;
+
+            for (int i = 0; i < width_i; i++){
+                mask[i] = a * std::pow(std::numbers::e, -((i - b) * (i - b)  / (2 * c * c)));
+            }
+            return width_i;
+        }
+        else if (kind == MaskKind::Triangle){
+            double temp = mask_size / 2.0;
+            double mn = UTILITY_MATH::powFact(temp, pow);
+            mn = mn * 2.0;
+            double mn_temp = mn;
+            mn = 1.0 / (mn_temp + (mask_size % 2) * powf(mask_size / 2 + 1, pow));
+            if (mask_size % 2 == 1) {
+                temp = temp + 1;
+            }
+            for (int i = 0; i < mask.size(); i++){
+                //mask[i].imag() = 0.0;
+                mask[i] = 0.0;
+            }
+            for (int i = 0; i < temp; i++) {
+                mask[i] = mn * std::pow((i + 1.0), pow);
+                //mask[mask_size - i - 1].real() = mn * std::pow((i + 1.0), pow);
+            }
+            double sum = 0.0;
+            for (int i = 0; i < mask.size(); i++){
+                sum = sum + mask[i];
+            }
+            for (int i = 0; i < mask.size(); i++){
+                mask[i] = mask[i]/sum;
+            }
+        }
+        else if (kind == MaskKind::Flat){
+            double val = 1.0 / mask.size();
+            for (int i = 0; i < mask_size; i++){
+                mask[i] = val;
+            }
+        }
+        double avg = 0.0;
+
+        for(int i = 0; i < mask.size(); i++){
+            avg += mask[i];
+        }
+
+        for (int i = 0; i < mask.size(); i++){
+            mask[i] /= avg;
+        }
+
+        return mask.size();
+    }
     
     template<typename U, FilteringType filtering_type_k,
         Integrator<U> IntegratorT, InstFreqKind inst_freq_k>
     struct NonOptPeriodBasedFilter {
-
-        enum class MaskKind {Gaussian, Triangle, Flat};
-
-        using MaskT = GenericSignal<SimpleVecWrapper<std::complex<double>>, true>;
-
-        template<Signal MaskT>
-        int generateConvMask(double inst_freq, double period_muller, 
-                MaskT & mask, MaskKind kind, double pow){
-            //todo
-            double period = 1.0 / inst_freq * period_muller;
-            size_t mask_size = period;
-            mask.clear();
-            for (int i = 0; i < mask_size; i++){
-                mask.base->vec->push_back(0.0);
-            }
-            if (kind == MaskKind::Gaussian){
-                //todo
-            }
-            else if (kind == MaskKind::Triangle){
-                double temp = mask_size / 2.0;
-                double mn = UTILITY_MATH::powFact(temp, pow);
-                mn = mn * 2.0;
-                double mn_temp = mn;
-                mn = 1.0 / (mn_temp + (mask_size % 2) * powf(mask_size / 2 + 1, pow));
-                if (mask_size % 2 == 1) {
-                    temp = temp + 1;
-                }
-                for (int i = 0; i < mask.size(); i++){
-                    mask[i].imag() = 0.0;
-                    mask[i].real() = 0.0;
-                }
-                for (int i = 0; i < temp; i++) {
-                    mask[i].real() = mn * std::pow((i + 1.0), pow);
-                    mask[mask_size - i - 1].real() = mn * std::pow((i + 1.0), pow);
-                }
-                double sum = 0.0;
-                for (int i = 0; i < mask.size(); i++){
-                    sum = sum + mask[i].real();
-                }
-                for (int i = 0; i < mask.size(); i++){
-                    mask[i].real() = mask[i].real()/sum;
-                }
-            }
-            else if (kind == MaskKind::Flat){
-                double val = 1.0 / mask.size();
-                for (int i = 0; i < mask_size; i++){
-                    mask[i].real() = val;
-                    mask[i].imag() = 0.0;
-                }
-            }
-
-            return mask.size();
-        }
-
+        using MaskT = GenericSignal<SimpleVecWrapper<std::complex<double>>, true>;\
         using AdditionalDataType = SignalPrototype<double>;
         using IdxType = size_t;
 
@@ -96,7 +118,7 @@ namespace NP_DSP::ONE_D::FILTERS {
         }
 
         //data and inst freq must be not monotone
-        template<Signal DataType, Signal OutType, Signal InstFreqType>
+        template<Signal DataType, Signal OutType, typename InstFreqType>
         void compute(const DataType& data, OutType& out, const InstFreqType * inst_freq) {
             using T = typename OutType::SampleType;
             if constexpr (filtering_type_k == FilteringType::DerivativeBased) {
@@ -383,8 +405,406 @@ namespace NP_DSP::ONE_D::FILTERS {
         }
     };
 
+    enum class NonLocalFilteringType { Conv, Sinc, SincLocal };
+    template<typename U, NonLocalFilteringType kind_e>
+    struct NonLocalNonOptFiltering {
+        constexpr static bool is_filter = true;
+        size_t conv_filter_len = 0;
+        double width_muller = 5.0;
+
+        template<Signal DataType, Signal OutType, Signal BufferType>
+        void compute(const DataType& data, OutType& out, const BufferType & buffer) {
+            if constexpr (kind_e == NonLocalFilteringType::Conv) {
+                //buffer is conv mask
+                UTILITY_MATH::fastConvolution(data, buffer, out);
+                std::vector<typename OutType::SampleType> copy_buffer;
+
+                for (int i = 0; i < conv_filter_len / 2; i++){
+                    copy_buffer.push_back(out[i]);
+                }
+                for (int i = 0; i < data.size() - conv_filter_len / 2; i++){
+                    out[i] = out[i + conv_filter_len / 2];
+                }
+                for (int i = data.size() - conv_filter_len / 2; i < data.size(); i++){
+                    out[i] = out[i + conv_filter_len / 2 - data.size()];
+                }
+                //todo test
+            }
+            else if constexpr (kind_e == NonLocalFilteringType::Sinc) {
+                std::vector<std::complex<double>> buffer1;
+                std::vector<std::complex<double>> buffer2;
+
+                for (int i = 0; i < data.size(); i++) {
+                    buffer1.push_back({data[i], 0.0});
+                    buffer2.push_back({0.0, 0.0});
+                }
+
+                UTILITY_MATH::fftc2c(buffer1, buffer2);
+
+                for (int i = 0; i < UTILITY_MATH::getUniqueSpecterSamplesCount(data.size()); i++) {
+                    buffer2[i] = buffer2[i] * buffer[i];
+                    if (i != 0 && data.size() - i > i) {
+                        buffer2[data.size() - i] = buffer2[data.size() - i] * buffer[i];
+                    }
+                }
+
+                UTILITY_MATH::ifftc2c(buffer2, buffer1);
+
+                for (int i = 0; i < data.size(); i++) {
+                    out[i] = buffer1[i].real();
+                }
+            }
+            else if constexpr (kind_e == NonLocalFilteringType::SincLocal){
+                std::unreachable();
+            }
+        }
+
+        template<Signal DataType, Signal OutType>
+        void computeSincWithMonoFreq(const DataType& data, OutType& out, int freq_idx, bool low_pass) {
+            if constexpr (kind_e == NonLocalFilteringType::Sinc){
+                std::vector<std::complex<double>> buffer1;
+                std::vector<std::complex<double>> buffer2;
+
+                for (int i = 0; i < data.size(); i++) {
+                    buffer1.push_back({data[i], 0.0});
+                    buffer2.push_back({0.0, 0.0});
+                }
+
+                UTILITY_MATH::fftc2c(buffer1, buffer2);
+
+                if (low_pass){
+                    for(int i = freq_idx; i < UTILITY_MATH::getUniqueSpecterSamplesCount(data.size()); i++){
+                        buffer2[i] = buffer2[i] * 0.0;
+                        if (i != 0 && data.size() - i > i) {
+                            buffer2[data.size() - i] = buffer2[data.size() - i] * 0.0;
+                        }
+                    }
+                }
+                else{
+                    for(int i = 0; i < freq_idx && i < UTILITY_MATH::getUniqueSpecterSamplesCount(data.size()); i++){
+                        buffer2[i] = buffer2[i] * 0.0;
+                        if (i != 0 && data.size() - i > i) {
+                            buffer2[data.size() - i] = buffer2[data.size() - i] * 0.0;
+                        }
+                    }
+                }
+
+                UTILITY_MATH::ifftc2c(buffer2, buffer1);
+
+                for (int i = 0; i < data.size(); i++) {
+                    out[i] = buffer1[i].real();
+                }
+            }
+            else if constexpr (kind_e == NonLocalFilteringType::SincLocal){
+                std::vector<std::complex<double>> buffer1;
+                std::vector<std::complex<double>> buffer2;
+                std::vector<std::complex<double>> filter_non_local_afr;
+                std::vector<std::complex<double>> filter;
+
+                for (int i = 0; i < data.size(); i++) {
+                    buffer1.push_back({data[i], 0.0});
+                    buffer2.push_back({0.0, 0.0});
+                    filter_non_local_afr.push_back({1.0, 1.0});
+                    filter.push_back({0.0, 0.0});
+                }
+
+                if (low_pass){
+                    for(int i = freq_idx; i <= UTILITY_MATH::getUniqueSpecterSamplesCount(data.size()); i++){
+                        filter_non_local_afr[i] = filter_non_local_afr[i] * 0.0;
+                        if (i != 0 && data.size() - i > i) {
+                            filter_non_local_afr[data.size() - i] = filter_non_local_afr[data.size() - i] * 0.0;
+                        }
+                    }
+                }
+                else{
+                    for(int i = 0; i < freq_idx && i <= UTILITY_MATH::getUniqueSpecterSamplesCount(data.size()); i++){
+                        filter_non_local_afr[i] = filter_non_local_afr[i] * 0.0;
+                        if (i != 0 && data.size() - i > i) {
+                            filter_non_local_afr[data.size() - i] = filter_non_local_afr[data.size() - i] * 0.0;
+                        }
+                    }
+                }
+                /*std::vector<double> plotting_vector;
+                for(int i = 0; i < data.size(); i++){
+                    plotting_vector.push_back(filter_non_local_afr[i].real());
+                }
+                matplot::plot(plotting_vector);
+                matplot::hold(true);
+                for(int i = 0; i < data.size(); i++){
+                    plotting_vector[i] = (filter_non_local_afr[i].imag());
+                }
+                matplot::plot(plotting_vector);
+                matplot::hold(false);
+                matplot::show();*/
+
+                UTILITY_MATH::ifftc2c(filter_non_local_afr, filter);
+
+                /*for(int i = 0; i < data.size(); i++){
+                    plotting_vector[i] = (filter[i].real());
+                }
+                matplot::plot(plotting_vector);
+                matplot::hold(true);
+                for(int i = 0; i < data.size(); i++){
+                    plotting_vector[i] = (filter[i].imag());
+                }
+                matplot::plot(plotting_vector);
+                matplot::hold(false);
+                matplot::show();*/
+
+                double freq = UTILITY_MATH::getFreqByIdx(data.size(), freq_idx);
+                double width = 1.0 / freq * width_muller;
+                double c = width / 2.35482;
+                double a = 1.0 / (2.506628275 * c);
+                double b = 0;
+
+                for(int i = 0; i <= UTILITY_MATH::getUniqueSpecterSamplesCount(data.size()); i++){
+                    filter[i] = filter[i] * a * std::pow(std::numbers::e, -((i - b) * (i - b)  / (2 * c * c)));
+                    if (i != 0 && data.size() - i > i) {
+                        filter[data.size() - i] = filter[data.size() - i] * a * std::pow(std::numbers::e, -((i - b) * (i - b)  / (2 * c * c)));
+                    }
+                }
+
+                double sum_re = 0.0;
+                double sum_im = 0.0;
+                for (int i = 0; i < data.size(); i++){
+                    sum_re += filter[i].real();
+                    sum_im += filter[i].imag();
+                }
+
+                for (int i = 0; i < data.size(); i++){
+                    auto re= filter[i].real() / sum_re * data.size();
+                    auto im= filter[i].imag() / sum_im * data.size();
+                    filter[i] = {re, im};
+                }
+
+                /*for(int i = 0; i < data.size(); i++){
+                    plotting_vector[i] = (filter[i].real());
+                }
+                matplot::plot(plotting_vector);
+                matplot::hold(true);
+                for(int i = 0; i < data.size(); i++){
+                    plotting_vector[i] = (filter[i].imag());
+                }
+                matplot::plot(plotting_vector);
+                matplot::hold(false);
+                matplot::show();*/
+
+                UTILITY_MATH::fftc2c(filter, filter_non_local_afr);
+                /*for(int i = 0; i < data.size(); i++){
+                    plotting_vector[i] = (filter_non_local_afr[i].real());
+                }
+                matplot::plot(plotting_vector);
+                matplot::hold(true);
+                for(int i = 0; i < data.size(); i++){
+                    plotting_vector[i] = (filter_non_local_afr[i].imag());
+                }
+                matplot::plot(plotting_vector);
+                matplot::hold(false);
+                matplot::show();*/
+
+                UTILITY_MATH::fftc2c(buffer1, buffer2);
+
+                for(int i = 0; i < data.size(); i++){
+                    buffer2[i] *= filter_non_local_afr[i];
+                }
+
+                UTILITY_MATH::ifftc2c(buffer2, buffer1);
+
+                for (int i = 0; i < data.size(); i++) {
+                    out[i] = buffer1[i].real();
+                }
+            }
+        }
+    };
+
+    template<typename U>
+    struct SincResFilter{
+        constexpr static bool is_filter = true;
+        GenericSignal<SimpleVecWrapper<U>, true> buffer1;
+        GenericSignal<SimpleVecWrapper<U>, true> buffer2;
+        double freq;
+        bool is_low_pass;
+        NonLocalNonOptFiltering<double,
+                NonLocalFilteringType::Sinc> filter;
+
+        template<Signal DataT, Signal OutT>
+        void compute(const DataT & data, OutT & out, std::nullptr_t null){
+            auto ext_info = UTILITY_MATH::circleExtend(data, *(buffer1.base->vec), freq);
+            UTILITY_MATH::circleExtend(data, *(buffer2.base->vec), freq);
+            //IC(ext_info.freq_idx, freq, ext_info.pad);
+            filter.computeSincWithMonoFreq(buffer1, buffer2, ext_info.freq_idx, is_low_pass);
+            for (int i = 0; i < data.size(); i++){
+                out[i] = buffer2[i + ext_info.pad];
+            }
+        }
+    };
+
+    template<typename U>
+    struct SincResLocalFilter{
+        constexpr static bool is_filter = true;
+        GenericSignal<SimpleVecWrapper<U>, true> buffer1;
+        GenericSignal<SimpleVecWrapper<U>, true> buffer2;
+        double freq;
+        bool is_low_pass;
+        double locality_coeff = 5.0;
+        NonLocalNonOptFiltering<double,
+                NonLocalFilteringType::SincLocal> filter;
+
+        template<Signal DataT, Signal OutT>
+        void compute(const DataT & data, OutT & out, std::nullptr_t null){
+            //std::vector<std::complex>
+            auto ext_info = UTILITY_MATH::circleExtend(data, *(buffer1.base->vec), freq);
+            UTILITY_MATH::circleExtend(data, *(buffer2.base->vec), freq);
+            //IC(ext_info.freq_idx, freq, ext_info.pad);
+            filter.width_muller = locality_coeff;
+            filter.computeSincWithMonoFreq(buffer1, buffer2, ext_info.freq_idx, true);
+            if (is_low_pass){
+                for (int i = 0; i < data.size(); i++){
+                    out[i] = buffer2[i + ext_info.pad];
+                }
+            }
+            else{
+                for (int i = 0; i < data.size(); i++){
+                    out[i] = data[i] - buffer2[i + ext_info.pad];
+                }
+            }
+        }
+    };
+
+    template<typename U, InstAmplComputer<U> InstAmplComputerT, Signal InstFreqT, 
+        Filter<U> FilterT, Integrator<U> IntegratorT, Derivator<U> DerivatorT>
+    struct InstAmplNormalizatorNaiveDer{
+        InstAmplComputerT * inst_ampl_computer;
+
+        double min_ampl = 10.0;
+
+        DerivatorT derivator;
+        IntegratorT integrator;
+        InstFreqT * inst_freq;
+        FilterT * filter;
+
+        GenericSignal<SimpleVecWrapper<U>, true> buffer2;
+
+        InstAmplNormalizatorNaiveDer(InstAmplComputerT & inst_ampl_computer, FilterT & filter){
+            this->inst_ampl_computer = &inst_ampl_computer;
+            this->filter = &filter;
+        }
+
+        template<Signal DataT, Signal OutT, Signal ComputerBufferT>
+        void compute(const DataT & data, OutT & out, ComputerBufferT & compute_buffer){
+            if constexpr (InstAmplComputerT::is_used_external_inst_freq){
+                inst_ampl_computer->inst_freq = inst_freq;
+            }
+            auto size = data.size();
+            if (buffer2.size() != size){
+                buffer2.base->vec->clear();
+                for(int i = 0; i < size; i++){
+                    buffer2.base->vec->push_back(0);
+                }
+            }
+            
+            inst_ampl_computer->compute(data, buffer2, &compute_buffer);
+            //auto old_muller = filter->period_muller;
+            //filter->period_muller = 2.0;
+            filter->compute(buffer2, out, inst_freq);
+            derivator.compute(data, compute_buffer, nullptr);
+            //filter->period_muller = old_muller;
+
+            auto b = data[0];
+            auto avg = 0.0; 
+
+            for (int i = 0; i < size; i++){
+                avg += out[i] / size;
+            }
+            for (int i = 0; i < size; i++){
+                if (out[i] > min_ampl){
+                    compute_buffer[i] = compute_buffer[i] / (out[i] / avg);
+                }
+                else{
+                    compute_buffer[i] = compute_buffer[i]  / (min_ampl / avg);
+                }
+            }
+
+            integrator.compute(compute_buffer, out, nullptr);
+            for (int i = 0; i < size; i++){
+                out[i] += b;
+            }
+        }
+
+        template<Signal DataT, Signal OutT, Signal ComputerBufferT>
+        double computeGetAvg(const DataT & data, OutT & out, ComputerBufferT & compute_buffer){
+            auto size = data.size();
+            if (buffer2.size() != size){
+                buffer2.base->vec->clear();
+                for(int i = 0; i < size; i++){
+                    buffer2.base->vec->push_back(0);
+                }
+            }
+            
+            inst_ampl_computer->compute(data, buffer2, &compute_buffer);
+            //auto old_muller = filter->period_muller;
+            //filter->period_muller = 2.0;
+            filter->compute(buffer2, out, inst_freq);
+            derivator.compute(data, compute_buffer, nullptr);
+            //filter->period_muller = old_muller;
+
+            auto b = data[0];
+            auto avg = 0.0;
+            for (int i = 0; i < size; i++){
+                avg += out[i] / size;
+            }
+            for (int i = 0; i < size; i++){
+                if (out[i] > min_ampl){
+                    compute_buffer[i] = compute_buffer[i] / (out[i] / avg);
+                }
+                else{
+                    compute_buffer[i] = compute_buffer[i] / (min_ampl / avg);
+                }
+            }
+            integrator.compute(compute_buffer, out, nullptr);
+            for (int i = 0; i < size; i++){
+                out[i] += b;
+            }
+
+            return avg;
+        }
+
+        template<Signal DataT, Signal OutT, Signal ComputerBufferT>
+        void computeWithExternalAvg(const DataT & data, OutT & out, ComputerBufferT & compute_buffer, double avg){
+            auto size = data.size();
+            if (buffer2.size() != size){
+                buffer2.base->vec->clear();
+                for(int i = 0; i < size; i++){
+                    buffer2.base->vec->push_back(0);
+                }
+            }
+            auto b = data[0];
+            
+            inst_ampl_computer->compute(data, buffer2, &compute_buffer);
+            //auto old_muller = filter->period_muller;
+            //filter->period_muller = 2.0;
+            filter->compute(buffer2, out, inst_freq);
+            derivator.compute(data, compute_buffer, nullptr);
+            //filter->period_muller = old_muller;
+            //out.show(PlottingKind::Simple);
+            
+            for (int i = 0; i < size; i++){
+                if (out[i] > min_ampl){
+                    compute_buffer[i] = compute_buffer[i] / (out[i] / avg);
+                }
+                else{
+                    compute_buffer[i] = compute_buffer[i]  / (min_ampl / avg);
+                }
+            }
+            integrator.compute(compute_buffer, out, nullptr);
+            for (int i = 0; i < size; i++){
+                out[i] += b;
+            }
+        }
+    };
+
     
-    template<typename U, InstAmplComputer<U> InstAmplComputerT, Signal InstFreqT, Filter<U> FilterT>
+    template<typename U, InstAmplComputer<U> InstAmplComputerT, typename InstFreqT, Filter<U> FilterT>
     struct InstAmplNormalizatorNaive{
         InstAmplComputerT * inst_ampl_computer;
 
@@ -487,7 +907,7 @@ namespace NP_DSP::ONE_D::FILTERS {
             //filter->period_muller = 2.0;
             filter->compute(buffer2, out, inst_freq);
             //filter->period_muller = old_muller;
-            out.show(PlottingKind::Simple);
+            //out.show(PlottingKind::Simple);
             
             for (int i = 0; i < size; i++){
                 if (out[i] > min_ampl){
@@ -504,17 +924,21 @@ namespace NP_DSP::ONE_D::FILTERS {
     };
 
     
-    template<typename U, InstAmplComputer<U> InstAmplComputerT, Signal InstFreqT, Filter<U> FilterT>
+    template<typename U, typename InstAmplNormalizer, typename InstFreqT, Filter<U> FilterT>
     struct InstAmplNormalizatorNaiveReqursive{
-        //todo
-        /*
-        InstAmplNormalizatorNaive<U, InstAmplComputerT, InstFreqT, FilterT>
-            single_normalizer;
-
+        InstAmplNormalizer * single_normalizer;
         InstFreqT * inst_freq;
-        Filter filter;
+        FilterT * filter;
+
         NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> mode;
         int iters_count = 50;
+
+        InstAmplNormalizatorNaiveReqursive(InstAmplNormalizer & single_normalizer, 
+            InstFreqT & inst_freq, FilterT & filter){
+            this->single_normalizer = &single_normalizer;
+            this->inst_freq = &inst_freq;
+            this->filter = &filter;
+        }
 
         template <Signal DataT, Signal OutT, Signal ComputeBufferT>
         void compute(const DataT & data, OutT & out, ComputeBufferT * compute_buffer){
@@ -526,19 +950,21 @@ namespace NP_DSP::ONE_D::FILTERS {
             }
             
             filter->compute(data, mode, inst_freq);
-
+            //mode.show(PlottingKind::Simple);
             for (int i = 0; i < data.size(); i++){
                 mode[i] = data[i] - mode[i];
             }
-            single_normalizer.inst_freq = inst_freq;
-            double avg = single_normalizer.computeGetAvg(mode[i], out, compute_buffer);
+            //mode.show(PlottingKind::Simple);
+            single_normalizer->inst_freq = inst_freq;
+            double avg = single_normalizer->computeGetAvg(mode, out, *compute_buffer);
+            //out.show(PlottingKind::Simple);
             for (int i = 0; i < iters_count / 2; i++){
-                single_normalizer.computeWithExternalAvg(out, mode[i], compute_buffer, avg);
-                
+                single_normalizer->computeWithExternalAvg(out, mode, *compute_buffer, avg);
+                //mode.show(PlottingKind::Simple);
+                single_normalizer->computeWithExternalAvg(mode, out, *compute_buffer, avg);
+                //mode.show(PlottingKind::Simple);
             }
         }
-        */
-
     };
 
     template<typename U, Integrator<U> Integrator, Derivator<U> Derivator, InstAmplComputer<U> InstAmplComputerT>
@@ -569,29 +995,24 @@ namespace NP_DSP::ONE_D::FILTERS {
             
             inst_ampl_computer->compute(data, out, &compute_buffer);
 
-                derivator->compute(data, compute_buffer, nullptr);
-
-                auto avg = 0.0;
-                auto b = data[0];
-
-                for (int i = 0; i < size; i++){
-                    avg += out[i] / size;
+            derivator->compute(data, compute_buffer, nullptr);
+            auto avg = 0.0;
+            auto b = data[0];
+            for (int i = 0; i < size; i++){
+                avg += out[i] / size;
+            }
+            for (int i = 0; i < size; i++){
+                if (out[i] > min_ampl){
+                    compute_buffer[i] /= (out[i] / avg);
                 }
-
-                for (int i = 0; i < size; i++){
-                    if (out[i] > min_ampl){
-                        compute_buffer[i] /= (out[i] / avg);
-                    }
-                    else{
-                        compute_buffer[i] /= (min_ampl / avg);
-                    }
+                else{
+                    compute_buffer[i] /= (min_ampl / avg);
                 }
-                integrator->compute(compute_buffer, out, nullptr);
-
-                for (int i = 0; i < size; i++){
-                    out[i] += b;
-                }
-            
+            }
+            integrator->compute(compute_buffer, out, nullptr);
+            for (int i = 0; i < size; i++){
+                out[i] += b;
+            }
         }
     };
 
@@ -672,12 +1093,12 @@ namespace NP_DSP::ONE_D::FILTERS {
                 std::vector<U> buffer;
                 inst_ampl_computer->compute(data, out, &compute_buffer);
                 derivator->compute(data, compute_buffer, nullptr);
-                IC(*(data.base->vec));
-                data.show(PlottingKind::Simple);
-                IC(*(out.base->vec));
-                out.show(PlottingKind::Simple);
-                IC(*(compute_buffer.base->vec));
-                compute_buffer.show(PlottingKind::Simple);
+                //IC(*(data.base->vec));
+                //data.show(PlottingKind::Simple);
+                //IC(*(out.base->vec));
+                //out.show(PlottingKind::Simple);
+                //IC(*(compute_buffer.base->vec));
+                //compute_buffer.show(PlottingKind::Simple);
 
                 for (int i = 0; i < data.size(); i++){
                     double big_der;
@@ -696,13 +1117,13 @@ namespace NP_DSP::ONE_D::FILTERS {
                     buffer.push_back(big_der);
                     compute_buffer[i] = compute_buffer[i] - big_der;
                 }
-                IC(*(inst_freq->base->vec));
-                IC(buffer);
-                matplot::plot(buffer);
-                matplot::show();
+                //IC(*(inst_freq->base->vec));
+                //IC(buffer);
+                //matplot::plot(buffer);
+                //matplot::show();
 
-                IC(*(compute_buffer.base->vec));
-                compute_buffer.show(PlottingKind::Simple);
+                //IC(*(compute_buffer.base->vec));
+                //compute_buffer.show(PlottingKind::Simple);
 
                 auto avg = 0.0;
                 auto b = data[0];
@@ -729,21 +1150,21 @@ namespace NP_DSP::ONE_D::FILTERS {
                         compute_buffer[i] /= (min_ampl / avg);
                     }
                 }
-                IC(*(compute_buffer.base->vec));
-                compute_buffer.show(PlottingKind::Simple);
+                //IC(*(compute_buffer.base->vec));
+                //compute_buffer.show(PlottingKind::Simple);
                 for (int i = 0; i < data.size(); i++){
                     compute_buffer[i] += buffer[i]; 
                 }
-                IC(*(compute_buffer.base->vec));
-                compute_buffer.show(PlottingKind::Simple); 
+                //IC(*(compute_buffer.base->vec));
+                //compute_buffer.show(PlottingKind::Simple); 
                 integrator->compute(compute_buffer, out, nullptr);
-                IC(*(out.base->vec));
-                out.show(PlottingKind::Simple);
+                //IC(*(out.base->vec));
+                //out.show(PlottingKind::Simple);
                 for (int i = 0; i < size; i++){
                     out[i] += b;
                 }
-                IC(*(out.base->vec));
-                out.show(PlottingKind::Simple);
+                //IC(*(out.base->vec));
+                //out.show(PlottingKind::Simple);
             }
         }
     };
@@ -1585,7 +2006,7 @@ namespace NP_DSP::ONE_D::FILTERS {
                 }
                 return false;
             }
-            result_buffer.show(PlottingKind::Simple);
+            //result_buffer.show(PlottingKind::Simple);
 
             if(result_cache.size()!=data.size()){
                 result_cache.clear();
@@ -1622,25 +2043,26 @@ namespace NP_DSP::ONE_D::FILTERS {
                 prediction_mode[i] = data[i] - result_buffer[i];
             }
 
-            prediction_mode.show(PlottingKind::Simple);
+            //prediction_mode.show(PlottingKind::Simple);
 
             for(int i = 0; i < data.size(); i++){
                 prediction_mode_inst_freq[i] = (*computer_buffer)[i];
             }
             //auto label = 0;
             //IC(++label);
-
+            //todo set inst_freq to inst_ampl_normalizer
+            inst_ampl_normalizer->inst_freq = &prediction_mode_inst_freq;
             inst_ampl_normalizer->compute(prediction_mode, *computer_buffer, prediction_mode_ampl);
 
-            computer_buffer->show(PlottingKind::Simple);
+            //computer_buffer->show(PlottingKind::Simple);
 
             for(int i = 0; i < data.size(); i++){
                 (*computer_buffer)[i] = result_buffer[i] + (*computer_buffer)[i];
             }
             //IC(++label);
-            computer_buffer->show(PlottingKind::Simple);
+            //computer_buffer->show(PlottingKind::Simple);
             filter->compute(*computer_buffer, prediction_mode, &prediction_mode_inst_freq);
-            prediction_mode.show(PlottingKind::Simple);
+            //prediction_mode.show(PlottingKind::Simple);
             //IC(++label);
             error = UTILITY_MATH::signalsL2NormedDistance
                     <double, decltype(result_buffer), decltype(prediction_mode)>
@@ -1684,7 +2106,6 @@ namespace NP_DSP::ONE_D::FILTERS {
                     }
                     return false;
                 }
-
             }
 
             for(int i = 0; i < data.size(); i += std::rand() % 3){
@@ -1692,7 +2113,7 @@ namespace NP_DSP::ONE_D::FILTERS {
                 double coeff2 = (std::rand() % 300 + 1) / 10.0;
                 result_buffer[i] = (result_buffer[i] * coeff1 + prediction_mode[i] * coeff2) / (coeff1 + coeff2);
             }
-            result_buffer.show(PlottingKind::Simple);
+            //result_buffer.show(PlottingKind::Simple);
             for(int i = 0; i < data.size(); i++){
                 (*computer_buffer)[i] = prediction_mode_inst_freq[i];
             }
@@ -1767,14 +2188,31 @@ namespace NP_DSP::ONE_D::FILTERS {
 
         FilterT * filter;
         InstAmplComputerT * inst_ampl_computer;
-        InstAmplNormalizator<double, IntegratorT, DerivatorT, InstAmplComputerT> 
-            * inst_ampl_normalizer;
+        InstAmplNormalizatorNaive
+            <double, InstAmplComputerT, decltype(prediction_mode_inst_freq), FilterT> 
+                * inst_ampl_normalizer;
+
+        /*InstAmplNormalizatorNaiveReqursive
+            <double, 
+            InstAmplNormalizatorNaive
+            <double, InstAmplComputerT, decltype(prediction_mode_inst_freq), 
+                FilterT>, decltype(prediction_mode_inst_freq), 
+                    FilterT> * inst_ampl_normalizer;*/
+        //(*naive_normalizer, inst_freq_buffer, non_opt_filter);
 
         RecursiveFilterInstAmplChangesWithConstInstFreqDouble(IntegratorT & integrator, DerivatorT & derivator, 
             FilterT & filter, InstAmplComputerT & inst_ampl_computer){
             this->filter = &filter;
-            inst_ampl_normalizer = new InstAmplNormalizator
-                <double, IntegratorT, DerivatorT, InstAmplComputerT> (integrator, derivator, inst_ampl_computer);
+            inst_ampl_normalizer = new InstAmplNormalizatorNaive
+                <double, InstAmplComputerT, decltype(prediction_mode_inst_freq), FilterT> 
+                    (inst_ampl_computer, filter);
+            /*inst_ampl_normalizer = new InstAmplNormalizatorNaiveReqursive
+            <double, 
+            InstAmplNormalizatorNaive
+            <double, InstAmplComputerT, decltype(prediction_mode_inst_freq), 
+                FilterT>, decltype(prediction_mode_inst_freq), 
+                    FilterT>
+                        (*naive_normalizer, prediction_mode_inst_freq, filter);*/
         }
 
         ~RecursiveFilterInstAmplChangesWithConstInstFreqDouble(){
@@ -1835,6 +2273,7 @@ namespace NP_DSP::ONE_D::FILTERS {
             //}
             //auto label = 0;
             //IC(++label);
+            inst_ampl_normalizer->inst_freq = &prediction_mode_inst_freq;
             inst_ampl_normalizer->compute(prediction_mode, *computer_buffer, prediction_mode_ampl);
 
             for(int i = 0; i < data.size(); i++){

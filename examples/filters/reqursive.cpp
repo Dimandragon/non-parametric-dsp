@@ -53,9 +53,11 @@ int main(){
                     inst_freq_computer_for_mode
                         (integrator, derivator, phase_computer_for_mode);
     
-    NP_DSP::ONE_D::INST_AMPL_COMPUTERS::DerivativeAndInstFreqBased<double, decltype(integrator), decltype(derivator), decltype(inst_freq_computer_for_mode),
+    /*NP_DSP::ONE_D::INST_AMPL_COMPUTERS::DerivativeAndInstFreqBased<double, decltype(integrator), decltype(derivator), decltype(inst_freq_computer_for_mode),
         NP_DSP::ONE_D::INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage>
-            inst_ampl_computer(integrator, derivator, inst_freq_computer_for_mode);
+            inst_ampl_computer(integrator, derivator, inst_freq_computer_for_mode);*/
+    NP_DSP::ONE_D::INST_AMPL_COMPUTERS::HilbertTransformBased
+        <NP_DSP::ONE_D::UTILITY_MATH::HTKind::Mull> inst_ampl_computer;
 
 
     NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
@@ -90,9 +92,15 @@ int main(){
     }
 
     inst_freq_computer_for_mode.variability = 0.5;
-    inst_freq_computer_for_mode.compute(signal1, inst_freq_buffer, &compute_buffer);
+    inst_freq_computer.compute(signal1, inst_freq_buffer, &compute_buffer);
     
     filter2.max_iter_number = 10000000000;
     filter2.compute(signal1, signal2, &inst_freq_buffer);
+    signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
+    signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
     IC(filter2.true_iter_number);
+    for (int i = 0; i < size; i++){
+        signal2[i] = signal1[i] - signal2[i];
+    }
+    signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
 }
