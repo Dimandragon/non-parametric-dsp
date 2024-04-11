@@ -3,6 +3,7 @@
 #include <npdsp_concepts.hpp>
 #include <vector>
 #include <cstdlib>
+#include <iostream>
 
 int main(){
     NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> data;
