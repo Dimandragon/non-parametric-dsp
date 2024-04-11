@@ -156,6 +156,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         }
 
         //static_assert(OutType::is_writable == true);
+        ComputedOnPhase(){}
 
         ComputedOnPhase(IntegratorT integrator_o,
                         DerivatorT derivator_o) {

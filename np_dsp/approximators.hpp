@@ -49,6 +49,8 @@ namespace NP_DSP::ONE_D::APPROX {
             tile_size = signal_in.size();
         }
 
+        FourierSeriesBased(){}
+
         size_t mirrorIdx(size_t const i) const {
             return i / tile_size * tile_size + i / tile_size * tile_size + tile_size - i;
         }
