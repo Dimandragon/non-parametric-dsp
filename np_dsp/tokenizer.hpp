@@ -63,7 +63,6 @@ namespace NP_DSP::ONE_D::Tokenizers {
 
         FILTERS::SincResLocalFilter<double> filter;
 
-
         template<typename DataT>
         void compute(const DataT & data_in){
             filter.locality_coeff = locality_coeff;
