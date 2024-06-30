@@ -730,7 +730,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     out[i] = UTILITY_MATH::linearInterpolate(left, right, static_cast<T>(i));
                 }
             } else {
-                std::unreachable();
+                //std::unreachable();
             }
         }
 
@@ -811,7 +811,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     out[i] = UTILITY_MATH::linearInterpolate(left, right, static_cast<T>(i));
                 }
             } else {
-                std::unreachable();
+                //std::unreachable();
             }
         }
     };

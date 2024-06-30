@@ -197,7 +197,7 @@ namespace NP_DSP::ONE_D::FILTERS {
                         out[i] -= avg;
                     }
                 } else {
-                    std::unreachable();
+                    //std::unreachable();
                 }
             } else if constexpr (filtering_type_k == FilteringType::ValueBased) {
                 if constexpr (inst_freq_kind == InstFreqKind::Average) {
@@ -245,7 +245,7 @@ namespace NP_DSP::ONE_D::FILTERS {
                     }
                     
                 } else {
-                    std::unreachable();
+                    //std::unreachable();
                 }
             } else if constexpr (filtering_type_k == FilteringType::ValueBasedSmart) {
                 if constexpr (inst_freq_kind == InstFreqKind::Average) {
@@ -335,7 +335,7 @@ namespace NP_DSP::ONE_D::FILTERS {
                         out[i] = val_expression(i);
                     }
                 } else {
-                    std::unreachable();
+                    //std::unreachable();
                 }
             }
             else if constexpr (filtering_type_k == FilteringType::AverageBased) {
@@ -397,7 +397,7 @@ namespace NP_DSP::ONE_D::FILTERS {
                     }
                 }
             } else {
-                std::unreachable();
+                //std::unreachable();
             }
         }
     };
@@ -452,7 +452,7 @@ namespace NP_DSP::ONE_D::FILTERS {
                 }
             }
             else if constexpr (kind_e == NonLocalFilteringType::SincLocal){
-                std::unreachable();
+                //std::unreachable();
             }
         }
 
@@ -1200,7 +1200,7 @@ namespace NP_DSP::ONE_D::FILTERS {
 
             if (inst_freq_computer_for_mode->is_phase_based()) {
                 //todo
-                std::unreachable();
+                //std::unreachable();
             }
             else {
                 if constexpr (std::is_same_v<typename InstFreqComputerForModeT::AdditionalDataType, GENERAL::Nil>) {
@@ -1299,7 +1299,7 @@ namespace NP_DSP::ONE_D::FILTERS {
             //inst_freq_computer->compute(data, inst_freq_buffer, out);
             if (inst_freq_computer->is_phase_based()) {
                 //todo
-                std::unreachable();
+                //std::unreachable();
             }
             if constexpr (std::is_same_v<typename InstFreqComputerT::AdditionalDataType, GENERAL::Nil>) {
                 inst_freq_computer->compute(data, *inst_freq_buffer, nullptr);
@@ -1444,7 +1444,7 @@ namespace NP_DSP::ONE_D::FILTERS {
             }
 
             if (inst_freq_computer_for_mode->is_phase_based()) {
-                std::unreachable();
+                //std::unreachable();
             }
             else {
                 if constexpr (std::is_same_v<typename InstFreqComputerForModeT::AdditionalDataType, GENERAL::Nil>) {
@@ -1541,7 +1541,7 @@ namespace NP_DSP::ONE_D::FILTERS {
             good_iter_number = 0;
             using T = typename OutType::SampleType;
             if (inst_freq_computer->is_phase_based()) {
-                std::unreachable();
+                //std::unreachable();
             }
             if constexpr (std::is_same_v<typename InstFreqComputerT::AdditionalDataType, GENERAL::Nil>) {
                 inst_freq_computer->compute(data, *inst_freq_buffer, nullptr);
@@ -2194,7 +2194,7 @@ namespace NP_DSP::ONE_D::FILTERS {
                 //for (auto i = 0; i < data.size(); i++){
                 //    prediction_mode_inst_freq.base->vec->push_back(0.0);
                 //}
-                std::unreachable();
+                //std::unreachable();
             }
             if(prediction_mode_ampl.size() != data.size()){
                 prediction_mode_ampl.base->vec->clear();
@@ -2414,7 +2414,7 @@ namespace NP_DSP::ONE_D::FILTERS {
                 for (auto i = 0; i < data.size(); i++){
                     prediction_mode_inst_freq.base->vec->push_back({0.0, 0.0});
                 }
-                //std::unreachable();
+                ////std::unreachable();
             }
             if(prediction_mode_ampl.size() != data.size()){
                 prediction_mode_ampl.base->vec->clear();

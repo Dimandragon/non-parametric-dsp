@@ -130,7 +130,7 @@ namespace NP_DSP{
             SignalBasePrototype(){}
             virtual ~SignalBasePrototype(){}
             void operator=(const SignalBasePrototype &) = delete;
-            SignalBasePrototype(const SignalBasePrototype & other){std::unreachable();}
+            SignalBasePrototype(const SignalBasePrototype & other){//std::unreachable();}
         };
 
         

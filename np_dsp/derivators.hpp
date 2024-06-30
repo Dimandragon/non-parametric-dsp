@@ -37,7 +37,7 @@ namespace NP_DSP::ONE_D::DERIVATORS {
                     out[i] = static_cast<T>(data[i + 1] - data[i]);
                 }
             } else {
-                std::unreachable();
+                //std::unreachable();
             }
         }
 
@@ -64,7 +64,7 @@ namespace NP_DSP::ONE_D::DERIVATORS {
                     out[i] = static_cast<T>(data[i + 1] - data[i]);
                 }
             } else {
-                std::unreachable();
+                //std::unreachable();
             }
         }
     };

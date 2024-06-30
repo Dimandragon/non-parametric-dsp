@@ -83,7 +83,7 @@ namespace NP_DSP::ONE_D {
             if constexpr (!std::is_same_v<DataReferenceExpression, GENERAL::Nil>) {
                 return ref_expression(idx);
             } else {
-                std::unreachable();
+                //std::unreachable();
             }
         }
 
@@ -91,7 +91,7 @@ namespace NP_DSP::ONE_D {
             if constexpr (!std::is_same_v<DataValueExpression, GENERAL::Nil>) {
                 return (*val_expression)(idx);
             } else {
-                std::unreachable();
+                //std::unreachable();
             }
         }
 
@@ -99,7 +99,7 @@ namespace NP_DSP::ONE_D {
             if constexpr (!std::is_same_v<SizeExpression, GENERAL::Nil>) {
                 return (*size_expression)();
             } else {
-                std::unreachable();
+                //std::unreachable();
             }
         }
     };
@@ -130,7 +130,7 @@ namespace NP_DSP::ONE_D {
             if constexpr (!std::is_same_v<DataValueExpression, GENERAL::Nil>) {
                 return (*val_expression)(idx);
             } else {
-                std::unreachable();
+                //std::unreachable();
             }
         }
 
@@ -138,7 +138,7 @@ namespace NP_DSP::ONE_D {
             if constexpr (!std::is_same_v<SizeExpression, GENERAL::Nil>) {
                 return (*size_expression)();
             } else {
-                std::unreachable();
+                //std::unreachable();
             }
         }
     };
@@ -345,7 +345,7 @@ namespace NP_DSP::ONE_D {
                 }
             } else if (kind == SignalKind::Smooth) {
                 //todo Teilors Series
-                std::unreachable();
+                //std::unreachable();
             }
         }
 
@@ -509,7 +509,7 @@ namespace NP_DSP::ONE_D {
                 }
             } else if (kind == SignalKind::Smooth) {
                 //todo Teilors Series
-                std::unreachable();
+                //std::unreachable();
             }
         }
 
