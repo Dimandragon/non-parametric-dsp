@@ -1,5 +1,5 @@
 #include <modes_extractors.hpp>
-//#include <cstdlib>
+#include <cstdlib>
 #include <iostream>
 #include <tokenizer.hpp>
 
@@ -38,7 +38,7 @@ int main(){
     //IC(tokens);
 
     for(const auto & token: tokens){
-        std::cout << token.mode_num << " " << token.t <<
+        std::cout << token.mode_num << " " << token.t << " " << 
             token.val << " " << token.inst_freq << " " <<
             token.inst_ampl << " " << token.phase << std::endl;  
     }

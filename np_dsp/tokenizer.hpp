@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cstddef>
 #include <npdsp_concepts.hpp>
 #include <signals.hpp>
@@ -62,6 +63,7 @@ namespace NP_DSP::ONE_D::Tokenizers {
                 <UTILITY_MATH::HTKind::Mull> inst_ampl_computer;
 
         FILTERS::SincResLocalFilter<double> filter;
+
 
         template<typename DataT>
         void compute(const DataT & data_in){
@@ -192,6 +194,16 @@ namespace NP_DSP::ONE_D::Tokenizers {
 
                     inst_ampl_computer.compute(mode,  inst_ampl, nullptr);
 
+                    auto i_temp = 0;
+                    Token token_temp;
+                    token_temp.mode_num = iter_number;
+                    token_temp.inst_ampl = inst_ampl[i_temp];
+                    token_temp.inst_freq = inst_freq[i_temp];
+                    token_temp.phase = phase[i_temp];
+                    token_temp.val = mode[i_temp];
+                    token_temp.t = i_temp;
+                    tokens.push_back(token_temp);
+
                     double current_mode = 0.0;
                     for (size_t i = 0; i < data.size(); i++){
                         if (phase[i] > current_mode + std::numbers::pi / 2.0){
@@ -220,9 +232,19 @@ namespace NP_DSP::ONE_D::Tokenizers {
                     inst_freq_computer.compute(phase, inst_freq, nullptr);
                     inst_ampl_computer.compute(mode,  inst_ampl, nullptr);
 
-                    double current_mode = 0.0;
+                    auto i_temp = 0;
+                    Token token_temp;
+                    token_temp.mode_num = iter_number;
+                    token_temp.inst_ampl = inst_ampl[i_temp];
+                    token_temp.inst_freq = inst_freq[i_temp];
+                    token_temp.phase = phase[i_temp];
+                    token_temp.val = mode[i_temp];
+                    token_temp.t = i_temp;
+                    tokens.push_back(token_temp);
+
+                    double current_phase = 0.0;
                     for (size_t i = 0; i < data.size(); i++){
-                        if (phase[i] > current_mode + std::numbers::pi / 2.0){
+                        if (phase[i] >= current_phase + std::numbers::pi / 2.0 ){
                             Token token;
                             token.mode_num = iter_number;
                             token.inst_ampl = inst_ampl[i];
@@ -230,7 +252,7 @@ namespace NP_DSP::ONE_D::Tokenizers {
                             token.phase = phase[i];
                             token.val = mode[i];
                             token.t = i;
-                            current_mode += std::numbers::pi / 2.0;
+                            current_phase += std::numbers::pi / 2.0;
                             tokens.push_back(token);
                         }
                     }
