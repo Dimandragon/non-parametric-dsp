@@ -206,7 +206,7 @@ namespace NP_DSP::ONE_D::Tokenizers {
 
                     double current_mode = 0.0;
                     for (size_t i = 0; i < data.size(); i++){
-                        if (phase[i] > current_mode + std::numbers::pi / 2.0){
+                        if (phase[i] > current_mode + std::numbers::pi){
                             Token token;
                             token.mode_num = iter_number;
                             token.inst_ampl = inst_ampl[i];
@@ -214,7 +214,7 @@ namespace NP_DSP::ONE_D::Tokenizers {
                             token.phase = phase[i];
                             token.val = mode[i];
                             token.t = i;
-                            current_mode += std::numbers::pi / 2.0;
+                            current_mode += std::numbers::pi;
                             tokens.push_back(token);
                         }
                     }
@@ -244,7 +244,7 @@ namespace NP_DSP::ONE_D::Tokenizers {
 
                     double current_phase = 0.0;
                     for (size_t i = 0; i < data.size(); i++){
-                        if (phase[i] >= current_phase + std::numbers::pi / 2.0 ){
+                        if (phase[i] >= current_phase + std::numbers::pi){
                             Token token;
                             token.mode_num = iter_number;
                             token.inst_ampl = inst_ampl[i];
@@ -252,7 +252,7 @@ namespace NP_DSP::ONE_D::Tokenizers {
                             token.phase = phase[i];
                             token.val = mode[i];
                             token.t = i;
-                            current_phase += std::numbers::pi / 2.0;
+                            current_phase += std::numbers::pi;
                             tokens.push_back(token);
                         }
                     }
