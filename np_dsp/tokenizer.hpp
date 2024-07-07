@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cstddef>
 #include <npdsp_concepts.hpp>
 #include <signals.hpp>
@@ -133,6 +134,8 @@ namespace NP_DSP::ONE_D::Tokenizers {
                     phase.base->vec->push_back(0.0);
                 }
             }
+
+            tokens.clear();
 
             while(true){
                 phase_computer_simple.compute(data, phase, nullptr);
