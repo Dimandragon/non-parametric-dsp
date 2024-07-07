@@ -135,6 +135,8 @@ namespace NP_DSP::ONE_D::Tokenizers {
                 }
             }
 
+            tokens.clear();
+
             while(true){
                 phase_computer_simple.compute(data, phase, nullptr);
 
