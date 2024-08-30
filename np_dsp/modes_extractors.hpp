@@ -71,7 +71,14 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
             filter.locality_coeff = locality_coeff;
             size_t iter_number = 0;
 
+            DataType non_resampled_data;
+
             auto prepare_memory_ext = [&](){
+                if (resampling_type == ResamplingType::BackForModeAfterIter){
+                    for (int i = 0; i < data_in.size(); i++){
+                        non_resampled_data.base->vec->push_back(data_in[i]);
+                    }
+                }
                 if(data.size() != data_in.size()){
                     data.base->vec->clear();
                     for (int i = 0; i < data_in.size(); i++){
@@ -207,14 +214,23 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                         }
                         INST_FREQ_COMPUTERS::backInstFreqNorm(*modes[iter_number], data_buffer, freq_conv);
                         for (int i = 0; i < data.size(); i++){
+                            (*modes[iter_number])[i] = data[i];
+                        }
+                        INST_FREQ_COMPUTERS::backInstFreqNorm(*modes[iter_number], data, freq_conv);
+                        for (int i = 0; i < data.size(); i++){
                             freq_conv[i] = 1.0;
+                        }
+                        for (int i = 0; i < data.size(); i++){
+                            //data[i] = non_resampled_data[i];
                         }
                     }
 
                     for(int i = 0; i < data.size(); i++){
+                        //data_buffer is filtered signal, data is unfiltered
                         auto swap = data_buffer[i];
                         data_buffer[i] = data[i] - data_buffer[i];
-                        data[i] = swap;
+                        data[i] = swap; //data is filtered signal
+                                        //data_buffer is mode
                     }
 
                     //std::cout << "get mode " << iter_number << std::endl;
@@ -239,7 +255,11 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                         }
                     }
                     if (resampling_type == ResamplingType::BackForModeAfterIter){
-                        //todo
+                        INST_FREQ_COMPUTERS::backInstFreqNorm(data_buffer, *modes[iter_number], freq_conv);
+                        for(int i = 0; i < data.size(); i++){
+                            non_resampled_data[i] -= (*modes[iter_number])[i];
+                            data[i] = non_resampled_data[i];
+                        }
                     }
 
                     //std::cout << "bask inst freq norm of mode " << iter_number << std::endl;
@@ -263,7 +283,14 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                     iter_number++;
                 }
                 else{
-                    INST_FREQ_COMPUTERS::backInstFreqNorm(data, *modes[iter_number], freq_conv);
+                    if (resampling_type == ResamplingType::BackOnlyOnOut){
+                        INST_FREQ_COMPUTERS::backInstFreqNorm(data, *modes[iter_number], freq_conv);
+                    }
+                    else{
+                        for (auto i = 0; i < data.size(); i++){
+                            (*modes[iter_number])[i] = data[i];
+                        }
+                    }
 
                     //std::cout << "last mode back inst freq norm " << iter_number << std::endl;
                     //modes[iter_number]->show(PlottingKind::Simple);
