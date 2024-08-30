@@ -74,10 +74,8 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
             DataType non_resampled_data;
 
             auto prepare_memory_ext = [&](){
-                if (resampling_type == ResamplingType::BackForModeAfterIter){
-                    for (int i = 0; i < data_in.size(); i++){
-                        non_resampled_data.base->vec->push_back(data_in[i]);
-                    }
+                for (int i = 0; i < data_in.size(); i++){
+                    non_resampled_data.base->vec->push_back(data_in[i]);
                 }
                 if(data.size() != data_in.size()){
                     data.base->vec->clear();
@@ -216,12 +214,12 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                         for (int i = 0; i < data.size(); i++){
                             (*modes[iter_number])[i] = data[i];
                         }
-                        INST_FREQ_COMPUTERS::backInstFreqNorm(*modes[iter_number], data, freq_conv);
+                        //INST_FREQ_COMPUTERS::backInstFreqNorm(*modes[iter_number], data, freq_conv);
                         for (int i = 0; i < data.size(); i++){
                             freq_conv[i] = 1.0;
                         }
                         for (int i = 0; i < data.size(); i++){
-                            //data[i] = non_resampled_data[i];
+                            data[i] = non_resampled_data[i];
                         }
                     }
 
@@ -253,9 +251,15 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                         for (int i = 0; i < data.size(); i++){
                             (*modes[iter_number])[i] = data_buffer[i];
                         }
+                        for (int i = 0; i < data.size(); i++){
+                            non_resampled_data = data[i];
+                        }
                     }
                     if (resampling_type == ResamplingType::BackForModeAfterIter){
                         INST_FREQ_COMPUTERS::backInstFreqNorm(data_buffer, *modes[iter_number], freq_conv);
+                        for (int i = 0; i < data.size(); i++){
+                            freq_conv[i] = 1.0;
+                        }
                         for(int i = 0; i < data.size(); i++){
                             non_resampled_data[i] -= (*modes[iter_number])[i];
                             data[i] = non_resampled_data[i];
