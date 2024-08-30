@@ -252,7 +252,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                             (*modes[iter_number])[i] = data_buffer[i];
                         }
                         for (int i = 0; i < data.size(); i++){
-                            non_resampled_data = data[i];
+                            non_resampled_data[i] = data[i];
                         }
                     }
                     if (resampling_type == ResamplingType::BackForModeAfterIter){
