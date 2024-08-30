@@ -236,7 +236,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                     //std::cout << "get mode " << iter_number << std::endl;
                     //data_buffer.show(PlottingKind::Simple);
 
-                    if (resampling_type == ResamplingType::BackOnlyOnOut || resampling_type == ResamplingType::BackForModeAfterIter){
+                    if (resampling_type == ResamplingType::BackOnlyOnOut){
                         INST_FREQ_COMPUTERS::backInstFreqNorm(data_buffer, *modes[iter_number], freq_conv);
                     }
                     if (resampling_type == ResamplingType::FullBackAfterIter){
