@@ -1191,8 +1191,6 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         }
         freq_avg = freq_avg / data.size();
         
-        
-
         size_t iter_predict = 0;
         double temp = 0.0;
         double temp1;
