@@ -43,9 +43,10 @@ int main() {
     filter.phase_computer = &phase_computer;
     filter.inst_freq_computer = &inst_freq_computer;
     //filter.is_low_pass = true;
-    filter.locality_coeff = 100.;
-    filter.period_muller = 1.0;
+    filter.locality_coeff = 5.;
+    filter.period_muller = 1.05;
     filter.debug = false;
+    
 
     filter.compute(signal1, signal2, &signal3);
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);

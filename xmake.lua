@@ -2,7 +2,6 @@ add_rules("mode.debug", "mode.release")
 
 set_languages("c++23")
 
-
 --xmake f --cxx=clang++ --cc=clang -m debug --debugger=lldb-16
 --xmake project -k compile_commands
 
@@ -355,3 +354,11 @@ target("sinc_res_req_full_filter_example")
     add_deps("matplot++_external")
     add_deps("non-parametric_dsp")
     add_deps("icecream")
+
+target("sinc_res_req_extractor_example")
+    set_kind("binary")
+    add_files("examples/modes_extractors/inst_freq_norm_req.cpp")
+    add_deps("matplot++_external")
+    add_deps("non-parametric_dsp")
+    add_deps("icecream")
+
