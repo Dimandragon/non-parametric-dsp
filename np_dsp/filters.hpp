@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <icecream.hpp>
 
 #include <complex>
@@ -2592,4 +2593,61 @@ namespace NP_DSP::ONE_D::FILTERS {
             }
         }   
     };
+
+    template<typename U, PhaseComputer<U> PhaseComputerT>
+    struct SincResLocalFilterWithRes{
+        constexpr static bool is_filter = true;
+        GenericSignal<SimpleVecWrapper<U>, true> buffer1;
+        GenericSignal<SimpleVecWrapper<U>, true> buffer2;
+        using SignalT = decltype(buffer1);
+
+        double freq;
+        bool is_low_pass;
+        double locality_coeff = 5.0;
+
+        double period_muller = 1.0;
+
+        PhaseComputerT * phase_computer;
+        SincResLocalFilter<U> filter;
+
+        template<Signal DataT, Signal OutT, Signal InstFreqT>
+        void compute(const DataT & data, OutT & out, InstFreqT * inst_freq){
+            std::vector<double> freq_conv;
+            std::vector<double> freq_conv_image;
+            for (int i = 0; i < data.size(); i++){
+                freq_conv.push_back(1.0);
+                freq_conv_image.push_back(1.0);
+            }
+            //std::cout << "created freq_conv and freq_conv_image" << std::endl;
+
+            SignalT compute_buffer;
+            for (auto i = 0; i < data.size(); i++){
+                compute_buffer.base->vec->push_back(0.0);
+            }
+
+            compute_buffer.has_ovnership = true;
+            double base_inst_freq = INST_FREQ_COMPUTERS::InstFreqNorm(data, out, *inst_freq, freq_conv, freq_conv_image);
+            //std::cout << "computed inst freq norm" << std::endl;
+
+            phase_computer->compute(out, compute_buffer, nullptr);
+
+            base_inst_freq = 1.0 /
+                (static_cast<double>(data.size()) /
+                (compute_buffer[data.size() - 1] / 
+                2.0 / std::numbers::pi)) / period_muller;
+
+            filter.freq = base_inst_freq;
+            filter.is_low_pass = is_low_pass;
+            filter.locality_coeff = locality_coeff;
+            /*std::cout << base_inst_freq << " "  
+                << is_low_pass << " "
+                << locality_coeff << " "
+                << period_muller << std::endl;*/
+            filter.compute(out, compute_buffer, nullptr);
+
+            INST_FREQ_COMPUTERS::backInstFreqNorm(compute_buffer, out, freq_conv);
+        }
+    };
+
+
 }
