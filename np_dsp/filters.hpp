@@ -2610,8 +2610,6 @@ namespace NP_DSP::ONE_D::FILTERS {
 
         size_t max_iters = 3;
 
-        bool debug = true;
-
         template<Signal DataT, Signal OutT, Signal ComputeBufferT>
         void compute(const DataT & data, OutT & out, ComputeBufferT * compute_buffer){
             bool flag = true;
@@ -2634,19 +2632,10 @@ namespace NP_DSP::ONE_D::FILTERS {
             
             if constexpr (inst_freq_computer->is_phase_based()){
                 phase_computer->compute(data, out, compute_buffer);
-                if (debug){
-                    out.show(NP_DSP::ONE_D::PlottingKind::Simple);
-                }
                 inst_freq_computer->compute(out, *compute_buffer, &compute_buffer2);
-                if (debug){
-                    compute_buffer->show(NP_DSP::ONE_D::PlottingKind::Simple);
-                }
             }
             else{
                 inst_freq_computer->compute(data, *compute_buffer, &compute_buffer2);
-                if (debug){
-                    compute_buffer->show(NP_DSP::ONE_D::PlottingKind::Simple);
-                }
             }
             
             filter.phase_computer = phase_computer;
@@ -2654,62 +2643,27 @@ namespace NP_DSP::ONE_D::FILTERS {
             filter.period_muller = period_muller;
             filter.is_low_pass = true;
             filter.compute(data, out, compute_buffer);
-            if (debug){
-                out.show(NP_DSP::ONE_D::PlottingKind::Simple);
-            }
 
             for (auto i = 0; i < data.size(); i++){
                 high_freq_mode[i] -= out[i];
             } 
-            if (debug){
-                std::cout << "first iter high_freq_mode of signal" << std::endl;
-                high_freq_mode.show(NP_DSP::ONE_D::PlottingKind::Simple);
-            }
             size_t iter_number = 1;
             while (flag){
                 iter_number++;
                 if constexpr (inst_freq_computer->is_phase_based()){
                     phase_computer->compute(high_freq_mode, compute_buffer2, compute_buffer);
-                    if (debug){
-                        std::cout << "phase of high_freq_mode" << std::endl;
-                        compute_buffer2.show(NP_DSP::ONE_D::PlottingKind::Simple);
-                    }
                     inst_freq_computer->compute(compute_buffer2, *compute_buffer, &low_freq_mode);
-                    if (debug){
-                        std::cout << "inst_freq of high_freq_mode" << std::endl;
-                        compute_buffer->show(NP_DSP::ONE_D::PlottingKind::Simple);
-                    }
                 }
                 else{
                     inst_freq_computer->compute(high_freq_mode, *compute_buffer, &low_freq_mode);
-                    if (debug){
-                        std::cout << "inst_freq of high_freq_mode" << std::endl;
-                        compute_buffer->show(NP_DSP::ONE_D::PlottingKind::Simple);
-                    }
                 }
                 filter.compute(high_freq_mode, low_freq_mode, compute_buffer);
-                if (debug){
-                    std::cout << "low_freq_mode of high_freq_mode" << std::endl;
-                    low_freq_mode.show(NP_DSP::ONE_D::PlottingKind::Simple);
-                }
                 for (int i = 0; i < data.size(); i++){
                     high_freq_mode[i] -= low_freq_mode[i];
                 }
-                if (debug){
-                    std::cout << "high_freq_mode of high_freq_mode" << std::endl;
-                    high_freq_mode.show(NP_DSP::ONE_D::PlottingKind::Simple);
-                }
                 phase_computer->compute(low_freq_mode, low_freq_mode_phase, compute_buffer);
-                if (debug){
-                    std::cout << "phase of low_freq_mode of high_freq_mode" << std::endl;
-                    low_freq_mode_phase.show(NP_DSP::ONE_D::PlottingKind::Simple);
-                }
                 for (int i = 0; i < data.size(); i++){
                     out[i] = out[i] + low_freq_mode[i];
-                }
-                if (debug){
-                    std::cout << "low_freq_mode_of Signal" << std::endl;
-                    out.show(NP_DSP::ONE_D::PlottingKind::Simple);
                 }
                 if (low_freq_mode_phase[data.size() - 1] < 6.28) {
                     flag = false;

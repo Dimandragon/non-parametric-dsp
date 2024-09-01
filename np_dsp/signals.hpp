@@ -369,10 +369,6 @@ namespace NP_DSP::ONE_D {
                 return interpolate(idx, SignalKind::Monotone);
             };
             std::pair<int, int> idxes = ONE_D::UTILITY_MATH::interpolationSearch(*idx1, *idx2, value, idx_lambda);
-            if constexpr (CONFIG::debug) {
-                std::string mark = "find monotone";
-                IC(mark, idxes.first, idxes.second, value);
-            }
             return UTILITY_MATH::backLinearInterpolate<Idx, SampleType>(
                 {*idx1, (*base)[*idx1]}, {*idx2, (*base)[*idx2]}, value);
         }
@@ -533,10 +529,6 @@ namespace NP_DSP::ONE_D {
                 return interpolate(idx, SignalKind::Monotone);
             };
             std::pair<int, int> idxes = UTILITY_MATH::interpolationSearch(*idx1, *idx2, value, idx_lambda);
-            if constexpr (CONFIG::debug) {
-                std::string mark = "find monotone";
-                IC(mark, idxes.first, idxes.second, value);
-            }
             return UTILITY_MATH::backLinearInterpolate<Idx, SampleType>(
                 {*idx1, (*base)[*idx1]}, {*idx2, (*base)[*idx2]}, value);
         }

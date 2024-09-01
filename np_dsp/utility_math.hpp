@@ -286,9 +286,6 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
                 break;
             }
             auto idx_new = static_cast<TIndex>(idx1 + dx * (value - data[idx1]) / dy);
-            if constexpr (CONFIG::debug) {
-                IC(idx1, idx2, dx, dy, idx_new);
-            }
             if (data[idx_new] > value) {
                 idx2 = idx_new;
             } else if (data[idx_new] < value) {
@@ -296,9 +293,6 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
             } else if (data[idx_new] == value) {
                 idx1 = idx_new;
                 idx2 = idx1 + 1;
-            }
-            if constexpr (CONFIG::debug) {
-                IC(idx1, idx2);
             }
         }
         return {idx1, idx2};
@@ -321,10 +315,6 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
                 break;
             }
             auto idx_new = static_cast<TIndex>(idx1 + dx * (value - idx_lambda(idx1)) / dy);
-            if constexpr (CONFIG::debug) {
-                //std::string mark = "creating idx_new in interpolation search";
-                IC(idx1, idx2, dx, dy, idx_new);
-            }
             if (idx_lambda(idx_new) > value) {
                 idx2 = idx_new;
             } else if (idx_lambda(idx_new) < value) {
@@ -332,9 +322,6 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
             } else if (idx_lambda(idx_new) == value) {
                 idx1 = idx_new;
                 idx2 = idx1 + 1;
-            }
-            if constexpr (CONFIG::debug) {
-                IC(idx1, idx2);
             }
         }
         return {idx1, idx2};

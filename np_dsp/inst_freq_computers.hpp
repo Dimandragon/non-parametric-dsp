@@ -600,9 +600,6 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     out[i] = std::abs(out[i]);
                 }
                 integrator.compute(out, *computer_buffer, nullptr);
-                if constexpr (NP_DSP::CONFIG::debug) {
-                    //computer_buffer.show(PlottingKind::Interpolate);
-                }
                 for (auto i = 0; i < data.size(); i++) {
                     auto approx_answer_right = static_cast<T>(0.0);
                     auto old_approx_answer_right = approx_answer_right;

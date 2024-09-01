@@ -424,23 +424,12 @@ namespace NP_DSP::ONE_D::APPROX {
                     }
                     if (left_diff == (loss_left - loss_central)) {
                         if (right_diff == (loss_right - loss_central)) {
-                            if constexpr (CONFIG::debug) {
-                                IC(left_diff, loss_left-loss_central, right_diff, loss_right-loss_central);
-                            }
 
                             errors_counter++;
 
                             if (errors_counter > 10) {
-                                if constexpr (CONFIG::debug) {
-                                    for (;;) {
-                                    }
-                                }
                             }
                         } else {
-                            if constexpr (CONFIG::debug) {
-                                IC(right_diff == loss_right-loss_central);
-                                IC(left_diff, loss_left-loss_central, right_diff, loss_right-loss_central);
-                            }
                         }
                     }
                     ampl_opt_iter++;
@@ -701,23 +690,12 @@ namespace NP_DSP::ONE_D::APPROX {
                     }
                     if (left_diff == loss_left - loss_central) {
                         if (right_diff == (loss_right - loss_central)) {
-                            if constexpr (CONFIG::debug) {
-                                IC(left_diff, loss_left-loss_central, right_diff, loss_right-loss_central);
-                            }
 
                             errors_counter++;
 
                             if (errors_counter > 10) {
-                                if constexpr (CONFIG::debug) {
-                                    for (;;) {
-                                    }
-                                }
                             }
                         } else {
-                            if constexpr (CONFIG::debug) {
-                                IC(right_diff == (loss_right-loss_central));
-                                IC(left_diff, loss_left-loss_central, right_diff, loss_right-loss_central);
-                            }
                         }
                     } else {
                     }

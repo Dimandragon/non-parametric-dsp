@@ -460,9 +460,6 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 (*computer_buffer)[i] = std::abs(out[i]);
             }
             integrator.compute(*computer_buffer, out, nullptr);
-            if constexpr (CONFIG::debug) {
-                //out.show(NP_DSP::ONE_D::PlottingKind::Simple);
-            }
 
             //norm
 
@@ -575,9 +572,6 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 out[i] = std::abs(out[i]);
             }
             integrator.compute(out, *computer_buffer, nullptr);
-            if constexpr (CONFIG::debug) {
-                computer_buffer->show(PlottingKind::Simple);
-            }
 
             if constexpr (kind == InstFreqDerivativeBasedKind::TimeAverage) {
                 for (auto i = 0; i < data.size(); i++) {
