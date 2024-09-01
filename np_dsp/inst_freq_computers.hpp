@@ -1134,7 +1134,8 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         double temp1;
         while (iter_predict != out.size()){
             if (iter_predict != 0){
-                freq_avg = std::sqrt(freq_avg*freq_avg / data.size() / data.size() * iter_predict * iter_predict);
+                //freq_avg = std::sqrt(freq_avg*freq_avg / data.size() / data.size() * iter_predict * iter_predict);
+                freq_avg = ((freq_avg * iter_predict / static_cast<double>(data.size())) + freq_avg) / 2.; 
             }
             iter_predict = 0;
             double temp = 0.0;
