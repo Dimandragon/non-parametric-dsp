@@ -592,7 +592,71 @@ namespace NP_DSP::ONE_D {
         //получение значения в неизвестной точке внутри диапазона определения (те в нашем случае по дробному индексу)
         template<typename Idx>
         SampleType interpolate(Idx idx, SignalKind kind) const {
-            if (kind == SignalKind::Monotone) {
+            if (kind == SignalKind::Universal){
+                int64_t integral_val = round(idx);
+                int64_t size_l = static_cast<int64_t>(size());
+                int64_t tile_number = static_cast<int64_t>(idx) / size_l;
+
+                //[size] is begin of 1 tile
+                //[-size] is end of -1 tile and [size] is begin of -2 tile
+                if (idx <= -1){
+                    if (static_cast<int64_t>(idx) % size_l != size_l){
+                        tile_number -= 1;
+                    }
+                    Idx mirror_idx;
+                    if (tile_number % 2 == 0){
+                        mirror_idx = static_cast<Idx>(size_l - 1 - static_cast<int64_t>(idx + 1) % size_l);
+                        //for example with size 1000 -1001 is 999, -2000 is 0
+                    }
+                    else{
+                        //-1 for example
+                        mirror_idx = static_cast<Idx>(-static_cast<int64_t>(idx + 1) % size_l);
+                        //for example with size 1000 -3000 is 999; -2001 is 0; 
+                    }
+                    mirror_idx = mirror_idx + idx - static_cast<Idx>(static_cast<int64_t>(idx));
+                    SampleType mirror_val = interpolate<Idx>(mirror_idx, SignalKind::Universal);
+                    SampleType dfull = (*this)[size_l-1] - (*this)[0];
+                    SampleType d_mirror = mirror_val - (*this)[0];
+                    return (tile_number + 1) * dfull - d_mirror + (*this)[0];
+                }
+                else if (idx > size_l){
+                    Idx mirror_idx;
+                    if (tile_number % 2 == 0){
+                        //for example 2
+                        mirror_idx = static_cast<Idx>(static_cast<int64_t>(idx) % size_l);
+                        mirror_idx = mirror_idx + idx - static_cast<Idx>(static_cast<int64_t>(idx));
+                        //for example with size 1000 2000 is 0; 2001 is 1; 
+                    }
+                    else{
+                        //for example 1
+                        mirror_idx = static_cast<Idx>(size_l - 1 - static_cast<int64_t>(idx) % size_l);
+                        mirror_idx = mirror_idx + idx - static_cast<Idx>(static_cast<int64_t>(idx));
+                        //for example with size 1000 1000 is 999, 1001 is 998
+                    }
+                    //IC(mirror_idx, idx, size_l);
+                    
+                    mirror_idx = mirror_idx + idx - static_cast<Idx>(static_cast<int64_t>(idx));
+
+                    SampleType mirror_val = interpolate<Idx>(mirror_idx, SignalKind::Universal);
+                    SampleType dfull = (*this)[size_l-1] - (*this)[0];
+                    SampleType d_mirror = (*this)[size_l - 1] - mirror_val;
+                    //IC(mirror_idx, )
+                    return (*this)[0] + tile_number * dfull + d_mirror;
+                }
+                else{
+                    if (idx <= size_l - 2){
+                        return UTILITY_MATH::linearInterpolate<double, SampleType>(
+                            {static_cast<int64_t>(idx), (*base)[static_cast<int64_t>(idx)]},
+                            {static_cast<int64_t>(idx + 1), (*base)[static_cast<int64_t>(idx) + 1]}, static_cast<double>(idx));
+                    }
+                    else{
+                        return UTILITY_MATH::linearInterpolate<double, SampleType>(
+                            {static_cast<int64_t>(size() - 2), (*base)[size() - 2]},
+                            {static_cast<int64_t>(size() - 1), (*base)[size() - 1]}, static_cast<double>(idx));
+                    }
+                }
+            }
+            else if (kind == SignalKind::Monotone) {
                 if (idx >= 0 && idx < static_cast<Idx>(size() - 2)) {
                     if constexpr (CONFIG::debug) {
                         std::string mark = "1b";
