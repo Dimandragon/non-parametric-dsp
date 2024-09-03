@@ -49,8 +49,6 @@ namespace NP_DSP::ONE_D::APPROX {
             tile_size = signal_in.size();
         }
 
-        FourierSeriesBased(){}
-
         size_t mirrorIdx(size_t const i) const {
             return i / tile_size * tile_size + i / tile_size * tile_size + tile_size - i;
         }
@@ -289,10 +287,28 @@ namespace NP_DSP::ONE_D::APPROX {
                 auto central_loss = check_loss({static_cast<SampleType>(1.), theta_central});
                 auto right_loss = check_loss({static_cast<SampleType>(1.), theta_max});
 
+                if constexpr (CONFIG::debug) {
+                    std::string mark = "end compute first losses";
+                    //IC(mark);
+
+                    //IC(theta_min, left_loss, theta_central, central_loss, theta_max, right_loss);
+                }
+
                 auto period_opt_iter = 0;
+
+                if constexpr (CONFIG::debug) {
+                    std::string mark = "start optimize period";
+                    //IC(mark);
+                }
 
 
                 while (!(*stopPont)(std::abs(right_loss - central_loss) + std::abs(left_loss - central_loss), *this)) {
+                    if constexpr (CONFIG::debug) {
+                        //IC(period_opt_iter, left_loss, central_loss, right_loss, theta_min, theta_central, theta_max);
+                        //IC(right_loss-central_loss, left_loss-central_loss, right_loss-left_loss);
+                        //IC(theta_central - theta_min, theta_max-theta_central);
+                    }
+
                     auto left_diff = left_loss - central_loss;
                     auto right_diff = right_loss - central_loss;
                     if (left_diff > 0 && right_diff <= 0) {
@@ -346,6 +362,11 @@ namespace NP_DSP::ONE_D::APPROX {
                 }
                 trigonometric_sample.second = theta_central;
 
+
+                if constexpr (CONFIG::debug) {
+                    std::string mark = "start optimize ampl";
+                    //IC(mark);
+                }
                 SampleType ampl_twenty_procent = ampl * 0.2;
                 SampleType ampl_left = ampl;
                 SampleType ampl_right = ampl;
@@ -370,32 +391,58 @@ namespace NP_DSP::ONE_D::APPROX {
                 //while(!(*stopPont)(std::abs(ampl_right - ampl_left), *this)) {
                 auto errors_counter = 0;
                 while (!(*stopPont)(std::abs(loss_right - loss_central) + std::abs(loss_left - loss_central), *this)) {
+                    if constexpr (CONFIG::debug) {
+                        //IC(ampl_opt_iter, loss_left, loss_central, loss_right, ampl_left, ampl_central, ampl_right);
+                        //IC(loss_right-loss_central, loss_left-loss_central, loss_right-loss_left);
+                        //IC(ampl_central - ampl_left, ampl_right - ampl_central);
+                    }
+
                     auto left_diff = loss_left - loss_central;
                     auto right_diff = loss_right - loss_central;
                     if (left_diff > 0 && right_diff <= 0) {
+                        if constexpr (CONFIG::debug) {
+                            std::string point_mark = "ampl 1 branch";
+                            //IC(point_mark);
+                        }
                         loss_left = loss_central;
                         ampl_left = ampl_central;
                         ampl_central = (ampl_left + ampl_right) / 2;
                         trigonometric_sample.first = ampl_central;
                         loss_central = check_loss(trigonometric_sample);
                     } else if (left_diff <= 0 && right_diff > 0) {
+                        if constexpr (CONFIG::debug) {
+                            std::string point_mark = "ampl 2 branch";
+                            //IC(point_mark);
+                        }
                         loss_right = loss_central;
                         ampl_right = ampl_central;
                         ampl_central = (ampl_left + ampl_right) / 2;
                         trigonometric_sample.first = ampl_central;
                         loss_central = check_loss(trigonometric_sample);
                     } else if (left_diff > right_diff) {
+                        if constexpr (CONFIG::debug) {
+                            std::string point_mark = "ampl 3 branch";
+                            //IC(point_mark);
+                        }
                         //left branch is higher
                         auto ampl_left_avg = (ampl_left + ampl_central) / 2;
                         trigonometric_sample.first = ampl_left_avg;
                         auto new_loss_left = check_loss(trigonometric_sample);
                         if (new_loss_left < loss_left && new_loss_left > central_loss) {
+                            if constexpr (CONFIG::debug) {
+                                std::string point_mark = "ampl 3.1 branch";
+                                //IC(point_mark);
+                            }
                             loss_left = new_loss_left;
                             ampl_left = ampl_left_avg;
                             ampl_central = (ampl_left + ampl_right) / 2;
                             trigonometric_sample.first = ampl_central;
                             loss_central = check_loss(trigonometric_sample);
                         } else {
+                            if constexpr (CONFIG::debug) {
+                                std::string point_mark = "ampl 3.2 branch";
+                                //IC(point_mark);
+                            }
                             ampl_right = (ampl_central + ampl_right) / 2;
                             trigonometric_sample.first = ampl_right;
                             loss_right = check_loss(trigonometric_sample);
@@ -404,16 +451,28 @@ namespace NP_DSP::ONE_D::APPROX {
                             loss_central = check_loss(trigonometric_sample);
                         }
                     } else if (left_diff <= right_diff) {
+                        if constexpr (CONFIG::debug) {
+                            std::string point_mark = "ampl 4 branch";
+                            //IC(point_mark);
+                        }
                         auto ampl_right_avg = (ampl_right + ampl_central) / 2;
                         trigonometric_sample.first = ampl_right_avg;
                         auto new_loss_right = check_loss(trigonometric_sample);
                         if (new_loss_right < loss_right && new_loss_right > loss_central) {
+                            if constexpr (CONFIG::debug) {
+                                std::string point_mark = "ampl 4.1 branch";
+                                //IC(point_mark);
+                            }
                             loss_right = new_loss_right;
                             ampl_right = ampl_right_avg;
                             ampl_central = (ampl_left + ampl_right) / 2;
                             trigonometric_sample.first = ampl_central;
                             loss_central = check_loss(trigonometric_sample);
                         } else {
+                            if constexpr (CONFIG::debug) {
+                                std::string point_mark = "ampl 4.2 branch";
+                                //IC(point_mark);
+                            }
                             ampl_left = (ampl_central + ampl_left) / 2;
                             trigonometric_sample.first = ampl_left;
                             loss_left = check_loss(trigonometric_sample);
@@ -424,12 +483,26 @@ namespace NP_DSP::ONE_D::APPROX {
                     }
                     if (left_diff == (loss_left - loss_central)) {
                         if (right_diff == (loss_right - loss_central)) {
+                            if constexpr (CONFIG::debug) {
+                                //IC(left_diff, loss_left-loss_central, right_diff, loss_right-loss_central);
+                            }
 
                             errors_counter++;
+                            if constexpr (CONFIG::debug) {
+                                //IC(errors_counter);
+                            }
 
                             if (errors_counter > 10) {
+                                if constexpr (CONFIG::debug) {
+                                    for (;;) {
+                                    }
+                                }
                             }
                         } else {
+                            if constexpr (CONFIG::debug) {
+                                //IC(right_diff == loss_right-loss_central);
+                                //IC(left_diff, loss_left-loss_central, right_diff, loss_right-loss_central);
+                            }
                         }
                     }
                     ampl_opt_iter++;
@@ -462,7 +535,16 @@ namespace NP_DSP::ONE_D::APPROX {
                 }
                 std::pair<SampleType, SampleType> trigonometric_sample;
                 trigonometric_sample.first = 1.;
+                if constexpr (CONFIG::debug) {
+                    std::string mark = "comopute fs cf";
+                    //IC(mark);
+                    //IC(i);
+                }
 
+                if constexpr (CONFIG::debug) {
+                    std::string mark = "compute first losses";
+                    //IC(mark);
+                }
 
                 auto check_loss = [&](std::pair<SampleType, SampleType> data) {
                     auto const complex_sample = UTILITY_MATH::convertFSampleT2C<SampleType>(data);
@@ -560,10 +642,29 @@ namespace NP_DSP::ONE_D::APPROX {
                 auto right_loss = check_loss({static_cast<SampleType>(max_ampl), theta_max});
                 auto central_loss = check_loss({static_cast<SampleType>(max_ampl), theta_central});
 
+                if constexpr (CONFIG::debug) {
+                    std::string mark = "end compute first losses";
+                    //IC(mark);
+
+                    //IC(theta_min, left_loss, theta_central, central_loss, theta_max, right_loss);
+                }
+
                 auto period_opt_iter = 0;
+
+                if constexpr (CONFIG::debug) {
+                    std::string mark = "start optimize period";
+                    //IC(mark);
+                }
+
 
                 while (!(*stopPont)(std::abs(right_loss - central_loss) + std::abs(left_loss - central_loss),
                                      *this)) {
+                    if constexpr (CONFIG::debug) {
+                        //IC(period_opt_iter, left_loss, central_loss, right_loss, theta_min, theta_central, theta_max);
+                        //IC(right_loss-central_loss, left_loss-central_loss, right_loss-left_loss);
+                        //IC(theta_central - theta_min, theta_max-theta_central);
+                    }
+
                     auto left_diff = left_loss - central_loss;
                     auto right_diff = right_loss - central_loss;
                     if (left_diff > 0 && right_diff <= 0) {
@@ -617,6 +718,12 @@ namespace NP_DSP::ONE_D::APPROX {
                 }
                 trigonometric_sample.second = theta_central;
 
+
+                if constexpr (CONFIG::debug) {
+                    std::string mark = "start optimize ampl";
+                    //IC(mark);
+                }
+
                 SampleType ampl_left = 0.0;
                 SampleType ampl_right = max_value;
                 if constexpr (kind == FSApproxKind::Positive) {
@@ -635,33 +742,58 @@ namespace NP_DSP::ONE_D::APPROX {
                 auto errors_counter = 0;
                 while (!((*stopPont)(std::abs(loss_right - loss_central) + std::abs(loss_left - loss_central),
                                      *this))) {
+                    if constexpr (CONFIG::debug) {
+                        //IC(ampl_opt_iter, loss_left, loss_central, loss_right, ampl_left, ampl_central, ampl_right);
+                        //IC(loss_right-loss_central, loss_left-loss_central, loss_right-loss_left);
+                        //IC(ampl_central - ampl_left, ampl_right - ampl_central);
+                    }
 
                     auto left_diff = loss_left - loss_central;
                     auto right_diff = loss_right - loss_central;
                     if (left_diff > 0 && right_diff <= 0) {
+                        if constexpr (CONFIG::debug) {
+                            std::string point_mark = "ampl 1 branch";
+                            //IC(point_mark);
+                        }
                         loss_left = loss_central;
                         ampl_left = ampl_central;
                         ampl_central = (ampl_left + ampl_right) / 2;
                         trigonometric_sample.first = ampl_central;
                         loss_central = check_loss(trigonometric_sample);
                     } else if (left_diff <= 0 && right_diff > 0) {
+                        if constexpr (CONFIG::debug) {
+                            std::string point_mark = "ampl 2 branch";
+                            //IC(point_mark);
+                        }
                         loss_right = loss_central;
                         ampl_right = ampl_central;
                         ampl_central = (ampl_left + ampl_right) / 2;
                         trigonometric_sample.first = ampl_central;
                         loss_central = check_loss(trigonometric_sample);
                     } else if (left_diff > right_diff) {
+                        if constexpr (CONFIG::debug) {
+                            std::string point_mark = "ampl 3 branch";
+                            //IC(point_mark);
+                        }
                         //left branch is higher
                         auto ampl_left_avg = (ampl_left + ampl_central) / 2;
                         trigonometric_sample.first = ampl_left_avg;
                         auto new_loss_left = check_loss(trigonometric_sample);
                         if (new_loss_left < loss_left && new_loss_left > central_loss) {
+                            if constexpr (CONFIG::debug) {
+                                std::string point_mark = "ampl 3.1 branch";
+                                //IC(point_mark);
+                            }
                             loss_left = new_loss_left;
                             ampl_left = ampl_left_avg;
                             ampl_central = (ampl_left + ampl_right) / 2;
                             trigonometric_sample.first = ampl_central;
                             loss_central = check_loss(trigonometric_sample);
                         } else {
+                            if constexpr (CONFIG::debug) {
+                                std::string point_mark = "ampl 3.2 branch";
+                                //IC(point_mark);
+                            }
                             ampl_right = (ampl_central + ampl_right) / 2;
                             trigonometric_sample.first = ampl_right;
                             loss_right = check_loss(trigonometric_sample);
@@ -670,16 +802,28 @@ namespace NP_DSP::ONE_D::APPROX {
                             loss_central = check_loss(trigonometric_sample);
                         }
                     } else if (left_diff <= right_diff) {
+                        if constexpr (CONFIG::debug) {
+                            std::string point_mark = "ampl 4 branch";
+                            //IC(point_mark);
+                        }
                         auto ampl_right_avg = (ampl_right + ampl_central) / 2;
                         trigonometric_sample.first = ampl_right_avg;
                         auto new_loss_right = check_loss(trigonometric_sample);
                         if (new_loss_right < loss_right && new_loss_right > loss_central) {
+                            if constexpr (CONFIG::debug) {
+                                std::string point_mark = "ampl 4.1 branch";
+                                //IC(point_mark);
+                            }
                             loss_right = new_loss_right;
                             ampl_right = ampl_right_avg;
                             ampl_central = (ampl_left + ampl_right) / 2;
                             trigonometric_sample.first = ampl_central;
                             loss_central = check_loss(trigonometric_sample);
                         } else {
+                            if constexpr (CONFIG::debug) {
+                                std::string point_mark = "ampl 4.2 branch";
+                                //IC(point_mark);
+                            }
                             ampl_left = (ampl_central + ampl_left) / 2;
                             trigonometric_sample.first = ampl_left;
                             loss_left = check_loss(trigonometric_sample);
@@ -690,14 +834,33 @@ namespace NP_DSP::ONE_D::APPROX {
                     }
                     if (left_diff == loss_left - loss_central) {
                         if (right_diff == (loss_right - loss_central)) {
+                            if constexpr (CONFIG::debug) {
+                                //IC(left_diff, loss_left-loss_central, right_diff, loss_right-loss_central);
+                            }
 
                             errors_counter++;
+                            if constexpr (CONFIG::debug) {
+                                //IC(errors_counter);
+                            }
 
                             if (errors_counter > 10) {
+                                if constexpr (CONFIG::debug) {
+                                    for (;;) {
+                                    }
+                                }
                             }
                         } else {
+                            if constexpr (CONFIG::debug) {
+                                //IC(right_diff == (loss_right-loss_central));
+                                //IC(left_diff, loss_left-loss_central, right_diff, loss_right-loss_central);
+                            }
                         }
                     } else {
+                        if constexpr (CONFIG::debug) {
+                            std::string point_mark = "aaaa fuck";
+                            //IC(point_mark);
+                            //IC(left_diff, loss_left-loss_central, right_diff, loss_right-loss_central);
+                        }
                     }
                     ampl_opt_iter++;
                     if (ampl_central - ampl_left < 0.000001 || ampl_right - ampl_central < 0.000001) {
@@ -717,12 +880,15 @@ namespace NP_DSP::ONE_D::APPROX {
         }
 
         void show(const PlottingKind kind) {
+            
         }
 
         void show(const PlottingKind kind, const std::string& filename, const std::string& format) {
+            
         }
 
         void show(const PlottingKind kind, const std::string& filename) {
+            
         }
     };
 }

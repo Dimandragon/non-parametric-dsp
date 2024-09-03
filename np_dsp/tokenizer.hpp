@@ -23,7 +23,7 @@ struct Token{
 };
 
 namespace NP_DSP::ONE_D::Tokenizers {
-    struct InstFreqNormSincTokenizer
+    struct instFreqNormSincTokenizer
     {
         using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         DataType data;
@@ -145,7 +145,7 @@ namespace NP_DSP::ONE_D::Tokenizers {
 
                 if(phase[data.size() - 1] > 6.28){
                     inst_freq_computer.compute(phase, inst_freq, nullptr);
-                    double base_inst_freq = INST_FREQ_COMPUTERS::InstFreqNorm(data, data_buffer, inst_freq, freq_conv, freq_conv_image);
+                    double base_inst_freq = INST_FREQ_COMPUTERS::instFreqNorm(data, data_buffer, inst_freq, freq_conv, freq_conv_image);
 
                     phase_computer_simple.compute(data_buffer, phase, nullptr);
 
@@ -270,7 +270,7 @@ namespace NP_DSP::ONE_D::Tokenizers {
         }
     };
 
-    struct InstFreqNormSincReqTokenizer
+    struct instFreqNormSincReqTokenizer
     {
         using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         DataType data;
@@ -287,6 +287,8 @@ namespace NP_DSP::ONE_D::Tokenizers {
         double period_muller = 1.0;
         double locality_coeff = 5.0;
         double max_iter_number_for_filter = 10;
+
+        bool debug = false;
 
         std::vector<Token> tokens;
 
@@ -319,6 +321,7 @@ namespace NP_DSP::ONE_D::Tokenizers {
             filter.period_muller = period_muller;
             filter.inst_freq_computer = &inst_freq_computer;
             filter.phase_computer = &phase_computer_simple;
+            filter.debug = false;
             filter.max_iters = max_iter_number_for_filter;
 
             size_t iter_number = 0;
@@ -395,13 +398,31 @@ namespace NP_DSP::ONE_D::Tokenizers {
             while(true){
                 phase_computer_simple.compute(data, phase, nullptr);
 
+                if (debug){
+                    //std::cout << "compute first phase  " << iter_number << std::endl;
+                    phase.show(PlottingKind::Simple);
+                }
+
                 if(phase[data.size() - 1] > 6.28){
                     filter.compute(data, data_buffer, &compute_buffer);
+
+                    if (debug){
+                        //std::cout << "get low freq part  " << iter_number << std::endl;
+                        data_buffer.show(PlottingKind::Simple);//, label.str());
+                    }
 
                     for(int i = 0; i < data.size(); i++){
                         mode[i] = data[i] - data_buffer[i];
                         data[i] = data_buffer[i]; //data is filtered signal
                                         //data_buffer is mode
+                    }
+                    if (debug){
+                        //std::cout << "get mode " << iter_number << std::endl;
+                        mode.show(PlottingKind::Simple);
+                    }
+                    if (debug){
+                        //std::cout << "get low_freq_part " << iter_number << std::endl;
+                        data.show(PlottingKind::Simple);
                     }
 
                     phase_computer_simple.compute(mode, phase, nullptr);

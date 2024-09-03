@@ -1,4 +1,6 @@
 #pragma once
+
+
 #include <npdsp_concepts.hpp>
 #include <signals.hpp>
 #include <vector>
@@ -12,15 +14,6 @@
 namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
     struct InstFreqNormSincExtractor
     {
-        enum class ResamplingType{
-            BackOnlyOnOut,
-            FullBackAfterIter,
-            BackForModeAfterIter,
-            BackForSignalAfterIter,
-        };
-
-        ResamplingType resampling_type = ResamplingType::BackOnlyOnOut;
-
         using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         DataType data;
         DataType data_buffer;
@@ -66,58 +59,48 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
 
         FILTERS::SincResLocalFilter<double> filter;
 
-        template<typename DataT>
+        template<Signal DataT>
         void compute(const DataT & data_in){
             filter.locality_coeff = locality_coeff;
             size_t iter_number = 0;
-
-            DataType non_resampled_data;
-
-            auto prepare_memory_ext = [&](){
+            if(data.size() != data_in.size()){
+                data.base->vec->clear();
                 for (int i = 0; i < data_in.size(); i++){
-                    non_resampled_data.base->vec->push_back(data_in[i]);
+                    data.base->vec->push_back(data_in[i]);
                 }
-                if(data.size() != data_in.size()){
-                    data.base->vec->clear();
-                    for (int i = 0; i < data_in.size(); i++){
-                        data.base->vec->push_back(data_in[i]);
-                    }
+            }
+            if(data_buffer.size() != data_in.size()){
+                data_buffer.base->vec->clear();
+                for (int i = 0; i < data_in.size(); i++){
+                    data_buffer.base->vec->push_back(data_in[i]);
                 }
-                if(data_buffer.size() != data_in.size()){
-                    data_buffer.base->vec->clear();
-                    for (int i = 0; i < data_in.size(); i++){
-                        data_buffer.base->vec->push_back(data_in[i]);
-                    }
+            }
+            if(compute_buffer.size() != data_in.size()){
+                compute_buffer.base->vec->clear();
+                for (int i = 0; i < data_in.size(); i++){
+                    compute_buffer.base->vec->push_back(0.0);
                 }
-                if(compute_buffer.size() != data_in.size()){
-                    compute_buffer.base->vec->clear();
-                    for (int i = 0; i < data_in.size(); i++){
-                        compute_buffer.base->vec->push_back(0.0);
-                    }
+            }
+            if(compute_buffer2.size() != data_in.size()){
+                compute_buffer2.base->vec->clear();
+                for (int i = 0; i < data_in.size(); i++){
+                    compute_buffer2.base->vec->push_back(0.0);
                 }
-                if(compute_buffer2.size() != data_in.size()){
-                    compute_buffer2.base->vec->clear();
-                    for (int i = 0; i < data_in.size(); i++){
-                        compute_buffer2.base->vec->push_back(0.0);
-                    }
+            }
+            if(freq_conv.size() != data.size()){
+                freq_conv.clear();
+                for (int i = 0; i < data.size(); i++) {
+                    freq_conv.push_back(1.0);
                 }
-                if(freq_conv.size() != data.size()){
-                    freq_conv.clear();
-                    for (int i = 0; i < data.size(); i++) {
-                        freq_conv.push_back(1.0);
-                    }
+            }
+            if(freq_conv_image.size() != data.size()){
+                freq_conv_image.clear();
+                for (int i = 0; i < data.size(); i++) {
+                    freq_conv_image.push_back(1.0);
                 }
-                if(freq_conv_image.size() != data.size()){
-                    freq_conv_image.clear();
-                    for (int i = 0; i < data.size(); i++) {
-                        freq_conv_image.push_back(1.0);
-                    }
-                }
-            };
+            }
 
-            prepare_memory_ext();
-
-            auto prepare_memory_int = [&](){
+            while(true){
                 if (iter_number + 1 > modes.size()) {
                     auto* modes_new = new GenericSignal<SimpleVecWrapper<double>, true>;
                     modes.push_back(modes_new);
@@ -170,10 +153,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                         phases[iter_number]->base->vec->push_back(0.0);
                     }
                 }
-            };
 
-            while(true){
-                prepare_memory_int();
                 phase_computer_simple.compute(data, *phases[iter_number], nullptr);
 
                 //std::cout << "compute first phase  " << iter_number << std::endl;
@@ -181,8 +161,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
 
                 if((*phases[iter_number])[data.size() - 1] > 6.28){
                     inst_freq_computer.compute(*phases[iter_number], *inst_freqs[iter_number], nullptr);
-
-                    double base_inst_freq = INST_FREQ_COMPUTERS::InstFreqNorm(data, data_buffer, *inst_freqs[iter_number], freq_conv, freq_conv_image);
+                    double base_inst_freq = INST_FREQ_COMPUTERS::instFreqNorm(data, data_buffer, *inst_freqs[iter_number], freq_conv, freq_conv_image);
 
                     phase_computer_simple.compute(data_buffer, *phases[iter_number], nullptr);
 
@@ -206,65 +185,18 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
 
                     //std::cout << "get low freq part  " << iter_number << std::endl;
                     //data_buffer.show(PlottingKind::Simple);//, label.str());
-                    if (resampling_type == ResamplingType::BackForSignalAfterIter){
-                        for (int i = 0; i < data.size(); i++){
-                            (*modes[iter_number])[i] = data_buffer[i];
-                        }
-                        INST_FREQ_COMPUTERS::backInstFreqNorm(*modes[iter_number], data_buffer, freq_conv);
-                        for (int i = 0; i < data.size(); i++){
-                            (*modes[iter_number])[i] = data[i];
-                        }
-                        //INST_FREQ_COMPUTERS::backInstFreqNorm(*modes[iter_number], data, freq_conv);
-                        for (int i = 0; i < data.size(); i++){
-                            freq_conv[i] = 1.0;
-                        }
-                        for (int i = 0; i < data.size(); i++){
-                            data[i] = non_resampled_data[i];
-                        }
-                    }
+
 
                     for(int i = 0; i < data.size(); i++){
-                        //data_buffer is filtered signal, data is unfiltered
                         auto swap = data_buffer[i];
                         data_buffer[i] = data[i] - data_buffer[i];
-                        data[i] = swap; //data is filtered signal
-                                        //data_buffer is mode
+                        data[i] = swap;
                     }
 
                     //std::cout << "get mode " << iter_number << std::endl;
                     //data_buffer.show(PlottingKind::Simple);
 
-                    if (resampling_type == ResamplingType::BackOnlyOnOut){
-                        INST_FREQ_COMPUTERS::backInstFreqNorm(data_buffer, *modes[iter_number], freq_conv);
-                    }
-                    if (resampling_type == ResamplingType::FullBackAfterIter){
-                        INST_FREQ_COMPUTERS::backInstFreqNorm(data_buffer, *modes[iter_number], freq_conv);
-                        for (int i = 0; i < data.size(); i++){
-                            data_buffer[i] = data[i];
-                        }
-                        INST_FREQ_COMPUTERS::backInstFreqNorm(data_buffer, data, freq_conv);
-                        for (int i = 0; i < data.size(); i++){
-                            freq_conv[i] = 1.0;
-                        }
-                    }
-                    if (resampling_type == ResamplingType::BackForSignalAfterIter){
-                        for (int i = 0; i < data.size(); i++){
-                            (*modes[iter_number])[i] = data_buffer[i];
-                        }
-                        for (int i = 0; i < data.size(); i++){
-                            non_resampled_data[i] = data[i];
-                        }
-                    }
-                    if (resampling_type == ResamplingType::BackForModeAfterIter){
-                        INST_FREQ_COMPUTERS::backInstFreqNorm(data_buffer, *modes[iter_number], freq_conv);
-                        for (int i = 0; i < data.size(); i++){
-                            freq_conv[i] = 1.0;
-                        }
-                        for(int i = 0; i < data.size(); i++){
-                            non_resampled_data[i] -= (*modes[iter_number])[i];
-                            data[i] = non_resampled_data[i];
-                        }
-                    }
+                    INST_FREQ_COMPUTERS::backInstFreqNorm(data_buffer, *modes[iter_number], freq_conv);
 
                     //std::cout << "bask inst freq norm of mode " << iter_number << std::endl;
                     //modes[iter_number]->show(PlottingKind::Simple);
@@ -287,14 +219,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                     iter_number++;
                 }
                 else{
-                    if (resampling_type == ResamplingType::BackOnlyOnOut){
-                        INST_FREQ_COMPUTERS::backInstFreqNorm(data, *modes[iter_number], freq_conv);
-                    }
-                    else{
-                        for (auto i = 0; i < data.size(); i++){
-                            (*modes[iter_number])[i] = data[i];
-                        }
-                    }
+                    INST_FREQ_COMPUTERS::backInstFreqNorm(data, *modes[iter_number], freq_conv);
 
                     //std::cout << "last mode back inst freq norm " << iter_number << std::endl;
                     //modes[iter_number]->show(PlottingKind::Simple);
@@ -306,25 +231,6 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                     return;
                 }
             }
-        }
-
-        int getModesCount(){
-            return static_cast<int>(modes.size());
-        }
-        int getDataSize(){
-            return static_cast<int>(modes[0]->size());
-        }
-        std::vector<double> getMode(int idx){
-            return *(modes[idx]->base->vec);
-        }
-        std::vector<double> getInstFreq(int idx){
-            return *(inst_freqs[idx]->base->vec);
-        }
-        std::vector<double> getInstAmpl(int idx){
-            return *(inst_ampls[idx]->base->vec);
-        }
-        std::vector<double> getPhase(int idx){
-            return *(phases[idx]->base->vec);
         }
     };
 
@@ -345,6 +251,8 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         double period_muller = 1.0;
         double locality_coeff = 5.0;
         double max_iter_number_for_filter = 10;
+
+        bool debug = false;
 
         INTEGRATORS::Riman<INTEGRATORS::PolygonType::ByPoint> integrator;
         DERIVATORS::FinniteDifference<DERIVATORS::FinniteDifferenceType::Backward> derivator;
@@ -375,6 +283,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
             filter.period_muller = period_muller;
             filter.inst_freq_computer = &inst_freq_computer;
             filter.phase_computer = &phase_computer_simple;
+            filter.debug = false;
             filter.max_iters = max_iter_number_for_filter;
 
             size_t iter_number = 0;
@@ -484,12 +393,31 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                 prepare_memory_int();
                 phase_computer_simple.compute(data, *phases[iter_number], nullptr);
 
+                if (debug){
+                    //std::cout << "compute first phase  " << iter_number << std::endl;
+                    phases[iter_number]->show(PlottingKind::Simple);
+                }
+
                 if((*phases[iter_number])[data.size() - 1] > 6.28){
                     filter.compute(data, data_buffer, &compute_buffer);
+
+                    if (debug){
+                        //std::cout << "get low freq part  " << iter_number << std::endl;
+                        data_buffer.show(PlottingKind::Simple);//, label.str());
+                    }
+
                     for(int i = 0; i < data.size(); i++){
                         (*modes[iter_number])[i] = data[i] - data_buffer[i];
                         data[i] = data_buffer[i]; //data is filtered signal
                                         //data_buffer is mode
+                    }
+                    if (debug){
+                        //std::cout << "get mode " << iter_number << std::endl;
+                        modes[iter_number]->show(PlottingKind::Simple);
+                    }
+                    if (debug){
+                        //std::cout << "get low_freq_part " << iter_number << std::endl;
+                        data.show(PlottingKind::Simple);
                     }
 
                     phase_computer_simple.compute(*modes[iter_number], *phases[iter_number], nullptr);

@@ -130,7 +130,7 @@ namespace NP_DSP{
             SignalBasePrototype(){}
             virtual ~SignalBasePrototype(){}
             void operator=(const SignalBasePrototype &) = delete;
-            SignalBasePrototype(const SignalBasePrototype & other){}//{std::unreachable();}
+            //SignalBasePrototype(const SignalBasePrototype & other){/*std::unreachable();*/}
         };
 
         
@@ -179,14 +179,79 @@ namespace NP_DSP{
             virtual T interpolate(double idx, SignalKind kind) const = 0;
 
             virtual void show(PlottingKind kind){
-
+                if constexpr (GENERAL::is_complex<T>) {
+                    if (kind == PlottingKind::Interpolate){
+                        
+                    }
+                    /*else if (kind == PlottingKind::Simple){
+                        std::vector<double> plotting_data = {};
+                        for (auto i = 0; i < base->size(); ++i){
+                            auto sample = (*base)[i];
+                            plotting_data.push_back(sample.real());
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::hold(matplot::on);
+                        plotting_data.clear();
+                        for (auto i = 0; i < base->size(); ++i){
+                            auto sample = (*base)[i];
+                            plotting_data.push_back(sample.imag());
+                        }
+                        matplot::plot(plotting_data);
+                        matplot::hold(matplot::off);
+                        matplot::show();
+                    }*/
+                }
+                else{
+                    if (kind == PlottingKind::Interpolate){
+                        
+                    }
+                    else if (kind == PlottingKind::Simple){
+                        
+                    }
+                }
             }
 
-            void show() {}
+            void show() {
+                show(PlottingKind::Simple);
+            }
 
-            virtual void show(PlottingKind kind, const std::string & filename, const std::string & format) const {}
+            virtual void show(PlottingKind kind, const std::string & filename, const std::string & format) const {
+                if constexpr (GENERAL::is_complex<T>) {
+                    if (kind == PlottingKind::Interpolate){
+                        
+                    }
+                    else if (kind == PlottingKind::Simple){
+                        
+                    }
+                }
+                else{
+                    if (kind == PlottingKind::Interpolate){
+                        
+                    }
+                    else if (kind == PlottingKind::Simple){
+                        
+                    }
+                }
+            }
 
-            virtual void show(PlottingKind kind, const std::string & filename) const {}
+            virtual void show(PlottingKind kind, const std::string & filename) const {
+                if constexpr (GENERAL::is_complex<T>) {
+                    if (kind == PlottingKind::Interpolate){
+                        
+                    }
+                    else if (kind == PlottingKind::Simple){
+                        
+                    }
+                }
+                else{
+                    if (kind == PlottingKind::Interpolate){
+                        
+                    }
+                    else if (kind == PlottingKind::Simple){
+                        
+                    }
+                }
+            }
         };
         struct details {
             static_assert(is_signal<SignalPrototype<double>>);

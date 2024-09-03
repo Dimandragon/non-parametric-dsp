@@ -29,6 +29,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
     template<typename T, typename data1T, typename data2T>
     T signalsL2Distance(const data1T& data1, const data2T& data2) {
         double error = 0.0;
+        error = 0.0;
         for (int i = 0; i < data1.size(); i++) {
             error = error + std::sqrt((data1[i] - data2[i]) * (data1[i] - data2[i]));
         }
@@ -48,6 +49,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
     template<typename T, typename data1T, typename data2T>
     T signalsL2DistanceDouble(const data1T& data1, const data2T& data2) {
         double error = 0.0;
+        error = 0.0;
         for (int i = 0; i < data1.size(); i++) {
             error = error + std::sqrt((data1[i].first - data2[i].first) * (data1[i].first - data2[i].first) + 
                 (data1[i].second - data2[i].second) * (data1[i].second - data2[i].second));
@@ -59,6 +61,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
     template<typename T, typename data1T, typename data2T>
     T signalsL2NormedDistanceDouble(const data1T& data1, const data2T& data2) {
         double error = 0.0;
+        error = 0.0;
         for (int i = 0; i < data1.size(); i++) {
             error = error + std::sqrt((data1[i].first - data2[i].first) * (data1[i].first - data2[i].first) + 
                 (data1[i].second - data2[i].second) * (data1[i].second - data2[i].second)) / data1.size();
@@ -184,6 +187,51 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         }
     }
 
+    template<typename DataT1, typename DataT2, typename OutT, typename T>
+    void fastConvolution(const DataT1& in1, const DataT2& in2, OutT& out) {
+        std::vector<std::complex<T>> data_in1;
+        std::vector<std::complex<T>> data_in2;
+        std::vector<std::complex<T>> sp1;
+        std::vector<std::complex<T>> sp2;
+        std::vector<std::complex<T>> data_out;
+
+        size_t len = in1.size();
+        if (in2.size() > len) {
+            len = in2.size();
+        }
+
+        for (int i = 0; i < in1.size(); i++) {
+            data_in1.push_back({in1[i], 0.0});
+        }
+        for (int i = 0; i < in2.size(); i++) {
+            data_in2.push_back({in2[i], 0.0});
+        }
+        for (int i = in1.size(); i < len; i++) {
+            data_in1.push_back({0.0, 0.0});
+        }
+        for (int i = in2.size(); i < len; i++) {
+            data_in2.push_back({0.0, 0.0});
+        }
+        for (int i = 0; i < len; i++) {
+            sp1.push_back({0.0, 0.0});
+            sp2.push_back({0.0, 0.0});
+            data_out.push_back({0.0, 0.0});
+        }
+
+        fftc2c(data_in1, sp1);
+        fftc2c(data_in2, sp2);
+
+        for (int i = 0; i < len; i++) {
+            sp1[i] = sp1[i] * sp2[i] * static_cast<T>(len);
+        }
+
+        ifftc2c(sp1, data_out);
+
+        for (int i = 0; i < len; i++) {
+            out[i] = data_out[i].real();
+        }
+    }
+
     
     template<Signal DataT1, Signal DataT2, Signal OutT>
     void fastConvolution(const DataT1& in1, const DataT2& in2, OutT& out) {
@@ -221,7 +269,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         fftc2c(data_in2, sp2);
 
         for (int i = 0; i < len; i++) {
-            sp1[i] = sp1[i] * sp2[i] * static_cast<double>(len);
+            sp1[i] = sp1[i] * sp2[i] * static_cast<T>(len);
         }
 
         ifftc2c(sp1, data_out);
@@ -286,6 +334,9 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
                 break;
             }
             auto idx_new = static_cast<TIndex>(idx1 + dx * (value - data[idx1]) / dy);
+            if constexpr (CONFIG::debug) {
+                //IC((idx1, idx2, dx, dy, idx_new);
+            }
             if (data[idx_new] > value) {
                 idx2 = idx_new;
             } else if (data[idx_new] < value) {
@@ -293,6 +344,9 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
             } else if (data[idx_new] == value) {
                 idx1 = idx_new;
                 idx2 = idx1 + 1;
+            }
+            if constexpr (CONFIG::debug) {
+                //IC((idx1, idx2);
             }
         }
         return {idx1, idx2};
@@ -315,6 +369,10 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
                 break;
             }
             auto idx_new = static_cast<TIndex>(idx1 + dx * (value - idx_lambda(idx1)) / dy);
+            if constexpr (CONFIG::debug) {
+                std::string mark = "creating idx_new in interpolation search";
+                //IC((idx1, idx2, dx, dy, idx_new);
+            }
             if (idx_lambda(idx_new) > value) {
                 idx2 = idx_new;
             } else if (idx_lambda(idx_new) < value) {
@@ -322,6 +380,9 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
             } else if (idx_lambda(idx_new) == value) {
                 idx1 = idx_new;
                 idx2 = idx1 + 1;
+            }
+            if constexpr (CONFIG::debug) {
+                //IC((idx1, idx2);
             }
         }
         return {idx1, idx2};
@@ -566,7 +627,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         out.clear();
         double step = static_cast<double>(size - 1) / static_cast<double>(target_size - 1);
         for (int i = 0; i < target_size; i++){
-            IC(data.interpolate(static_cast<double>(i) * step, SignalKind::Universal), i, i * step);
+            //IC((data.interpolate(static_cast<double>(i) * step, SignalKind::Universal), i, i * step);
             out.push_back(data.interpolate(static_cast<double>(i) * step, SignalKind::Universal));
         }
     }
@@ -584,17 +645,17 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         int pad = (res_data.new_size - data.size()) / 2;
         for (int i = 0; i < pad; i++){
             out.push_back(data[data.size() - pad + i]);
-            //IC(data.size() - pad + i);
+            ////IC((data.size() - pad + i);
         }
         for (int i = pad; i < data.size() + pad; i++){
             out.push_back(data[i - pad]);
-            //IC(i - pad);
+            ////IC((i - pad);
         }
         for (int i = data.size() + pad; i < res_data.new_size; i++){
             out.push_back(data[i - data.size() - pad]);
-            //IC(i - data.size() - pad);
+            ////IC((i - data.size() - pad);
         }
-        //IC(res_data.new_size, out.size());
+        ////IC((res_data.new_size, out.size());
         circleExtendResult res;
         res.freq_idx = res_data.new_idx;
         res.pad = pad;

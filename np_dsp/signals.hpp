@@ -83,7 +83,7 @@ namespace NP_DSP::ONE_D {
             if constexpr (!std::is_same_v<DataReferenceExpression, GENERAL::Nil>) {
                 return ref_expression(idx);
             } else {
-                //std::unreachable();
+                /*std::unreachable();*/
             }
         }
 
@@ -91,7 +91,7 @@ namespace NP_DSP::ONE_D {
             if constexpr (!std::is_same_v<DataValueExpression, GENERAL::Nil>) {
                 return (*val_expression)(idx);
             } else {
-                //std::unreachable();
+                /*std::unreachable();*/
             }
         }
 
@@ -99,7 +99,7 @@ namespace NP_DSP::ONE_D {
             if constexpr (!std::is_same_v<SizeExpression, GENERAL::Nil>) {
                 return (*size_expression)();
             } else {
-                //std::unreachable();
+                /*std::unreachable();*/
             }
         }
     };
@@ -130,7 +130,7 @@ namespace NP_DSP::ONE_D {
             if constexpr (!std::is_same_v<DataValueExpression, GENERAL::Nil>) {
                 return (*val_expression)(idx);
             } else {
-                //std::unreachable();
+                /*std::unreachable();*/
             }
         }
 
@@ -138,7 +138,7 @@ namespace NP_DSP::ONE_D {
             if constexpr (!std::is_same_v<SizeExpression, GENERAL::Nil>) {
                 return (*size_expression)();
             } else {
-                //std::unreachable();
+                /*std::unreachable();*/
             }
         }
     };
@@ -184,14 +184,30 @@ namespace NP_DSP::ONE_D {
         }
 
         void show(PlottingKind kind) const {
-
+            if (kind == PlottingKind::Interpolate) {
+                
+            } else if (kind == PlottingKind::Simple) {
+                
+            }
+            else if (kind == PlottingKind::Spectre){
+                
+            }
         }
 
         void show(PlottingKind kind, const std::string& filename, const std::string& format) const {
-
+            if (kind == PlottingKind::Simple) {
+                
+            } else if (kind == PlottingKind::Interpolate) {
+                
+            }
         }
 
         void show(PlottingKind kind, const std::string& filename) const {
+            if (kind == PlottingKind::Simple) {
+                
+            } else if (kind == PlottingKind::Interpolate) {
+                
+            }
 
         }
 
@@ -201,10 +217,11 @@ namespace NP_DSP::ONE_D {
         //получение значения в неизвестной точке внутри диапазона определения (те в нашем случае по дробному индексу)
         template<typename Idx>
         SampleType interpolate(Idx idx, SignalKind kind) const {
-
             if (kind == SignalKind::Universal){
+                int64_t integral_val = round(idx);
                 int64_t size_l = static_cast<int64_t>(size());
                 int64_t tile_number = static_cast<int64_t>(idx) / size_l;
+
                 //[size] is begin of 1 tile
                 //[-size] is end of -1 tile and [size] is begin of -2 tile
                 if (idx <= -1){
@@ -232,17 +249,23 @@ namespace NP_DSP::ONE_D {
                     if (tile_number % 2 == 0){
                         //for example 2
                         mirror_idx = static_cast<Idx>(static_cast<int64_t>(idx) % size_l);
+                        mirror_idx = mirror_idx + idx - static_cast<Idx>(static_cast<int64_t>(idx));
                         //for example with size 1000 2000 is 0; 2001 is 1; 
                     }
                     else{
                         //for example 1
                         mirror_idx = static_cast<Idx>(size_l - 1 - static_cast<int64_t>(idx) % size_l);
+                        mirror_idx = mirror_idx + idx - static_cast<Idx>(static_cast<int64_t>(idx));
                         //for example with size 1000 1000 is 999, 1001 is 998
                     }
+                    ////IC(mirror_idx, idx, size_l);
+                    
                     mirror_idx = mirror_idx + idx - static_cast<Idx>(static_cast<int64_t>(idx));
+
                     SampleType mirror_val = interpolate<Idx>(mirror_idx, SignalKind::Universal);
                     SampleType dfull = (*this)[size_l-1] - (*this)[0];
                     SampleType d_mirror = (*this)[size_l - 1] - mirror_val;
+                    ////IC(mirror_idx, )
                     return (*this)[0] + tile_number * dfull + d_mirror;
                 }
                 else{
@@ -260,11 +283,20 @@ namespace NP_DSP::ONE_D {
             }
             else if (kind == SignalKind::Monotone) {
                 if (idx >= 0 && idx < static_cast<Idx>(size() - 2)) {
+                    if constexpr (CONFIG::debug) {
+                        std::string mark = "1b";
+                        //IC(mark);
+                    }
                     return UTILITY_MATH::linearInterpolate<double, SampleType>(
                         {static_cast<double>(idx), (*base)[static_cast<int>(idx)]},
                         {static_cast<double>(idx + 1), (*base)[idx + 1]}, static_cast<double>(idx));
                 } else if (idx < 0) {
                     Idx idx_new = idx + ((0 - static_cast<int>(idx)) % static_cast<int>(size())) * 2;
+                    if constexpr (CONFIG::debug) {
+                        std::string mark = "2b";
+                        //IC(mark);
+                        //IC(idx_new);
+                    }
                     if (idx_new == idx) {
                         idx_new++;
                     }
@@ -280,11 +312,20 @@ namespace NP_DSP::ONE_D {
                     if (idx_new > size() - 1) {
                         idx_new = size() - 2;
                     }
+                    if constexpr (CONFIG::debug) {
+                        std::string mark = "3b";
+                        //IC(mark);
+                        //IC(idx_new);
+                    }
                     SampleType value_new = interpolate(idx_new, kind);
                     return UTILITY_MATH::linearInterpolate<double, SampleType>(
                         {static_cast<double>(size() - 1), (*base)[size() - 1]},
                         {static_cast<double>(idx_new), value_new}, static_cast<double>(idx));
                 } else {
+                    if constexpr (CONFIG::debug) {
+                        std::string mark = "4b";
+                        //IC(mark);
+                    }
                     return UTILITY_MATH::linearInterpolate<double, SampleType>(
                         {static_cast<double>(size() - 1), (*base)[size() - 1]},
                         {static_cast<double>(size() - 2), (*base)[size() - 2]}, static_cast<double>(idx));
@@ -307,7 +348,7 @@ namespace NP_DSP::ONE_D {
                     }
                 }
                 UTILITY_MATH::fftc2c(data, spectr);
-                //IC()
+                ////IC()
                 //spectr.show(PlottingKind::Simple);
 
 
@@ -322,6 +363,10 @@ namespace NP_DSP::ONE_D {
                 return accum.real();
             } else if (kind == SignalKind::Stohastic) {
                 if (idx >= 0 && idx < static_cast<Idx>(size() - 2)) {
+                    if constexpr (NP_DSP::CONFIG::debug) {
+                        std::string mark = "1b";
+                        //IC(mark);
+                    }
                     return UTILITY_MATH::linearInterpolate<double, SampleType>(
                         {static_cast<double>(idx), (*base)[static_cast<int>(idx)]},
                         {static_cast<double>(idx + 1), (*base)[idx + 1]}, static_cast<double>(idx));
@@ -345,7 +390,7 @@ namespace NP_DSP::ONE_D {
                 }
             } else if (kind == SignalKind::Smooth) {
                 //todo Teilors Series
-                //std::unreachable();
+                /*std::unreachable();*/
             }
         }
 
@@ -369,6 +414,10 @@ namespace NP_DSP::ONE_D {
                 return interpolate(idx, SignalKind::Monotone);
             };
             std::pair<int, int> idxes = ONE_D::UTILITY_MATH::interpolationSearch(*idx1, *idx2, value, idx_lambda);
+            if constexpr (CONFIG::debug) {
+                std::string mark = "find monotone";
+                //IC(mark, idxes.first, idxes.second, value);
+            }
             return UTILITY_MATH::backLinearInterpolate<Idx, SampleType>(
                 {*idx1, (*base)[*idx1]}, {*idx2, (*base)[*idx2]}, value);
         }
@@ -408,23 +457,114 @@ namespace NP_DSP::ONE_D {
             return base->size();
         }
 
-        void show(PlottingKind kind) {}
+        void show(PlottingKind kind) {
+            if (kind == PlottingKind::Interpolate) {
+                
+            } else if (kind == PlottingKind::Simple) {
+                
+            }
+        }
 
-        void show(PlottingKind kind, const std::string& filename, const std::string& format) const {}
+        void show(PlottingKind kind, const std::string& filename, const std::string& format) const {
+            if (kind == PlottingKind::Simple) {
+                
+            } else if (kind == PlottingKind::Interpolate) {
+                
+            }
+        }
 
-        void show(PlottingKind kind, const std::string& filename) const {}
+        void show(PlottingKind kind, const std::string& filename) const {
+            if (kind == PlottingKind::Simple) {
+                
+            } else if (kind == PlottingKind::Interpolate) {
+                
+            }
+        }
 
 
         //получение значения в неизвестной точке внутри диапазона определения (те в нашем случае по дробному индексу)
         template<typename Idx>
         SampleType interpolate(Idx idx, SignalKind kind) const {
-            if (kind == SignalKind::Monotone) {
+            if (kind == SignalKind::Universal){
+                int64_t integral_val = round(idx);
+                int64_t size_l = static_cast<int64_t>(size());
+                int64_t tile_number = static_cast<int64_t>(idx) / size_l;
+
+                //[size] is begin of 1 tile
+                //[-size] is end of -1 tile and [size] is begin of -2 tile
+                if (idx <= -1){
+                    if (static_cast<int64_t>(idx) % size_l != size_l){
+                        tile_number -= 1;
+                    }
+                    Idx mirror_idx;
+                    if (tile_number % 2 == 0){
+                        mirror_idx = static_cast<Idx>(size_l - 1 - static_cast<int64_t>(idx + 1) % size_l);
+                        //for example with size 1000 -1001 is 999, -2000 is 0
+                    }
+                    else{
+                        //-1 for example
+                        mirror_idx = static_cast<Idx>(-static_cast<int64_t>(idx + 1) % size_l);
+                        //for example with size 1000 -3000 is 999; -2001 is 0; 
+                    }
+                    mirror_idx = mirror_idx + idx - static_cast<Idx>(static_cast<int64_t>(idx));
+                    SampleType mirror_val = interpolate<Idx>(mirror_idx, SignalKind::Universal);
+                    SampleType dfull = (*this)[size_l-1] - (*this)[0];
+                    SampleType d_mirror = mirror_val - (*this)[0];
+                    return (tile_number + 1) * dfull - d_mirror + (*this)[0];
+                }
+                else if (idx > size_l){
+                    Idx mirror_idx;
+                    if (tile_number % 2 == 0){
+                        //for example 2
+                        mirror_idx = static_cast<Idx>(static_cast<int64_t>(idx) % size_l);
+                        mirror_idx = mirror_idx + idx - static_cast<Idx>(static_cast<int64_t>(idx));
+                        //for example with size 1000 2000 is 0; 2001 is 1; 
+                    }
+                    else{
+                        //for example 1
+                        mirror_idx = static_cast<Idx>(size_l - 1 - static_cast<int64_t>(idx) % size_l);
+                        mirror_idx = mirror_idx + idx - static_cast<Idx>(static_cast<int64_t>(idx));
+                        //for example with size 1000 1000 is 999, 1001 is 998
+                    }
+                    ////IC(mirror_idx, idx, size_l);
+                    
+                    mirror_idx = mirror_idx + idx - static_cast<Idx>(static_cast<int64_t>(idx));
+
+                    SampleType mirror_val = interpolate<Idx>(mirror_idx, SignalKind::Universal);
+                    SampleType dfull = (*this)[size_l-1] - (*this)[0];
+                    SampleType d_mirror = (*this)[size_l - 1] - mirror_val;
+                    ////IC(mirror_idx, )
+                    return (*this)[0] + tile_number * dfull + d_mirror;
+                }
+                else{
+                    if (idx <= size_l - 2){
+                        return UTILITY_MATH::linearInterpolate<double, SampleType>(
+                            {static_cast<int64_t>(idx), (*base)[static_cast<int64_t>(idx)]},
+                            {static_cast<int64_t>(idx + 1), (*base)[static_cast<int64_t>(idx) + 1]}, static_cast<double>(idx));
+                    }
+                    else{
+                        return UTILITY_MATH::linearInterpolate<double, SampleType>(
+                            {static_cast<int64_t>(size() - 2), (*base)[size() - 2]},
+                            {static_cast<int64_t>(size() - 1), (*base)[size() - 1]}, static_cast<double>(idx));
+                    }
+                }
+            }
+            else if (kind == SignalKind::Monotone) {
                 if (idx >= 0 && idx < static_cast<Idx>(size() - 2)) {
+                    if constexpr (CONFIG::debug) {
+                        std::string mark = "1b";
+                        //IC(mark);
+                    }
                     return UTILITY_MATH::linearInterpolate<double, SampleType>(
                         {static_cast<double>(idx), (*base)[static_cast<int>(idx)]},
                         {static_cast<double>(idx + 1), (*base)[idx + 1]}, static_cast<double>(idx));
                 } else if (idx < 0) {
                     Idx idx_new = idx + ((0 - static_cast<int>(idx)) % static_cast<int>(size())) * 2;
+                    if constexpr (CONFIG::debug) {
+                        std::string mark = "2b";
+                        //IC(mark);
+                        //IC(idx_new);
+                    }
                     if (idx_new == idx) {
                         idx_new++;
                     }
@@ -440,11 +580,20 @@ namespace NP_DSP::ONE_D {
                     if (idx_new > size() - 1) {
                         idx_new = size() - 2;
                     }
+                    if constexpr (CONFIG::debug) {
+                        std::string mark = "3b";
+                        //IC(mark);
+                        //IC(idx_new);
+                    }
                     SampleType value_new = interpolate(idx_new, kind);
                     return UTILITY_MATH::linearInterpolate<double, SampleType>(
                         {static_cast<double>(size() - 1), (*base)[size() - 1]},
                         {static_cast<double>(idx_new), value_new}, static_cast<double>(idx));
                 } else {
+                    if constexpr (CONFIG::debug) {
+                        std::string mark = "4b";
+                        //IC(mark);
+                    }
                     return UTILITY_MATH::linearInterpolate<double, SampleType>(
                         {static_cast<double>(size() - 1), (*base)[size() - 1]},
                         {static_cast<double>(size() - 2), (*base)[size() - 2]}, static_cast<double>(idx));
@@ -467,7 +616,6 @@ namespace NP_DSP::ONE_D {
                     }
                 }
                 UTILITY_MATH::fftc2c(data, spectr);
-                //IC()
                 //spectr.show(PlottingKind::Simple);
 
 
@@ -482,6 +630,10 @@ namespace NP_DSP::ONE_D {
                 return accum.real();
             } else if (kind == SignalKind::Stohastic) {
                 if (idx >= 0 && idx < static_cast<Idx>(size() - 2)) {
+                    if constexpr (NP_DSP::CONFIG::debug) {
+                        std::string mark = "1b";
+                        //IC(mark);
+                    }
                     return UTILITY_MATH::linearInterpolate<double, SampleType>(
                         {static_cast<double>(idx), (*base)[static_cast<int>(idx)]},
                         {static_cast<double>(idx + 1), (*base)[idx + 1]}, static_cast<double>(idx));
@@ -505,7 +657,7 @@ namespace NP_DSP::ONE_D {
                 }
             } else if (kind == SignalKind::Smooth) {
                 //todo Teilors Series
-                //std::unreachable();
+                /*std::unreachable();*/
             }
         }
 
@@ -529,6 +681,10 @@ namespace NP_DSP::ONE_D {
                 return interpolate(idx, SignalKind::Monotone);
             };
             std::pair<int, int> idxes = UTILITY_MATH::interpolationSearch(*idx1, *idx2, value, idx_lambda);
+            if constexpr (CONFIG::debug) {
+                std::string mark = "find monotone";
+                //IC(mark, idxes.first, idxes.second, value);
+            }
             return UTILITY_MATH::backLinearInterpolate<Idx, SampleType>(
                 {*idx1, (*base)[*idx1]}, {*idx2, (*base)[*idx2]}, value);
         }
