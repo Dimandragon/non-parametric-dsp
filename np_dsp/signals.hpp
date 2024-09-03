@@ -324,7 +324,7 @@ namespace NP_DSP::ONE_D {
                         mirror_idx = mirror_idx + idx - static_cast<Idx>(static_cast<int64_t>(idx));
                         //for example with size 1000 1000 is 999, 1001 is 998
                     }
-                    IC(mirror_idx, idx, size_l);
+                    //IC(mirror_idx, idx, size_l);
                     
                     mirror_idx = mirror_idx + idx - static_cast<Idx>(static_cast<int64_t>(idx));
 
