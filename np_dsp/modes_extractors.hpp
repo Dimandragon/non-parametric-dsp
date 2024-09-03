@@ -59,7 +59,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
 
         FILTERS::SincResLocalFilter<double> filter;
 
-        template<Signal DataT>
+        template<typename DataT>
         void compute(const DataT & data_in){
             filter.locality_coeff = locality_coeff;
             size_t iter_number = 0;
