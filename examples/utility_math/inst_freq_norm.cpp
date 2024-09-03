@@ -69,7 +69,7 @@ int main(){
 
     inst_freq.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
-    NP_DSP::ONE_D::INST_FREQ_COMPUTERS::InstFreqNorm(data, out, inst_freq, freq_conv, freq_conv_image);
+    NP_DSP::ONE_D::INST_FREQ_COMPUTERS::instFreqNorm(data, out, inst_freq, freq_conv, freq_conv_image);
 
     out.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
@@ -81,7 +81,7 @@ int main(){
         data[i] = out[i];
     }
 
-    NP_DSP::ONE_D::INST_FREQ_COMPUTERS::InstFreqNorm(data, out, inst_freq, freq_conv, freq_conv_image);
+    NP_DSP::ONE_D::INST_FREQ_COMPUTERS::instFreqNorm(data, out, inst_freq, freq_conv, freq_conv_image);
 
     out.show(NP_DSP::ONE_D::PlottingKind::Simple);
 

@@ -1119,8 +1119,8 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
     };
 
     
-    template<Signal DataT, Signal OutT, Signal InstFreqT>
-    double InstFreqNorm(const DataT & data, OutT & out, const InstFreqT & inst_freq, 
+    /*template<Signal DataT, Signal OutT, Signal InstFreqT>
+    double instFreqNorm(const DataT & data, OutT & out, const InstFreqT & inst_freq, 
         std::vector<double> & freq_conv, std::vector<double> & freq_conv_image){
         freq_conv_image.clear();
         double freq_avg = 0.0;
@@ -1169,7 +1169,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
 
     
     template<Signal DataT, Signal OutT, Signal InstFreqT>
-    double InstFreqNormDouble(const DataT & data, const OutT & out, const InstFreqT & inst_freq, 
+    double instFreqNormDouble(const DataT & data, const OutT & out, const InstFreqT & inst_freq, 
         std::vector<double> & freq_conv, std::vector<double> & freq_conv_image){
         
         auto val_expr = [&](size_t idx) {

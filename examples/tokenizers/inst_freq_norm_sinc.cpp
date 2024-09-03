@@ -17,7 +17,7 @@ int main(){
 
     aaa.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
-    NP_DSP::ONE_D::Tokenizers::InstFreqNormSincTokenizer tokenizer;
+    NP_DSP::ONE_D::Tokenizers::instFreqNormSincTokenizer tokenizer;
     tokenizer.locality_coeff = 2.5;
     tokenizer.period_muller = 1.0;
 

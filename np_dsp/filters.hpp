@@ -2626,7 +2626,7 @@ namespace NP_DSP::ONE_D::FILTERS {
             }
 
             compute_buffer.has_ovnership = true;
-            double base_inst_freq = INST_FREQ_COMPUTERS::InstFreqNorm(data, out, *inst_freq, freq_conv, freq_conv_image);
+            double base_inst_freq = INST_FREQ_COMPUTERS::instFreqNorm(data, out, *inst_freq, freq_conv, freq_conv_image);
             //std::cout << "computed inst freq norm" << std::endl;
 
             phase_computer->compute(out, compute_buffer, nullptr);

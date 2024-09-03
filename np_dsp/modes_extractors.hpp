@@ -1653,7 +1653,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
 
                 if((*phases[iter_number])[data.size() - 1] > 6.28){
                     inst_freq_computer.compute(*phases[iter_number], *inst_freqs[iter_number], nullptr);
-                    double base_inst_freq = INST_FREQ_COMPUTERS::InstFreqNorm(data, data_buffer, *inst_freqs[iter_number], freq_conv, freq_conv_image);
+                    double base_inst_freq = INST_FREQ_COMPUTERS::instFreqNorm(data, data_buffer, *inst_freqs[iter_number], freq_conv, freq_conv_image);
 
                     phase_computer_simple.compute(data_buffer, *phases[iter_number], nullptr);
 
@@ -1781,7 +1781,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
     };
 
-    struct InstFreqNormSincExtractor
+    struct instFreqNormSincExtractor
     {
         using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         DataType data;
@@ -1930,7 +1930,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
 
                 if((*phases[iter_number])[data.size() - 1] > 6.28){
                     inst_freq_computer.compute(*phases[iter_number], *inst_freqs[iter_number], nullptr);
-                    double base_inst_freq = INST_FREQ_COMPUTERS::InstFreqNorm(data, data_buffer, *inst_freqs[iter_number], freq_conv, freq_conv_image);
+                    double base_inst_freq = INST_FREQ_COMPUTERS::instFreqNorm(data, data_buffer, *inst_freqs[iter_number], freq_conv, freq_conv_image);
 
                     phase_computer_simple.compute(data_buffer, *phases[iter_number], nullptr);
 
@@ -2003,7 +2003,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
     };
 
-    struct InstFreqNormSincExtractorReq
+    struct instFreqNormSincExtractorReq
     {
         using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         DataType data;
