@@ -5,8 +5,35 @@
 #include <cstdlib>
 #include <mode_colleretion_tester.cpp>
 #include <iostream>
+#include <tokenizer.hpp>
 
-int main(){
+void tokenizerTest(){
+    NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> data;
+    NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> aaa;
+
+    for(int i = 0; i < 500; i++) {
+        data.base->vec->push_back(std::rand());
+    }
+
+    NP_DSP::ONE_D::Tokenizers::instFreqNormSincReqTokenizer tokenizer;
+    tokenizer.locality_coeff = 2.5;
+    tokenizer.period_muller = 1.05;
+    tokenizer.max_iter_number_for_filter = 3;
+    tokenizer.debug = false;
+
+
+    tokenizer.compute(data);
+
+    auto tokens = tokenizer.getTokens();
+
+    for(const auto & token: tokens){
+        std::cout << token.mode_num << " " << token.t << " " <<
+            token.val << " " << token.inst_freq << " " <<
+            token.inst_ampl << " " << token.phase << std::endl;  
+    }
+}
+
+void extractorTest(){
     NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> data;
 
     for(int i = 0; i < 500; i++) {
@@ -28,6 +55,11 @@ int main(){
     extractor.compute(data);
 
     std::cout << extractor.getModesCount() << std::endl;
+}
+
+int main(){
+    tokenizerTest();
+    extractorTest();
     return 0;
 }
 
