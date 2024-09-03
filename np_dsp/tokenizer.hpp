@@ -23,7 +23,7 @@ struct Token{
 };
 
 namespace NP_DSP::ONE_D::Tokenizers {
-    struct instFreqNormSincTokenizer
+    struct InstFreqNormSincTokenizer
     {
         using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         DataType data;
@@ -270,7 +270,7 @@ namespace NP_DSP::ONE_D::Tokenizers {
         }
     };
 
-    struct instFreqNormSincReqTokenizer
+    struct InstFreqNormSincReqTokenizer
     {
         using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         DataType data;
