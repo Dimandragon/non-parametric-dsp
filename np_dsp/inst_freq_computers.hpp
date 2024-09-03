@@ -11,6 +11,7 @@
 #include <approximators.hpp>
 #include <npdsp_config.hpp>
 #include <complex>
+#include <math.h>
 
 namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
     
@@ -1123,27 +1124,55 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
     double instFreqNorm(const DataT & data, OutT & out, const InstFreqT & inst_freq, 
         std::vector<double> & freq_conv, std::vector<double> & freq_conv_image){
         freq_conv_image.clear();
+        auto delta = 0.5;
         double freq_avg = 0.0;
         for (int i = 0; i < data.size(); i++){
             freq_avg += inst_freq[i];
         }
         freq_avg = freq_avg / data.size();
 
-        size_t iter_predict = 0;
+        double iter_predict_int = 0.;
+        double iter_predict = 0.;
         double temp = 0.0;
         double temp1;
-        while (iter_predict != out.size()){
+
+        std::option<std::pair<double, double>> max;
+        std::option<std::pair<double, double>> min;
+
+        while (std::abs(iter_predict - (double)out.size()) > delta || iter_predict_int != out.size()){
             if (iter_predict != 0){
+                //freq_avg = (std::sqrt(freq_avg*freq_avg / data.size() / data.size() * iter_predict * iter_predict)
+                //    + freq_avg) / 2.;
                 //freq_avg = std::sqrt(freq_avg*freq_avg / data.size() / data.size() * iter_predict * iter_predict);
-                freq_avg = ((freq_avg * iter_predict / static_cast<double>(data.size())) + freq_avg) / 2.; 
+
+                if (min && max){
+                    freq_avg = UTILITY_MATH::backLinearInterpolate<double, double>
+                        (min, max, (double)out.size() + delta/10.);
+                }
+                else if (max){
+                    freq_avg = 
+                }
+                else if (min){
+
+                }
+                else{
+                    auto mn = std::rand() % 100 + 1;
+                    auto mn2 = std::rand() % 100 + 1;
+                    freq_avg = (std::sqrt(freq_avg*freq_avg / data.size() / data.size() * (iter_predict - delta / 10.) * (iter_predict)) * mn
+                        + freq_avg * mn2) / (mn + mn2);
+                }
             }
-            iter_predict = 0;
-            double temp = 0.0;
+            iter_predict_int = 0;
+            temp = 0.0;
             while (temp <= (static_cast<double>(data.size()) - 1.0)){
                 temp1 = freq_avg / inst_freq.interpolate(temp, SignalKind::Universal);//linear_interpolate(freq_arr, temp);
                 temp = temp + temp1;
-                iter_predict++;
+                iter_predict_int += 1.0;
             }
+            //std::cout << iter_predict_int << " ";
+            //iter_predict = iter_predict_int / temp * static_cast<double>(data.size());
+            iter_predict = iter_predict_int / temp * static_cast<double>(data.size());
+            std::cout << iter_predict << " " << iter_predict_int <<" "<< freq_avg << " " << out.size() << std::endl;
         }
 
         temp = 0.0;
@@ -1164,6 +1193,143 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
 
         std::swap(freq_conv, freq_conv_image);
         freq_conv_image.clear();
+
+        std::cout << "GOOOOOOOAAAAAL" << std::endl;
+        return freq_avg;
+    }*/
+
+    template<Signal DataT, Signal OutT, Signal InstFreqT>
+    double instFreqNorm(const DataT & data, OutT & out, const InstFreqT & inst_freq, 
+        std::vector<double> & freq_conv, std::vector<double> & freq_conv_image){
+        freq_conv_image.clear();
+        auto delta = 0.5;
+        double freq_avg = 0.0;
+        for (int i = 0; i < data.size(); i++){
+            freq_avg += inst_freq[i];
+        }
+        freq_avg = freq_avg / data.size();
+        if(freq_avg == 0){
+            return 0.;
+        }
+
+        double iter_predict_int = 0.0;
+        double iter_predict = 0.0;
+        double temp = 0.0;
+        double temp1;
+
+        std::optional<std::pair<double, double>> max;
+        std::optional<std::pair<double, double>> min;
+
+        double lim = static_cast<double>(out.size()) + 0.1 * delta - 1.0;
+        int iter = 0;
+
+        while (true){
+            temp = 0.0;
+            for (int i = 0; i < out.size(); i++){
+                double i_f = inst_freq.interpolate(temp, SignalKind::Universal);
+                double temp1;
+                if (i_f == 0.){
+                    temp1 = 1.;
+                }
+                else{
+                    temp1 = freq_avg / i_f;
+                }
+                temp += std::abs(temp1);
+                if (temp >= lim){
+                    temp = temp * lim / (i);
+                }
+            }
+            //IC(temp, freq_avg);
+            if (temp >= (double)out.size() + delta - 1.){
+                if (!max){
+                    max = {freq_avg, temp};
+                }
+                if (max){
+                    if (freq_avg < max->first){
+                        max = {freq_avg, temp};
+                    }
+                }
+            }
+            else if (temp <= (double)out.size() - 1.0){
+                if (!min){
+                    min = {freq_avg, temp};
+                }
+                else{
+                    if (freq_avg > min->first){
+                        min = {freq_avg, temp};
+                    }
+                }
+            }
+            else{
+                break;
+            }
+            if (!max && !min){
+                auto mn = std::rand() % 100 + 1;
+                auto mn2 = std::rand() % 100 + 1;
+                freq_avg = (std::sqrt(freq_avg*freq_avg * lim * lim / temp / temp) * mn
+                    + freq_avg * mn2) / (mn + mn2);
+            }
+            else if (max && !min){
+                //IC(*max);
+                auto mn = std::rand() % 100 + 1;
+                auto mn2 = std::rand() % 100 + 1;
+
+                freq_avg = (std::sqrt(freq_avg*freq_avg * (lim - delta) * (lim - delta) / max->second / max->second) * mn
+                    + freq_avg * mn2) / (mn + mn2);
+            }
+            else if (min && !max){
+                auto mn = std::rand() % 10 + 1;
+                auto mn2 = std::rand() % 10 + 1;
+
+                freq_avg = ((freq_avg * (lim + delta) / min->second) * mn
+                    + freq_avg * mn2) / (mn + mn2);
+                freq_avg = freq_avg * (lim + lim) / min->second;
+                if (freq_avg == 0.0){
+                    int i = *reinterpret_cast<int *>(0);
+                }
+                //IC(*min, freq_avg);
+            }
+            else{
+                if (max->first == min->first){
+                    freq_avg = max->first;
+                    break;
+                }
+                //IC(*max, *min, lim);
+                if (iter % 2){
+                    freq_avg = UTILITY_MATH::backLinearInterpolate<double, double>
+                        (*min, *max, lim);
+                }
+                else{
+                    freq_avg = (min->first / 2.0 + max->first / 2.0);
+                }
+                iter++;
+                //freq_avg = (min->first * (max->second - lim) + max->first * (lim - min->second)) / ((lim - min->second) + (max->second - lim));
+                //IC(*max, *min, lim, freq_avg);
+            }
+        }
+        double temp_res = temp;
+        temp = 0.0;
+        auto counter = 0;
+        while (temp<=temp_res){
+            temp1 = freq_avg / inst_freq.interpolate(temp, SignalKind::Universal);
+            //out_signal.push(linear_interpolate(signal_in, temp));
+            if(counter == out.size()){
+                break;
+            }
+            out[counter] = data.interpolate(temp, SignalKind::Universal);
+            //freq_conv_image.push(temp1 * linear_interpolate(freq_conv, temp));
+            freq_conv_image.push_back(temp1 * UTILITY_MATH::linearInterpolate<double, double>({static_cast<int>(temp), freq_conv[static_cast<int>(temp)]},
+                {static_cast<int>(temp) + 1, freq_conv[static_cast<int>(temp + 1)]}, temp));
+            temp = temp + temp1;
+            counter++;
+        }
+
+        //IC(counter);
+
+        std::swap(freq_conv, freq_conv_image);
+        freq_conv_image.clear();
+
+        //std::cout << "GOOOOOOOAAAAAL" << std::endl;
         return freq_avg;
     }
 
