@@ -30,8 +30,8 @@ target("non-parametric_dsp")
 
 
 
-target("main_extractor_example")
-    set_kind("binary")
-    add_files("example/main.cpp")
-    add_deps("non-parametric_dsp")
+--target("main_extractor_example")
+--    set_kind("binary")
+--    add_files("example/main.cpp")
+--    add_deps("non-parametric_dsp")
     --add_deps("my-icecream")
