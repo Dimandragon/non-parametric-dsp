@@ -1245,26 +1245,24 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         std::optional<std::pair<double, double>> max;
         std::optional<std::pair<double, double>> min;
 
-        double lim = static_cast<double>(out.size()) + 0.1 * delta - 1.0;
+        const double lim = static_cast<double>(out.size()) + 0.1 * delta - 1.0;
         int iter = 0;
+        
 
-        while (true){
+        auto findIterLambda = [&]() ->bool{
             temp = 0.0;
             for (int i = 0; i < out.size(); i++){
                 double i_f = inst_freq.interpolate(temp, SignalKind::Universal);
                 double temp1;
                 if (i_f == 0.){
-                    temp1 = 1.;
+                    temp1 = 1;
                 }
                 else{
                     temp1 = freq_avg / i_f;
                 }
                 temp += std::abs(temp1);
-                if (temp >= lim){
-                    temp = temp * lim / (i);
-                }
             }
-            //IC(temp, freq_avg);
+            
             if (temp >= (double)out.size() + delta - 1.){
                 if (!max){
                     max = {freq_avg, temp};
@@ -1286,40 +1284,25 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                 }
             }
             else{
-                break;
+                return false;
             }
             if (!max && !min){
-                auto mn = std::rand() % 100 + 1;
-                auto mn2 = std::rand() % 100 + 1;
-                freq_avg = (std::sqrt(freq_avg*freq_avg * lim * lim / temp / temp) * mn
-                    + freq_avg * mn2) / (mn + mn2);
+                freq_avg = std::sqrt(freq_avg*freq_avg * lim * lim / temp / temp);
             }
             else if (max && !min){
-                //IC(*max);
-                auto mn = std::rand() % 100 + 1;
-                auto mn2 = std::rand() % 100 + 1;
-
-                freq_avg = (std::sqrt(freq_avg*freq_avg * (lim - delta) * (lim - delta) / max->second / max->second) * mn
-                    + freq_avg * mn2) / (mn + mn2);
+                freq_avg = std::sqrt(freq_avg*freq_avg * (lim - delta) * (lim - delta) / max->second / max->second);
             }
             else if (min && !max){
-                auto mn = std::rand() % 10 + 1;
-                auto mn2 = std::rand() % 10 + 1;
-
-                freq_avg = ((freq_avg * (lim + delta) / min->second) * mn
-                    + freq_avg * mn2) / (mn + mn2);
                 freq_avg = freq_avg * (lim + lim) / min->second;
                 if (freq_avg == 0.0){
                     int i = *reinterpret_cast<int *>(0);
                 }
-                //IC(*min, freq_avg);
             }
             else{
                 if (max->first == min->first){
                     freq_avg = max->first;
-                    break;
+                    return false;
                 }
-                //IC(*max, *min, lim);
                 if (iter % 2){
                     freq_avg = UTILITY_MATH::backLinearInterpolate<double, double>
                         (*min, *max, lim);
@@ -1328,31 +1311,51 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     freq_avg = (min->first / 2.0 + max->first / 2.0);
                 }
                 iter++;
-                //freq_avg = (min->first * (max->second - lim) + max->first * (lim - min->second)) / ((lim - min->second) + (max->second - lim));
-                //IC(*max, *min, lim, freq_avg);
             }
-        }
+            return true;
+        };
+        while (findIterLambda()){}
+
         double temp_res = temp;
         temp = 0.0;
         auto counter = 0;
         while (temp<=temp_res){
-            temp1 = freq_avg / inst_freq.interpolate(temp, SignalKind::Universal);
+            double i_f = inst_freq.interpolate(temp, SignalKind::Universal);
+            double temp1;
+            if (i_f == 0.){
+                temp1 = 1;
+            }
+            else{
+                temp1 = freq_avg / i_f;
+            }
             //out_signal.push(linear_interpolate(signal_in, temp));
             if(counter == out.size()){
                 break;
             }
             out[counter] = data.interpolate(temp, SignalKind::Universal);
             //freq_conv_image.push(temp1 * linear_interpolate(freq_conv, temp));
-            freq_conv_image.push_back(temp1 * UTILITY_MATH::linearInterpolate<double, double>({static_cast<int>(temp), freq_conv[static_cast<int>(temp)]},
+            if (static_cast<int>(temp) >= freq_conv.size() - 1){
+                auto idx_ = freq_conv.size() - 1;
+                freq_conv_image.push_back(temp1 * UTILITY_MATH::linearInterpolate<double, double>({static_cast<int>(temp), freq_conv[idx_-1]},
+                    {static_cast<int>(temp) + 1, freq_conv[idx_]}, temp));
+            }
+            else{
+                freq_conv_image.push_back(temp1 * UTILITY_MATH::linearInterpolate<double, double>({static_cast<int>(temp), freq_conv[static_cast<int>(temp)]},
                 {static_cast<int>(temp) + 1, freq_conv[static_cast<int>(temp + 1)]}, temp));
+            }
             temp = temp + temp1;
             counter++;
         }
 
-        //IC(counter);
-
         std::swap(freq_conv, freq_conv_image);
         freq_conv_image.clear();
+
+        double freq_conv_red = 0.0;
+        for (int i = 0; i < freq_conv.size(); i++){
+            freq_conv_red += freq_conv[i];
+        }
+
+        //IC(freq_conv_red);
 
         //std::cout << "GOOOOOOOAAAAAL" << std::endl;
         return freq_avg;
@@ -1430,34 +1433,39 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         for (int i = 0; i < freq_conv.size(); i++){
             sum += freq_conv[i];
         }
+        
         size_t iter_predict = 0;
 
-        while (temp <= (data.size() - 1)){
-            temp1 = 1.0 / UTILITY_MATH::linearInterpolate<double, double>({static_cast<int>(temp), freq_conv[static_cast<int>(temp)]},
+        auto first_find_iter_loop_body = [&](int flag){
+            double fc = UTILITY_MATH::linearInterpolate<double, double>({static_cast<int>(temp), freq_conv[static_cast<int>(temp)]},
                 {static_cast<int>(temp) + 1, freq_conv[static_cast<int>(temp) + 1]}, temp);
             
-            if (0.0 == UTILITY_MATH::linearInterpolate<double, double>({static_cast<int>(temp), freq_conv[static_cast<int>(temp)]},
-                {static_cast<int>(temp) + 1, freq_conv[static_cast<int>(temp) + 1]}, temp))
+            if (0.0 == fc)
             {
                 temp = temp + 1.0;
+                iter_predict++;
             }
             else{
-                temp = temp + temp1;
-                iter_predict = iter_predict+1;
+                temp = temp + 1.0 / fc;
+                iter_predict++;
             }
+        };
+
+        while (temp <= (data.size() - 1)){
+            first_find_iter_loop_body(1);
         }
 
         double one = 1.0;
         one = one / data.size() * iter_predict;
         temp = 0.0;
         size_t counter = 0;
-        while (temp <= static_cast<double>(data.size()) - 1.0){
-            temp1 = one / UTILITY_MATH::linearInterpolate<double, double>({static_cast<int>(temp), freq_conv[static_cast<int>(temp)]},
+        auto find_iter = [&](bool arg){
+            double fc = UTILITY_MATH::linearInterpolate<double, double>({static_cast<int>(temp), freq_conv[static_cast<int>(temp)]},
                 {static_cast<int>(temp) + 1, freq_conv[static_cast<int>(temp) + 1]}, temp);
-            if (0.0 == UTILITY_MATH::linearInterpolate<double, double>({static_cast<int>(temp), freq_conv[static_cast<int>(temp)]},
-                {static_cast<int>(temp) + 1, freq_conv[static_cast<int>(temp) + 1]}, temp))
+            if (0.0 == fc)
             {
                 temp = temp + 1.0;
+                counter++;
             }
             else{
                 //arrout.push(linear_interpolate::<T>(arrin, temp));
@@ -1465,14 +1473,24 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     out[counter] = data.interpolate(temp, SignalKind::Universal);
                     //IC(counter, temp, out[counter]);
                     counter++;
-                    temp = temp + temp1;
+                    temp = temp + one / fc;
                 }
                 else{
-                    break;
+                    return false;
                 }
             }
+            return true;
+        };
+        while (temp <= static_cast<double>(data.size()) - 1.0){
+            if (!find_iter(true)){
+                break;
+            }
         }
+        //IC(sum, iter_predict, temp);
     }
 
-    
+    template<Signal DataT, Signal OutT>
+    void backInstFreqNormNew(DataT const & data, OutT & out, std::vector<double> & freq_conv){
+        //todo
+    }
 }
