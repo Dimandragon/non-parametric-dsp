@@ -19,6 +19,10 @@ task("build matplot++")
         fl = os.exec("sh matplot_build.sh")
     end)
 
+target("boost_interpolate")
+    set_kind("headeronly")
+    add_includedirs("interpolate_from_boost", {public = true})
+
 target("matplot++_external")
     set_kind("headeronly")
     --on_load(function(target)
