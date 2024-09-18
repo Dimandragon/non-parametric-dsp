@@ -53,6 +53,20 @@ namespace NP_DSP::ONE_D::APPROX {
             return i / tile_size * tile_size + i / tile_size * tile_size + tile_size - i;
         }
 
+        template<Signal SignalType>
+        void computeFSFromData(SignalType& signal_in){
+            for (size_t i = 0; i < signal_in.size(); i++){
+                approximated_data[i] = {signal_in[i], 0.0};
+            }
+            is_actual = true;
+            for (auto i = 0; i < approximated_data.size() / tile_size; i++) {
+                auto const pad = i * tile_size;
+                UTILITY_MATH::fftc2c(approximated_data, fourier_series, tile_size, pad);
+            }
+            auto const pad = approximated_data.size() / tile_size * tile_size;
+            UTILITY_MATH::fftc2c(approximated_data, fourier_series, approximated_data.size() - pad, pad);
+        }
+
         void applyMirror(size_t const i) {
             if (i % tile_size != 0) {
                 auto const mirror_idx = mirrorIdx(i);
@@ -91,7 +105,7 @@ namespace NP_DSP::ONE_D::APPROX {
             std::complex<double> accum = {0.0, 0.0};
 
             if (idx <= approximated_data.size() && idx >= 0) {
-                auto tile_first_idx = idx / tile_size * tile_size;
+                auto tile_first_idx = static_cast<int>(idx) / tile_size * tile_size;
                 if (tile_first_idx + tile_size < approximated_data.size()) {
                     SampleType w = std::numbers::pi * 2.0 * static_cast<SampleType>(idx) / static_cast<SampleType>(
                                        tile_size);
@@ -876,6 +890,172 @@ namespace NP_DSP::ONE_D::APPROX {
                 }
 
                 check_loss(trigonometric_sample);
+            }
+        }
+
+        void show(const PlottingKind kind) {
+            
+        }
+
+        void show(const PlottingKind kind, const std::string& filename, const std::string& format) {
+            
+        }
+
+        void show(const PlottingKind kind, const std::string& filename) {
+            
+        }
+    };
+
+    struct FourierSeriesBasedWithNoTrain {
+        //static constexpr bool is_signal_approximator = true;
+        size_t signal_size;
+        bool is_actual = false;
+        int polynoms_count;
+
+        int polynoms_count_on_tile;
+        int tile_size;
+
+        std::vector<std::complex<double>> fourier_series;
+        std::vector<std::complex<double>> approximated_data;
+
+
+        template<Signal SignalType>
+        FourierSeriesBasedWithNoTrain(const SignalType & signal_in) {
+            signal_size = signal_in.size();
+            fourier_series = std::vector<std::complex<double>>(signal_in.size());
+            approximated_data = std::vector<std::complex<double>>(signal_in.size());
+            polynoms_count = signal_in.size();
+            polynoms_count_on_tile = signal_in.size();
+            tile_size = signal_in.size();
+        }
+
+        template<Signal SignalType>
+        void computeFSFromData(SignalType& signal_in){
+            for (size_t i = 0; i < signal_in.size(); i++){
+                approximated_data[i] = {signal_in[i], 0.0};
+            }
+            is_actual = true;
+            for (auto i = 0; i < approximated_data.size() / tile_size; i++) {
+                auto const pad = i * tile_size;
+                UTILITY_MATH::fftc2c(approximated_data, fourier_series, tile_size, pad);
+            }
+            auto const pad = approximated_data.size() / tile_size * tile_size;
+            UTILITY_MATH::fftc2c(approximated_data, fourier_series, approximated_data.size() - pad, pad);
+        }
+
+        size_t mirrorIdx(size_t const i) const {
+            return i / tile_size * tile_size + i / tile_size * tile_size + tile_size - i;
+        }
+
+        void applyMirror(size_t const i) {
+            if (i % tile_size != 0) {
+                auto const mirror_idx = mirrorIdx(i);
+                fourier_series[mirror_idx] = {fourier_series[i].real() / 2.0, -fourier_series[i].imag() / 2.0};
+                fourier_series[i] = fourier_series[i] / 2.0;
+            }
+        }
+
+        void computeData() {
+            is_actual = true;
+            for (auto i = 0; i < approximated_data.size() / tile_size; i++) {
+                auto const pad = i * tile_size;
+                UTILITY_MATH::ifftc2c(fourier_series, approximated_data, tile_size, pad);
+            }
+            auto const pad = approximated_data.size() / tile_size * tile_size;
+            UTILITY_MATH::ifftc2c(fourier_series, approximated_data, approximated_data.size() - pad, pad);
+        }
+
+        void computeTile(size_t const idx) {
+            auto const i = idx / tile_size;
+            auto const pad = i * tile_size;
+            if (approximated_data.size() > pad + tile_size) {
+                UTILITY_MATH::ifftc2c(fourier_series, approximated_data, tile_size, pad);
+            } else {
+                UTILITY_MATH::ifftc2c(fourier_series, approximated_data, approximated_data.size() - pad, pad);
+            }
+        }
+
+        void setApproxOrderRatio(double const ratio) {
+            polynoms_count_on_tile = static_cast<int>(static_cast<double>(tile_size) * 0.5 * ratio);
+        }
+
+        template<typename IdxT>
+        std::complex<double> computeSample(IdxT idx) {
+            using SampleType = double;
+            std::complex<double> accum = {0.0, 0.0};
+
+            if (idx <= approximated_data.size() && idx >= 0) {
+                auto tile_first_idx = idx / tile_size * tile_size;
+                if (tile_first_idx + tile_size < approximated_data.size()) {
+                    SampleType w = std::numbers::pi * 2.0 * static_cast<SampleType>(idx) / static_cast<SampleType>(
+                                       tile_size);
+                    for (auto i = 0; i < tile_size; i++) {
+                        accum += fourier_series[i + tile_first_idx] * std::complex<SampleType>{
+                            std::cos(w * i), std::sin(w * i)
+                        };
+                    }
+                } else {
+                    SampleType w = std::numbers::pi * 2.0 * static_cast<SampleType>(idx) /
+                                   static_cast<SampleType>(approximated_data.size() - tile_first_idx);
+                    for (auto i = 0; i < approximated_data.size() - tile_first_idx; i++) {
+                        accum += fourier_series[i + tile_first_idx] * std::complex<SampleType>{
+                            std::cos(w * i), std::sin(w * i)
+                        };
+                    }
+                }
+            } else if (idx > approximated_data.size()) {
+                auto tile_first_idx = approximated_data.size() / tile_size * tile_size;
+                SampleType w = std::numbers::pi * 2.0 * static_cast<SampleType>(idx) /
+                               static_cast<SampleType>(approximated_data.size() - tile_first_idx);
+                for (auto i = 0; i < approximated_data.size() - tile_first_idx; i++) {
+                    accum += fourier_series[i + tile_first_idx] * std::complex<SampleType>{
+                        std::cos(w * i), std::sin(w * i)
+                    };
+                }
+            } else {
+                if (approximated_data.size() > tile_size) {
+                    SampleType w = std::numbers::pi * 2.0 * static_cast<SampleType>(idx) /
+                                   static_cast<SampleType>(tile_size);
+                    for (auto i = 0; i < tile_size; i++) {
+                        accum += fourier_series[i] * std::complex<SampleType>{std::cos(w * i), std::sin(w * i)};
+                    }
+                } else {
+                    SampleType w = std::numbers::pi * 2.0 * static_cast<SampleType>(idx) /
+                                   static_cast<SampleType>(approximated_data.size());
+                    for (auto i = 0; i < approximated_data.size(); i++) {
+                        accum += fourier_series[i] * std::complex<SampleType>{std::cos(w * i), std::sin(w * i)};
+                    }
+                }
+            }
+
+            return accum;
+        }
+
+        template<typename SampleType, typename IdxType>
+        SampleType compute(IdxType idx) {
+            if (std::abs(static_cast<double>(idx) - static_cast<int64_t>(idx)) == 0) {
+                if (is_actual) {
+                    return approximated_data[idx].real();
+                } else {
+                    computeData();
+                    return approximated_data[idx].real();
+                }
+            } else {
+                return computeSample(idx).real();
+            }
+        }
+
+        template<typename SampleType, typename IdxType>
+        std::complex<SampleType> computeComplex(IdxType idx) {
+            if (std::abs(static_cast<double>(idx) - static_cast<int64_t>(idx)) == 0) {
+                if (is_actual) {
+                    return approximated_data[idx];
+                } else {
+                    computeData();
+                    return approximated_data[idx];
+                }
+            } else {
+                return computeSample(idx);
             }
         }
 
