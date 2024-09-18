@@ -252,18 +252,13 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
             //    IC(phase_base[i], extremums[i]);
             //}
 
-            if constexpr (CONFIG::debug) {
-                IC(phase_base);
-            }
             approximator = APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain
                 <std::vector<double>>();
             approximator->loadData(extremums, phase_base);
 
             for (int i = 0; i < data.size(); i++){
                 out[i] = approximator->compute<double>(i);
-                //IC(out[i], i);
             }
-            //IC(out);
         }
 
         template<Signal DataType, Signal OutType>
@@ -306,9 +301,6 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 phase_base.push_back(i * std::numbers::pi);
             }
 
-            if constexpr (CONFIG::debug) {
-                IC(phase_base);
-            }
             approximator = APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain
                 <std::vector<double>>();
             approximator->loadData(extremums, phase_base);

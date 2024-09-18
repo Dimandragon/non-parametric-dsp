@@ -1584,7 +1584,5 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
             temp += temp1;
             counter++;
         }
-
-        IC(counter, temp);
     }
 }
