@@ -1071,4 +1071,106 @@ namespace NP_DSP::ONE_D::APPROX {
             
         }
     };
+
+    template<typename T>
+    struct ModifiedAkimaBasedWithNoTrain {
+        //using boost::math::interpolators::makima;
+        std::optional<boost::math::interpolators::makima<std::vector<double>>> spline = {};
+        double min_bound = 0.0;
+        double max_bound = 0.0;
+
+        void loadData(const T & x, const T & y){
+            std::vector<double> x_(x.size());
+            std::vector<double> y_(x.size());
+            for (auto i = 0; i < x.size(); i++){
+                auto const & el = x[i];
+                x_[i] = el;
+            }
+            for (auto i = 0; i < x.size(); i++){
+                auto const & el = y[i];
+                y_[i] = el;
+            }
+            double min = 9999999999999999999999.0; //todo
+            double max = -9999999999999999999999.0; //todo
+            for (auto const & el : x_){
+                if (el < min){
+                    min = el;
+                }
+                if (el > max){
+                    max = el;
+                }
+            }
+            min_bound = min;
+            max_bound = max;
+            spline = boost::math::interpolators::makima
+                <std::vector<double>>(std::move(x_), std::move(y_));
+        }
+
+        void loadData(const T & y){
+            //IC(y.size());
+            std::vector<double> x_(y.size());
+            std::vector<double> y_(y.size());
+            for (int i = 0; i < y.size(); i++){
+                x_[i] = (double)i;
+            }
+            for (int i = 0; i < y.size(); i++){
+                auto const & el = y[i];
+                y_[i] = el;
+            }
+            //IC(y_.size());
+            min_bound = 0.0;
+            max_bound = y.size() - 1;
+
+            spline = boost::math::interpolators::makima
+                <std::vector<double>>(std::move(x_), std::move(y_));
+        }
+
+        template<typename IdxT>
+        double compute(IdxT idx){
+            if (idx >= min_bound && idx <= max_bound){
+                return (*spline)(idx);
+            }
+            else if (idx < min_bound){
+                int64_t _idx = static_cast<int64_t>(idx);
+                double idx_ = idx - _idx;
+                auto size = max_bound - min_bound;
+                int64_t _size = static_cast<int64_t>(size); //todo size_
+                double new_idx = size + (_idx - static_cast<int64_t>(min_bound)) % _size + min_bound;
+                new_idx -= idx_;
+                return (*spline)(new_idx);
+            }
+            else{
+                int64_t _idx = static_cast<int64_t>(idx);
+                double idx_ = idx - _idx;
+                auto size = max_bound - min_bound;
+                auto _size = static_cast<int64_t>(size); //todo size_
+                double new_idx = _idx % _size + idx_;
+                return (*spline)(new_idx);
+            }
+        }
+
+        template<typename IdxT>
+        double computeDerive(IdxT idx){
+            if (idx >= min_bound && idx <= max_bound){
+                return spline->prime(idx);
+            }
+            else if (idx < min_bound){
+                int64_t _idx = static_cast<int64_t>(idx);
+                double idx_ = idx - _idx;
+                auto size = max_bound - min_bound;
+                int64_t _size = static_cast<int64_t>(size); //todo size_
+                double new_idx = size + (_idx - static_cast<int64_t>(min_bound)) % _size + min_bound;
+                new_idx -= idx_;
+                return spline->prime(new_idx);
+            }
+            else{
+                int64_t _idx = static_cast<int64_t>(idx);
+                double idx_ = idx - _idx;
+                auto size = max_bound - min_bound;
+                auto _size = static_cast<int64_t>(size); //todo size_
+                double new_idx = _idx % _size + idx_;
+                return spline->prime(new_idx);
+            }
+        }
+    };
 }
