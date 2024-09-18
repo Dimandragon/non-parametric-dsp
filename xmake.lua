@@ -9,6 +9,9 @@ set_languages("c++23")
 --add_requires("libomp")
 --add_requires("libtorch")
 
+target("boost_interpolate")
+    set_kind("headeronly")
+    add_includedirs("interpolate_from_boost", {public = true})
 
 target("pocketfft")
     set_kind("headeronly")
@@ -27,6 +30,7 @@ target("non-parametric_dsp")
     add_includedirs("np_dsp", {public = true})
 
     add_deps("pocketfft")
+    add_deps("boost_interpolate")
 
 
 
