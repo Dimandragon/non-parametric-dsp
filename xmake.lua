@@ -2,7 +2,7 @@ add_rules("mode.debug", "mode.release")
 
 set_languages("c++23")
 
---xmake f --cxx=clang++ --cc=clang -m debug --debugger=lldb-16
+--xmake f --cxx=g++ --cc=gcc -m release --debugger=lldb
 --xmake project -k compile_commands
 
 --add_requires("libomp")
@@ -388,4 +388,17 @@ target("makima_approximator_example")
     add_deps("matplot++_external")
     add_deps("non-parametric_dsp")
     add_deps("icecream")
+
+target("phase_pchip_approx_experiment")
+    set_kind("binary")
+    add_files("examples/phase_computers/pchip_experient.cpp")
+    add_deps("matplot++_external")
+    add_deps("non-parametric_dsp")
+    add_deps("icecream")
+
+target("extremums_pchip_based_phase_computer")
+    set_kind("binary")
+    add_files("examples/phase_computers/extremums_pchip_based.cpp")
+    add_deps("matplot++_external")
+    add_deps("non-parametric_dsp")
     add_deps("icecream")

@@ -197,6 +197,134 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
         }
     };
 
+    template<typename U, ExtremumsKind kind_e, Derivator<U> DerivatorT>
+    struct ExtremumsBasedUsingPCHIP{
+        using AdditionalDataType = GENERAL::Nil;
+
+        DerivatorT derivator;
+
+        constexpr static bool is_phase_computer = true;
+
+        std::optional<APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain
+                <std::vector<double>>> approximator;
+
+        template<Signal DataType, Signal OutType>
+        void compute(const DataType& data, OutType& out, auto * nil) {
+            if constexpr (kind_e == ExtremumsKind::DerArctg) {
+                derivator.compute(data, out, nullptr);
+                for (int i = 0; i < data.size(); i++){
+                    out[i] = std::atan(out[i]);
+                }
+            } else if constexpr (kind_e == ExtremumsKind::Simple) {
+                for (int i = 0; i < data.size(); i++) {
+                    out[i] = data[i];
+                }
+            }
+
+            std::vector<double> extremums;
+            extremums.push_back(0);
+            for (int i = 1; i < out.size() - 1; i++) {
+                if ((out[i] >= out[i - 1] &&
+                     out[i] > out[i + 1]) ||
+                    (out[i] > out[i - 1] &&
+                     out[i] >= out[i + 1]) ||
+                    (out[i] <= out[i - 1] &&
+                     out[i] < out[i + 1]) ||
+                    (out[i] < out[i - 1] &&
+                     out[i] <= out[i + 1])) {
+                    extremums.push_back(i);
+                }
+            }
+            extremums.push_back(out.size() - 1);
+
+            if (extremums.size() < 4){
+                while (extremums.size() != 4){
+                    extremums.push_back(extremums[extremums.size() - 1] * 2 - extremums[extremums.size() - 2]);
+                }
+            }
+
+            std::vector<double> phase_base;
+            for (auto i = 0; i < extremums.size(); i++) {
+                phase_base.push_back(i * std::numbers::pi);
+            }
+
+
+            //IC(phase_base.size(), extremums.size());
+            //for (int i = 0; i < phase_base.size(); i++){
+            //    IC(phase_base[i], extremums[i]);
+            //}
+
+            if constexpr (CONFIG::debug) {
+                IC(phase_base);
+            }
+            approximator = APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain
+                <std::vector<double>>();
+            approximator->loadData(extremums, phase_base);
+
+            for (int i = 0; i < data.size(); i++){
+                out[i] = approximator->compute<double>(i);
+                //IC(out[i], i);
+            }
+            //IC(out);
+        }
+
+        template<Signal DataType, Signal OutType>
+        void compute(const DataType& data, OutType& out, std::nullptr_t * nil) {
+            if constexpr (kind_e == ExtremumsKind::DerArctg) {
+                derivator.compute(data, out, nullptr);
+                for (int i = 0; i < data.size(); i++){
+                    out[i] = std::atan(out[i]);
+                }
+            } else if constexpr (kind_e == ExtremumsKind::Simple) {
+                for (int i = 0; i < data.size(); i++) {
+                    out[i] = data[i];
+                }
+            }
+
+            std::vector<double> extremums;
+            extremums.push_back(0.0);
+            for (int i = 1; i < out.size() - 1; i++) {
+                if ((out[i] >= out[i - 1] &&
+                     out[i] > out[i + 1]) ||
+                    (out[i] > out[i - 1] &&
+                     out[i] >= out[i + 1]) ||
+                    (out[i] <= out[i - 1] &&
+                     out[i] < out[i + 1]) ||
+                    (out[i] < out[i - 1] &&
+                     out[i] <= out[i + 1])) {
+                    extremums.push_back(i);
+                }
+            }
+            extremums.push_back(out.size() - 1);
+
+            if (extremums.size() < 4){
+                while (extremums.size() != 4){
+                    extremums.push_back(extremums[extremums.size() - 1] * 2 - extremums[extremums.size() - 2]);
+                }
+            }
+
+            std::vector<double> phase_base;
+            for (auto i = 0; i < extremums.size(); i++) {
+                phase_base.push_back(i * std::numbers::pi);
+            }
+
+            if constexpr (CONFIG::debug) {
+                IC(phase_base);
+            }
+            approximator = APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain
+                <std::vector<double>>();
+            approximator->loadData(extremums, phase_base);
+
+            for (int i = 0; i < data.size(); i++){
+                out[i] = approximator->compute<double>(i);
+            }
+        }
+
+        double derive(double idx){
+            return approximator->computeDerive(idx);
+        }
+    };
+
     
     template<typename U,
         ExtremumsKind kind_e, Integrator<U> IntegratorT, Derivator<U> DerivatorT>
