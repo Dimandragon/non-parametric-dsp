@@ -16,9 +16,7 @@
 namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
     
     enum class InstFreqDerivativeBasedKind { Momental, TimeAverage, DeriveAverage, DeriveDouble };
-
-    
-    enum class ExtremumsKind { Simple, DerArctg };
+    using namespace UTILITY_MATH;
 
     
     template<typename U, ExtremumsKind kind_e, Derivator<U> DerivatorT>
