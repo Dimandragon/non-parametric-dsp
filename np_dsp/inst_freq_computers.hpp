@@ -1258,6 +1258,112 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
             out[i] = approximator.compute(i);
         }
     }
+
+    template<Signal DataT, Signal OutT>
+    double instFreqNormExtrBased(DataT const & data, OutT & out,
+        APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain<std::vector<double>> & idx_approx, 
+        std::vector<double> & extremums)
+    {
+        //std::vector<double> extremums;
+        UTILITY_MATH::computeExtremums<DataT, double>
+            (data, extremums, UTILITY_MATH::ExtremumsKind::Simple);
+        
+        double period = static_cast<double>(data.size() - 1) / static_cast<double>(extremums.size() - 1);
+
+        std::vector<double> extremums_old_idx;
+        std::vector<double> extremums_new_idx;
+        extremums_old_idx.push_back(-extremums[1]);
+        extremums_new_idx.push_back(-period);
+        for (int i = 0; i < extremums.size(); i++){
+            extremums_old_idx.push_back(extremums[i]);
+            extremums_new_idx.push_back(i * period);
+        }
+        extremums_old_idx.push_back(extremums[extremums.size() - 1] * 2 - extremums[extremums.size() - 2]);
+        extremums_new_idx.push_back(extremums.size() * period);
+
+        idx_approx.loadData(extremums_new_idx, extremums_old_idx);
+
+        APPROX::ModifiedAkimaBasedWithNoTrain<std::vector<double>> signal_approx;
+        //signal_approx.loadData(*(data.base->vec));
+        std::vector<double> data_vec;
+        for (int i = 0; i < data.size(); i++){
+            data_vec.push_back(data[i]);
+        }
+        signal_approx.loadData(data_vec);
+
+        for (int i = 0; i < data.size(); i++){
+            out[i] = signal_approx.compute(idx_approx.compute(i));
+            //IC(i, idx_approx.compute(i));
+        }
+
+        return period;
+    }
+
+    template<Signal DataT, Signal OutT>
+    double instFreqNormComputedOnExtremums(DataT const & data, OutT & out,
+        APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain<std::vector<double>> & idx_approx, 
+        const std::vector<double> & extremums)
+    {
+        //std::vector<double> extremums;
+        //UTILITY_MATH::computeExtremums<DataT, double>
+        //    (data, extremums, UTILITY_MATH::ExtremumsKind::Simple);
+        
+        double period = static_cast<double>(data.size() - 1) / static_cast<double>(extremums.size() - 1);
+
+        std::vector<double> extremums_old_idx;
+        std::vector<double> extremums_new_idx;
+        extremums_old_idx.push_back(-extremums[1]);
+        extremums_new_idx.push_back(-period);
+        for (int i = 0; i < extremums.size(); i++){
+            extremums_old_idx.push_back(extremums[i]);
+            extremums_new_idx.push_back(i * period);
+        }
+        extremums_old_idx.push_back(extremums[extremums.size() - 1] * 2 - extremums[extremums.size() - 2]);
+        extremums_new_idx.push_back(extremums.size() * period);
+
+        idx_approx.loadData(extremums_new_idx, extremums_old_idx);
+
+        APPROX::ModifiedAkimaBasedWithNoTrain<std::vector<double>> signal_approx;
+        //signal_approx.loadData(*(data.base->vec));
+        std::vector<double> data_vec;
+        for (int i = 0; i < data.size(); i++){
+            data_vec.push_back(data[i]);
+        }
+        signal_approx.loadData(data_vec);
+
+        for (int i = 0; i < data.size(); i++){
+            out[i] = signal_approx.compute(idx_approx.compute(i));
+            //IC(i, idx_approx.compute(i));
+        }
+
+        return period;
+    }
+
+    template<Signal DataT, Signal OutT>
+    void backInstFreqNormExtrBased(DataT const & data, OutT & out,
+        APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain<std::vector<double>> & idx_approx){
+        APPROX::ModifiedAkimaBasedWithNoTrain<std::vector<double>> signal_res_approx;
+        std::vector<double> data_vec;
+
+        auto val_expr = [&](double idx){
+            return idx_approx.compute(idx);
+        };
+        auto size_expr = [&](){
+            return data.size();
+        };
+        ExpressionWrapper<double, double, decltype(val_expr), GENERAL::Nil, decltype(size_expr), false> expr_wrapper(val_expr, size_expr);
+        GenericSignalRExpr<decltype(expr_wrapper)> resampled_idx_signal(expr_wrapper);
+
+        for (int i = 0; i < data.size(); i++){
+            data_vec.push_back(data[i]);
+        }
+        signal_res_approx.loadData(data_vec);
+
+        for(int i = 0; i < data.size(); i++){
+            //IC(i, resampled_idx_signal.findMonotone(i, {}, {}, {i}, 0.01));
+            out[i] = signal_res_approx.compute(resampled_idx_signal.findMonotone(i, {}, {}, {}, 0.01));
+        }
+    }
     
     template<Signal DataT, Signal OutT, Signal InstFreqT>
     double instFreqNormDouble(const DataT & data, const OutT & out, const InstFreqT & inst_freq, 
