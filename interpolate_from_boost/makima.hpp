@@ -113,6 +113,10 @@ public:
         return impl_->operator()(x);
     }
 
+    Real derive(Real x, Real a) const {
+        return impl_->derive(x, a);
+    }
+
     Real prime(Real x) const {
         return impl_->prime(x);
     }
