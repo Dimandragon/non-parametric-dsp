@@ -180,124 +180,14 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
 
         template<Signal DataType, Signal OutType>
         void compute(const DataType& phase, OutType& out, auto * nil) {
-            using T = typename OutType::SampleType;
-            //nil may bee nullptr
-            if constexpr (counting_kind == InstFreqDerivativeBasedKind::Momental) {
-                derivator.compute(phase, out, nullptr);
-                for (int i = 0; i < phase.size(); i++) {
-                    out[i] = out[i] / (std::numbers::pi * 2.0);
-                }
-            } else if constexpr (counting_kind == InstFreqDerivativeBasedKind::TimeAverage) {
-                for (auto i = 0; i < phase.size(); i++) {
-                    auto approx_answer_x = 0.0;
-                    auto approx_answer_y = 0.0;
-                    auto counter = 0;
-                    double x_left = 0.0;
-                    double x_right = phase.size();
-                    double y_left = 0.0;
-                    double y_right = findPeriodDistanceAverage(phase, i, x_right);
-
-
-                    while (x_right - x_left > 1.0) {
-                        approx_answer_x = UTILITY_MATH::backLinearInterpolate<double, double>
-                            ({x_left, y_left}, {x_right, y_right}, 
-                                2.0 * std::numbers::pi * variability);
-                        approx_answer_y = findPeriodDistanceAverage(phase, i, approx_answer_x);
-                        if (approx_answer_y > y_right){
-                            y_left = y_right;
-                            y_right = approx_answer_y;
-                            x_left = x_right;
-                            x_right = approx_answer_x;
-                        }
-                        else if (approx_answer_y < y_left){
-                            y_right = y_left;
-                            x_right = x_left;
-                            y_left = approx_answer_y;
-                            x_left = approx_answer_x;
-                        }
-                        else if (approx_answer_y > 2.0 * std::numbers::pi * variability){
-                            y_right = approx_answer_y;
-                            y_left = approx_answer_x;
-                        }
-                        else if (approx_answer_y < 2.0 * std::numbers::pi * variability){
-                            y_left = approx_answer_y;
-                            y_left = approx_answer_x;
-                        }
-                    }
-                    auto period = 1.0 / UTILITY_MATH::backLinearInterpolate<double, double>
-                        ({x_left, y_left}, {x_right, y_right}, 
-                                2.0 * std::numbers::pi * variability) * 2.0;
-                    out[i] = static_cast<T>(1.0 / period) * variability;
-                }
-            } else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveAverage) {
-                for (auto i = 0; i < phase.size(); i++) {
-                    auto approx_answer_right = static_cast<T>(0.0);
-                    auto old_approx_answer_right = approx_answer_right;
-                    auto counter = 0;
-                    while (approx_answer_right < std::numbers::pi * variability) {
-                        counter++;
-                        old_approx_answer_right = approx_answer_right;
-                        approx_answer_right = phase.interpolate(i + counter, SignalKind::Monotone) - phase.interpolate(i, SignalKind::Monotone);
-                    }
-                    auto left_loss_right_edge = std::numbers::pi * variability - old_approx_answer_right;
-                    auto right_loss_right_edge = approx_answer_right - std::numbers::pi * variability;
-                    auto sum_loss_right_edge = left_loss_right_edge + right_loss_right_edge;
-                    auto right_edge = static_cast<T>(counter) - right_loss_right_edge / sum_loss_right_edge;
-
-                    auto approx_answer_left = static_cast<T>(0.0);
-                    auto old_approx_answer_left = approx_answer_left;
-                    counter = 0;
-                    while (approx_answer_left < std::numbers::pi * variability) {
-                        counter++;
-                        old_approx_answer_left = approx_answer_left;
-                        approx_answer_left = phase.interpolate(i, SignalKind::Monotone) - phase.interpolate(i - counter, SignalKind::Monotone);
-                    }
-                    auto left_loss_left_edge = std::numbers::pi * variability - old_approx_answer_left;
-                    auto right_loss_left_edge = approx_answer_left - std::numbers::pi * variability;
-                    auto sum_loss_left_edge = left_loss_left_edge + right_loss_left_edge;
-                    auto left_edge = static_cast<T>(counter) - right_loss_left_edge / sum_loss_left_edge;
-
-                    auto period = right_edge + left_edge;
-                    out[i] = static_cast<T>(1.0 / period) * variability;
-                }
-            } else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveDouble) {
-                for (auto i = 0; i < phase.size(); i++) {
-                    auto approx_answer_right = 0.0;
-                    auto old_approx_answer_right = approx_answer_right;
-                    auto counter = 0;
-                    while (approx_answer_right < std::numbers::pi * variability) {
-                        counter++;
-                        old_approx_answer_right = approx_answer_right;
-                        approx_answer_right = phase.interpolate(i + counter, SignalKind::Monotone) - phase.interpolate(i, SignalKind::Monotone);
-                    }
-                    auto left_loss_right_edge = std::numbers::pi * variability - old_approx_answer_right;
-                    auto right_loss_right_edge = approx_answer_right - std::numbers::pi * variability;
-                    auto sum_loss_right_edge = left_loss_right_edge + right_loss_right_edge;
-                    auto right_edge = static_cast<double>(counter) - right_loss_right_edge / sum_loss_right_edge;
-
-                    auto approx_answer_left = 0.0;
-                    auto old_approx_answer_left = approx_answer_left;
-                    counter = 0;
-                    while (approx_answer_left < std::numbers::pi * variability) {
-                        counter++;
-                        old_approx_answer_left = approx_answer_left;
-                        approx_answer_left = phase.interpolate(i, SignalKind::Monotone) - phase.interpolate(i - counter, SignalKind::Monotone);
-                    }
-                    auto left_loss_left_edge = std::numbers::pi * variability - old_approx_answer_left;
-                    auto right_loss_left_edge = approx_answer_left - std::numbers::pi * variability;
-                    auto sum_loss_left_edge = left_loss_left_edge + right_loss_left_edge;
-                    auto left_edge = static_cast<double>(counter) - right_loss_left_edge / sum_loss_left_edge;
-
-                    out[i].first = 0.5 / left_edge * variability;
-                    out[i].second = 0.5 / right_edge * variability;
-                }
-            }
+            compute(phase, out, nullptr);
         }
 
         template<Signal DataType, Signal OutType>
         void compute(const DataType& phase, OutType& out, std::nullptr_t nil) {
             using T = typename OutType::SampleType;
             //nil may bee nullptr
+            auto delta = 0.01;
             if constexpr (counting_kind == InstFreqDerivativeBasedKind::Momental) {
                 derivator.compute(phase, out, nullptr);
                 for (int i = 0; i < phase.size(); i++) {
@@ -305,6 +195,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                 }
             } else if constexpr (counting_kind == InstFreqDerivativeBasedKind::TimeAverage) {
                 for (auto i = 0; i < phase.size(); i++) {
+                    #if 0
                     auto approx_answer_x = 0.0;
                     auto approx_answer_y = 0.0;
                     auto counter = 0;
@@ -313,12 +204,12 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     double y_left = 0.0;
                     double y_right = findPeriodDistanceAverage(phase, i, x_right);
 
-
                     while (x_right - x_left > 1.0) {
                         approx_answer_x = UTILITY_MATH::backLinearInterpolate<double, double>
                             ({x_left, y_left}, {x_right, y_right}, 
                                 2.0 * std::numbers::pi * variability);
                         approx_answer_y = findPeriodDistanceAverage(phase, i, approx_answer_x);
+
                         if (approx_answer_y > y_right){
                             y_left = y_right;
                             y_right = approx_answer_y;
@@ -333,17 +224,37 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                         }
                         else if (approx_answer_y > 2.0 * std::numbers::pi * variability){
                             y_right = approx_answer_y;
-                            y_left = approx_answer_x;
+                            x_right = approx_answer_x;
                         }
                         else if (approx_answer_y < 2.0 * std::numbers::pi * variability){
                             y_left = approx_answer_y;
-                            y_left = approx_answer_x;
+                            x_left = approx_answer_x;
                         }
+                        if (std::abs(approx_answer_y - 2.0 * std::numbers::pi * variability) < delta / approx_answer_x){
+                            /*x_left = static_cast<int64_t>(approx_answer_x);
+                            x_right = x_left + 1;
+                            y_left = findPeriodDistanceAverage(phase, i, x_left);
+                            y_right = findPeriodDistanceAverage(phase, i, x_right);*/
+                            break;
+                        }
+                        //IC(i, approx_answer_y, approx_answer_x, x_left, x_right, y_left, y_right, 2.0 * std::numbers::pi * variability);
                     }
-                    auto period = 1.0 / UTILITY_MATH::backLinearInterpolate<double, double>
-                        ({x_left, y_left}, {x_right, y_right}, 
-                                2.0 * std::numbers::pi * variability) * 2.0;
+                    #endif
+                    auto val_expr = [&](double idx){
+                        return std::abs(phase.interpolate(i + idx, SignalKind::Monotone) - phase.interpolate(i - idx, SignalKind::Monotone));
+                    };
+                    auto size_expr = [&](){
+                        return phase.size();
+                    };
+                    ExpressionWrapper<double, double, decltype(val_expr), GENERAL::Nil,
+                        decltype(size_expr), false> expr_wrapper(val_expr, size_expr);
+                    GenericSignal<decltype(expr_wrapper), false> phase_(expr_wrapper);
+                    double approx_answer_x = phase_.findMonotone
+                        (2.0 * std::numbers::pi * variability, {}, {}, {}, 0.01);
+
+                    auto period = approx_answer_x * 2.0;
                     out[i] = static_cast<T>(1.0 / period) * variability;
+                    //IC(out[i], i, period, approx_answer_x);
                 }
             } else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveAverage) {
                 for (auto i = 0; i < phase.size(); i++) {
