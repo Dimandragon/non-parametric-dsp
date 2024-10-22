@@ -756,4 +756,27 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         
         extremums.push_back(static_cast<int>(signal.size() - 1));
     }
+
+    template<typename T, typename U>
+    bool compareSignals(const T & signal1, const T & signal2){
+        if (signal1.size() != signal2.size()){
+            return false;
+        }
+        else{
+            for (auto i = 0; i < signal1.size(); i++){
+                if (signal1[i] != signal2[i]){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    template<typename T, typename U>
+    void assignVectors(T & vec1, const U & vec2){
+        vec1.clear();
+        for (int i = 0; i < vec2.size(); i++){
+            vec1.push_back(vec2[i]);
+        }
+    }
 }
