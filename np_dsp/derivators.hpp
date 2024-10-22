@@ -1,16 +1,17 @@
 #pragma once
 
 #include "icecream.hpp"
+#include "utility_math.hpp"
 
 
 #include <cstddef>
 #include <utility>
-
+#include <vector>
+#include <complex>
 #include <npdsp_concepts.hpp>
 
 namespace NP_DSP::ONE_D::DERIVATORS {
-     enum class FinniteDifferenceType { Forward, Central, Backward };
-
+    enum class FinniteDifferenceType { Forward, Central, Backward };
     
     template<FinniteDifferenceType different_t>
     struct FinniteDifference {
@@ -20,9 +21,9 @@ namespace NP_DSP::ONE_D::DERIVATORS {
 
         using AdditionalDataType = GENERAL::Nil;
 
-        template<Signal DataType, Signal DerivativeType>
+        template<typename DataType, typename DerivativeType>
         static void compute(const DataType& data, DerivativeType& out, auto * nil) {
-            using T = typename DerivativeType::SampleType;
+            using T = double;
             //additional_data can be nullptr
             //init first and last values
 
@@ -45,7 +46,7 @@ namespace NP_DSP::ONE_D::DERIVATORS {
             }
         }
 
-        template<Signal DataType, Signal DerivativeType>
+        template<typename DataType, typename DerivativeType>
         static void compute(const DataType& data, DerivativeType& out, std::nullptr_t nil) {
             using T = typename DerivativeType::SampleType;
             //additional_data can be nullptr
@@ -72,4 +73,42 @@ namespace NP_DSP::ONE_D::DERIVATORS {
             }
         }
     };
+
+    struct FTBased{
+        constexpr static bool is_derivator = true;
+        using AdditionalDataType = GENERAL::Nil;
+        double power = 1.0;
+
+        template<typename DataT, typename OutT>
+        void compute(const DataT & data, OutT & out, std::nullptr_t nil){
+            std::vector<std::complex<double>> signal;
+            std::vector<std::complex<double>> spectre;
+            for (int i = 0; i < data.size(); i++){
+                signal.push_back({data[i], 0.0});
+                spectre.push_back({0.0, 0.0});
+            }
+            UTILITY_MATH::fftc2c<double>(signal, spectre);
+            for (int i = 1; i < data.size(); i++){
+                double imag = std::numbers::pi * i / (double)data.size() * 2.0;
+                std::complex<double> muller = {0.0, std::numbers::pi * i / data.size()};
+                muller = std::pow(muller, power);
+                //IC(spectre[i], muller, muller*spectre[i]);
+                spectre[i] = spectre[i] * muller;
+            }
+            UTILITY_MATH::ifftc2c<double>(spectre, signal);
+            for (int i = 0; i < data.size(); i++){
+                out[i] = signal[i].real();
+                //out[i] = std::sqrt(signal[i].real()*signal[i].real() + signal[i].imag()*signal[i].imag());
+            }
+        }
+    };
+
+    struct RiemanLoiouville{
+
+    };
+    
+    struct Caputo{
+
+    };
+    // struct 
 }
