@@ -710,4 +710,50 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
 
         return res;
     }
+
+    enum class ExtremumsKind { Simple, DerArctg };
+
+    template<typename T, typename U>
+    void computeExtremums(const T & signal, std::vector<U> & extremums, ExtremumsKind kind){
+        extremums.clear();
+        extremums.push_back(0);
+        if (kind == ExtremumsKind::Simple){
+            for (int i = 1; i < signal.size() - 1; i++) {
+                if ((signal[i] >= signal[i - 1] &&
+                     signal[i] > signal[i + 1]) ||
+                    (signal[i] > signal[i - 1] &&
+                     signal[i] >= signal[i + 1]) ||
+                    (signal[i] <= signal[i - 1] &&
+                     signal[i] < signal[i + 1]) ||
+                    (signal[i] < signal[i - 1] &&
+                     signal[i] <= signal[i + 1])) {
+                    extremums.push_back(i);
+                }
+            }
+        }
+        /*else if (kind == ExtremumsKind::DerArctg){
+            std::vector<double> der;
+            //der.has_ovnership = true;
+            for (int i = 0; i < signal.size(); i++){
+                der.push_back(0.0);
+            }
+            GENERAL::Nil nil;
+            DERIVATORS::FinniteDifference<DERIVATORS::FinniteDifferenceType::Backward> derivator;
+            derivator.compute(signal, der, &nil);
+            for (int i = 1; i < der.size() - 1; i++) {
+                if ((der[i] >= der[i - 1] &&
+                     der[i] > der[i + 1]) ||
+                    (der[i] > der[i - 1] &&
+                     der[i] >= der[i + 1]) ||
+                    (der[i] <= der[i - 1] &&
+                     der[i] < der[i + 1]) ||
+                    (der[i] < der[i - 1] &&
+                     der[i] <= der[i + 1])) {
+                    extremums.push_back(i);
+                }
+            }
+        }*/
+        
+        extremums.push_back(static_cast<int>(signal.size() - 1));
+    }
 }
