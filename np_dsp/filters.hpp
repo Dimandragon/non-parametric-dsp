@@ -1,25 +1,54 @@
 #pragma once
 
+#include "approximators.hpp"
 #include "inst_freq_computers.hpp"
 #include "matplot/freestanding/plot.h"
 #include <cstddef>
 #include <icecream.hpp>
 
+#include <algorithm>
 #include <complex>
+#include <concepts>
+#include <inst_ampl_computers.hpp>
+#include <integrators.hpp>
 #include <npdsp_concepts.hpp>
 #include <signals.hpp>
-#include <utility>
-#include <integrators.hpp>
 #include <string>
+#include <utility>
 #include <utility_math.hpp>
-#include <concepts>
 #include <vector>
-#include <algorithm>
-#include <inst_ampl_computers.hpp>
-
 
 namespace NP_DSP::ONE_D::FILTERS {
-    enum class InstFreqKind { Average, Double };
+enum class InstFreqKind { Average, Double };
+
+void rotateExtremums(const std::vector<double> & extremums, 
+  std::vector<double> & rotated_extremums, double phase_shift)
+{
+  APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain<std::vector<double>> approx;
+  rotated_extremums.clear();
+  std::vector<double> phase_x;
+  std::vector<double> phase_y;
+  for (int i = 0; i < extremums.size(); i++){
+    phase_x.push_back(extremums[i]);
+    phase_y.push_back(i * std::numbers::pi);
+  }
+  approx.loadData(phase_y, phase_x);
+  
+  rotated_extremums.push_back(extremums[0]);
+
+  for (int i = 0; i < phase_y.size() - 1; i++){
+    double temp = approx.compute(phase_y[i] + phase_shift);
+    //rotated_extremums.push_back(approx.compute(phase_y[i] + phase_shift));
+    if (rotated_extremums[rotated_extremums.size() - 1] == temp){
+      continue;
+    }
+    rotated_extremums.push_back(temp);
+  }
+  if (rotated_extremums[rotated_extremums.size() - 1] != 
+      extremums[extremums.size() - 1]){
+    rotated_extremums.push_back(extremums[extremums.size() - 1]);
+  }
+}
 
     enum class FilteringType { DerivativeBased, ValueBased, AverageBased, Median, ValueBasedSmart, DerivativeBasedSmart };
 
