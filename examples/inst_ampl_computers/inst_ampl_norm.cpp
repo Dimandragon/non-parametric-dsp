@@ -46,10 +46,10 @@ int main(){
 
     static_assert(NP_DSP::ONE_D::is_inst_ampl_computer<decltype(inst_ampl_computer), double>);
     
-    NP_DSP::ONE_D::FILTERS::InstAmplNormalizator<double, decltype(integrator), decltype(derivator), 
+    NP_DSP::ONE_D::FILTERS::EXPERIMENTAL::InstAmplNormalizator<double, decltype(integrator), decltype(derivator), 
         decltype(inst_ampl_computer)> inst_ampl_normalizer(integrator, derivator, inst_ampl_computer);
 
-    auto inst_ampl_normalizer2 = NP_DSP::ONE_D::FILTERS::InstAmplNormalizatorUsingInstFreq
+    auto inst_ampl_normalizer2 = NP_DSP::ONE_D::FILTERS::EXPERIMENTAL::InstAmplNormalizatorUsingInstFreq
         <double, decltype(integrator), decltype(derivator), decltype(inst_ampl_computer),
             false, false, decltype(signal1)>(integrator, derivator, inst_ampl_computer);
 

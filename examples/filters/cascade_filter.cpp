@@ -42,12 +42,12 @@ int main(){
                     inst_freq_computer
                         (integrator, derivator, phase_computer);
 
-    NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+    NP_DSP::ONE_D::FILTERS::InstFreqBased<double, 
         NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased,
             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average>
                 non_opt_filter(integrator);
 
-    NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+    NP_DSP::ONE_D::FILTERS::InstFreqBased<double, 
         NP_DSP::ONE_D::FILTERS::FilteringType::ValueBased,
             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average>
                 non_opt_filter2(integrator);

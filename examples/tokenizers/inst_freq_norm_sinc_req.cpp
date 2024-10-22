@@ -11,7 +11,7 @@ int main(){
         data.base->vec->push_back(std::rand());
     }
 
-    NP_DSP::ONE_D::Tokenizers::instFreqNormSincReqTokenizer tokenizer;
+    NP_DSP::ONE_D::Tokenizers::InstFreqNormSincReqTokenizer tokenizer;
     tokenizer.locality_coeff = 2.5;
     tokenizer.period_muller = 1.05;
     tokenizer.max_iter_number_for_filter = 3;

@@ -40,6 +40,7 @@ int incr(int & point){
 }
 
 int main(){
+    int size = 102;
     int point = 0;
     NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> signal1;
     using SignalT = decltype(signal1);
@@ -48,7 +49,7 @@ int main(){
     //0 and last are different
     //if 10 then 4 and 6
     //if 11 then 5 and 6
-    for (auto i = 0; i < 102; i++){
+    for (auto i = 0; i < size; i++){
         signal1.base->vec->push_back(0.);
     }
     createFill(signal1);
@@ -105,4 +106,14 @@ int main(){
     NP_DSP::ONE_D::UTILITY_MATH::fftc2c(data_vec, data_fs);
     plotComplex(data_fs, "/home/dmitry/projects/non-parametric-dsp/examples/approximators/images/data_fs.svg");
     return 0;
+
+    std::vector<double> plotting_dense;
+
+    for (int i = 0; i < size; i++){
+        for (int j = 0; j < 10; j++){
+            plotting_dense.push_back(approximator.compute<double, double>(i + j / 10.0));
+        }
+    }
+    matplot::plot(plotting_dense);
+    matplot::show();
 }

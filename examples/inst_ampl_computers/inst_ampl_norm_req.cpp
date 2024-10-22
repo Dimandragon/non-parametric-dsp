@@ -48,7 +48,7 @@ int main(){
         <NP_DSP::ONE_D::UTILITY_MATH::HTKind::Mull> inst_ampl_computer;
 
 
-    NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+    NP_DSP::ONE_D::FILTERS::InstFreqBased<double,
         NP_DSP::ONE_D::FILTERS::FilteringType::AverageBased,
             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average>
                 non_opt_filter(integrator);
@@ -57,11 +57,11 @@ int main(){
         , decltype(inst_freq_buffer), decltype(non_opt_filter)> 
         naive_normalizer(inst_ampl_computer, non_opt_filter);*/
 
-    NP_DSP::ONE_D::FILTERS::InstAmplNormalizatorNaive<double, decltype(inst_ampl_computer),
+    NP_DSP::ONE_D::FILTERS::EXPERIMENTAL::InstAmplNormalizatorNaive<double, decltype(inst_ampl_computer),
         decltype(inst_freq_buffer), decltype(non_opt_filter)> 
         naive_normalizer(inst_ampl_computer, non_opt_filter);
 
-    NP_DSP::ONE_D::FILTERS::InstAmplNormalizatorNaiveReqursive
+    NP_DSP::ONE_D::FILTERS::EXPERIMENTAL::InstAmplNormalizatorNaiveReqursive
         <double, decltype(naive_normalizer), SignalT, 
             decltype(non_opt_filter)> inst_ampl_req_norm(naive_normalizer, inst_freq_buffer,
                 non_opt_filter);

@@ -24,8 +24,8 @@ int main(){
     signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
     //NP_DSP::ONE_D::UTILITY_MATH::fastConvolution(signal1, signal2, signal1);
-    NP_DSP::ONE_D::FILTERS::NonLocalNonOptFiltering<double,
-            NP_DSP::ONE_D::FILTERS::NonLocalFilteringType::Conv> filter;
+    NP_DSP::ONE_D::FILTERS::MonoFreqFilters<double,
+            NP_DSP::ONE_D::FILTERS::MonoInstFreqFilteringType::Conv> filter;
 
     filter.conv_filter_len = 10;
 

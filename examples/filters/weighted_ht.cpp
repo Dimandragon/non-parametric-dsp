@@ -24,6 +24,7 @@ int main(){
         plotting_vector.push_back(0.0);
         filter.push_back({0.0, 0.0});
         resp.push_back({0.0, 0.0});
+        weights.base->vec->push_back(0.0);
     }
 
     double avg = 0.0;
@@ -35,19 +36,8 @@ int main(){
         signal1[i] -= avg;
     }
     
-    for (int i = 0; i < 50; i++) {
-        //signal2.base->vec->push_back(1.0);
-        //resp.push_back({1.0, 0.0});
-        weights.base->vec->push_back(0.0);
-    }
-    for (int i = 50; i < 450; i++){
-        //resp.push_back({0.0, 0.0});
-        weights.base->vec->push_back(1.0);
-    }
-    for (int i = 450; i < 500; i++) {
-        //signal2.base->vec->push_back(1.0);
-        //resp.push_back({1.0, 0.0});
-        weights.base->vec->push_back(0.0);
+    for (int i = 0; i < 500; i++){
+        weights[i] = 0.5;
     }
 
     NP_DSP::ONE_D::UTILITY_MATH::WeightedHilbertTransform
@@ -60,8 +50,19 @@ int main(){
         plotting_vector[i] = filter[i].imag();
     }
     matplot::plot(*signal3.base->vec);
-    matplot::hold(false);
+
+    /*for (int i = 0; i < 500; i++){
+        weights[i] = 1.0;
+    }
+    NP_DSP::ONE_D::UTILITY_MATH::WeightedHilbertTransform
+        <decltype(signal1), decltype(signal3), decltype(weights), NP_DSP::ONE_D::UTILITY_MATH::HTKind::Mull>
+        (signal1, signal3, resp, filter, weights);
+    
+    matplot::plot(*signal1.base->vec);
+    matplot::plot(*signal3.base->vec);*/
+
     matplot::show();
+    matplot::hold(false);
 
     for (int i = 0; i < 500; i++) {
         auto freq = NP_DSP::ONE_D::UTILITY_MATH::getFreqByIdx(500, i);

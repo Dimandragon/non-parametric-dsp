@@ -43,13 +43,14 @@ int main() {
     signal3.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
 
-    NP_DSP::ONE_D::FILTERS::SincResLocalFilterWithRes<double, decltype(phase_computer)> filter;
-    filter.phase_computer = &phase_computer;
+    NP_DSP::ONE_D::FILTERS::LocalFilter<double, 
+        NP_DSP::ONE_D::FILTERS::LocalFilteringType::SincResampled> filter;
+    //filter.phase_computer = &phase_computer;
     filter.is_low_pass = true;
     filter.locality_coeff = 3.;
     filter.period_muller = 1.05;
 
-    filter.compute(signal1, signal2, &signal3);
+    filter.compute(signal1, signal2, nullptr);
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
     for (int i = 0; i < signal1.size(); i++){

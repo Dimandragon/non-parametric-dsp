@@ -18,8 +18,8 @@ int main(){
 
     //auto freq_slise = 50;
 
-    NP_DSP::ONE_D::FILTERS::NonLocalNonOptFiltering<double,
-            NP_DSP::ONE_D::FILTERS::NonLocalFilteringType::Sinc> filter;
+    NP_DSP::ONE_D::FILTERS::MonoFreqFilters<double,
+            NP_DSP::ONE_D::FILTERS::MonoInstFreqFilteringType::Sinc> filter;
 
     for (int i = 0; i < 500; i++) {
         signal1.base->vec->push_back(std::rand());
@@ -49,12 +49,13 @@ int main(){
     compute_buffer.show(NP_DSP::ONE_D::PlottingKind::Simple);
     compute_buffer.show(NP_DSP::ONE_D::PlottingKind::Spectre);
 
-    NP_DSP::ONE_D::FILTERS::SincResFilter<double> filter2;
+    NP_DSP::ONE_D::FILTERS::MonoFreqFilters<double, 
+        NP_DSP::ONE_D::FILTERS::MonoInstFreqFilteringType::SincPadded> filter2;
 
     filter2.freq = 0.2;
     filter2.is_low_pass = true;
 
-    filter2.compute(signal1, signal4, nullptr);
+    filter2.compute(signal1, signal4, signal3);
 
     signal4.show(NP_DSP::ONE_D::PlottingKind::Simple);
     signal4.show(NP_DSP::ONE_D::PlottingKind::Spectre);
@@ -62,7 +63,7 @@ int main(){
     filter2.freq = 0.2;
     filter2.is_low_pass = false;
 
-    filter2.compute(signal1, signal4, nullptr);
+    filter2.compute(signal1, signal4, signal3);
 
     signal4.show(NP_DSP::ONE_D::PlottingKind::Simple);
     signal4.show(NP_DSP::ONE_D::PlottingKind::Spectre);

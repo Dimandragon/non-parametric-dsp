@@ -17,10 +17,11 @@ int main() {
         signal2.base->vec->push_back(0.0);
     }
 
-    NP_DSP::ONE_D::FILTERS::SincResLocalFilter<double> filter;
+    NP_DSP::ONE_D::FILTERS::MonoFreqFilters<double, 
+        NP_DSP::ONE_D::FILTERS::MonoInstFreqFilteringType::SincPaddedFIR>filter;
     filter.is_low_pass = true;
     filter.freq = 0.2;
-    filter.compute(signal1, signal2, nullptr);
+    filter.compute(signal1, signal2, signal3);
     signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple);
     signal1.show(NP_DSP::ONE_D::PlottingKind::Spectre);

@@ -4,7 +4,7 @@
 #include <npdsp_concepts.hpp>
 #include <vector>
 #include <cstdlib>
-#include <mode_colleretion_tester.cpp>
+#include <mode_colleretion_tester.hpp>
 
 int main(){
     NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> data;
@@ -18,7 +18,7 @@ int main(){
 
     NP_DSP::ONE_D::MODES_EXTRACTORS::instFreqNormSincExtractorReq extractor;
     extractor.locality_coeff = 5;
-    extractor.period_muller = 1.05;
+    extractor.period_muller = 1.15;
     extractor.max_iter_number_for_filter = 3;
     extractor.debug = false;
     //extractor.non_opt_filter.period_muller = 1.0;

@@ -4,7 +4,7 @@
 #include <npdsp_concepts.hpp>
 #include <vector>
 #include <cstdlib>
-#include <mode_colleretion_tester.cpp>
+#include <mode_colleretion_tester.hpp>
 #include <vector>
 #include <matplot/matplot.h>
 #include <cmath>
@@ -16,14 +16,14 @@ bool save = true;
 int main(){
     NP_DSP::ONE_D::GenericSignal<NP_DSP::ONE_D::SimpleVecWrapper<double>, true> data;
 
-    for(int i = 0; i < 2000; i++) {
-        data.base->vec->push_back(std::rand() + std::sin(i / 500) * 2500000000. + std::sin(i / 200) * 100000000.);
+    for(int i = 0; i < 200; i++) {
+        data.base->vec->push_back(std::rand() + std::sin(i / 500) * 2500000000. + std::sin(i / 20) * 100000000.);
     }
 
     IC(*data.base->vec);
     if (save){
         data.show(NP_DSP::ONE_D::PlottingKind::Simple, 
-            "/home/dmitry/projects/non-parametric-dsp/examples/modes_extractors/signal.svg");
+            "/home/dmitry/projects/non-parametric-dsp/examples/modes_extractors/signal.png");
     }
     else{
         data.show(NP_DSP::ONE_D::PlottingKind::Simple);
@@ -32,16 +32,16 @@ int main(){
 
     NP_DSP::ONE_D::MODES_EXTRACTORS::instFreqNormSincExtractorReq extractor;
     extractor.locality_coeff = 5;
-    extractor.period_muller = 1.15;
-    extractor.max_iter_number_for_filter = 3;
-    extractor.debug = false;
+    extractor.period_muller = 1.2;
+    extractor.max_iter_number_for_filter = 5;
+    extractor.debug = true;
 
     extractor.compute(data);
 
     IC(extractor.modes.size());
     for(int i = 0; i < extractor.modes.size(); i++) {
         std::stringstream path;
-        path << "/home/dmitry/projects/non-parametric-dsp/examples/modes_extractors/mode" << i << ".svg";
+        path << "/home/dmitry/projects/non-parametric-dsp/examples/modes_extractors/mode" << i << ".png";
 
         if (save){
             extractor.modes[i]->show(NP_DSP::ONE_D::PlottingKind::Simple, path.str());
@@ -82,7 +82,7 @@ int main(){
     matplot::heatmap(orthogonality_distr);
     matplot::show();
     if (save){
-        matplot::save("/home/dmitry/projects/non-parametric-dsp/examples/modes_extractors/orthogonality_test.svg");
+        matplot::save("/home/dmitry/projects/non-parametric-dsp/examples/modes_extractors/orthogonality_test.png");
     }
 
     return 0;

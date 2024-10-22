@@ -55,7 +55,7 @@ int main(){
 
     inst_freq.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
-    NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+    NP_DSP::ONE_D::FILTERS::InstFreqBased<double, 
         NP_DSP::ONE_D::FILTERS::FilteringType::AverageBased,
             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average> non_opt_filter;
 

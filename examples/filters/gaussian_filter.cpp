@@ -28,8 +28,8 @@ int main(){
 
     mask.show(PlottingKind::Simple);
 
-    FILTERS::NonLocalNonOptFiltering<double,
-        NP_DSP::ONE_D::FILTERS::NonLocalFilteringType::Conv> filter;
+    FILTERS::MonoFreqFilters<double,
+        NP_DSP::ONE_D::FILTERS::MonoInstFreqFilteringType::Conv> filter;
 
     filter.conv_filter_len = mask.size();
 

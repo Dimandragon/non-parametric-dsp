@@ -60,23 +60,23 @@ int main(){
         <NP_DSP::ONE_D::UTILITY_MATH::HTKind::Mull> inst_ampl_computer;
 
 
-    NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+    NP_DSP::ONE_D::FILTERS::InstFreqBased<double, 
         NP_DSP::ONE_D::FILTERS::FilteringType::AverageBased,
             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average>
                 non_opt_filter(integrator);
 
-    NP_DSP::ONE_D::FILTERS::OptPeriodBasedFilter<double, decltype(non_opt_filter), decltype(inst_freq_computer),
+    NP_DSP::ONE_D::FILTERS::EXPERIMENTAL::OptPeriodBasedFilter<double, decltype(non_opt_filter), decltype(inst_freq_computer),
         decltype(phase_computer), decltype(inst_freq_computer_for_mode), decltype(phase_computer_for_mode)> 
             opt_filter(non_opt_filter, inst_freq_computer, phase_computer, 
                 inst_freq_computer_for_mode, phase_computer_for_mode);
 
-    NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChanges<double, decltype(integrator), decltype(derivator),
+    NP_DSP::ONE_D::FILTERS::EXPERIMENTAL::RecursiveFilterInstAmplChanges<double, decltype(integrator), decltype(derivator),
         decltype(non_opt_filter), decltype(inst_freq_computer), decltype(phase_computer), decltype(inst_ampl_computer),
             decltype(inst_freq_computer_for_mode), decltype(phase_computer_for_mode)> filter
                 (integrator, derivator, non_opt_filter, inst_freq_computer, phase_computer, inst_ampl_computer,
                     inst_freq_computer_for_mode, phase_computer_for_mode);
 
-    NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesWithConstInstFreq<double, decltype(integrator), decltype(derivator),
+    NP_DSP::ONE_D::FILTERS::EXPERIMENTAL::RecursiveFilterInstAmplChangesWithConstInstFreq<double, decltype(integrator), decltype(derivator),
         decltype(non_opt_filter),decltype(inst_ampl_computer)> filter2
                 (integrator, derivator, non_opt_filter, inst_ampl_computer);
 

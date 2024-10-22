@@ -45,11 +45,11 @@ int main(){
             inst_freq_computer_for_mode (integrator, derivator, phase_computer_for_mode);
 
     //NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBased<NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBasedComputeInstFreqKind::Linear> inst_freq_computer2;
-    NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, NP_DSP::ONE_D::FILTERS::FilteringType::ValueBased,
+    NP_DSP::ONE_D::FILTERS::InstFreqBased<double, NP_DSP::ONE_D::FILTERS::FilteringType::ValueBased,
         decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average> non_opt_filter;
 
 
-    NP_DSP::ONE_D::FILTERS::OptPeriodBasedFilter<double, decltype(non_opt_filter), decltype(inst_freq_computer),
+    NP_DSP::ONE_D::FILTERS::EXPERIMENTAL::OptPeriodBasedFilter<double, decltype(non_opt_filter), decltype(inst_freq_computer),
         decltype(phase_computer), decltype(inst_freq_computer_for_mode), decltype(phase_computer_for_mode)> 
             filter(non_opt_filter, inst_freq_computer, phase_computer, 
                 inst_freq_computer_for_mode, phase_computer_for_mode);

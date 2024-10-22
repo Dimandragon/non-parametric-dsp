@@ -35,7 +35,7 @@ int main(){
         NP_DSP::ONE_D::PHASE_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage, decltype(phase_computer)>
             inst_freq_computer (integrator, derivator, phase_computer);
     
-    NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, NP_DSP::ONE_D::FILTERS::FilteringType::ValueBased,
+    NP_DSP::ONE_D::FILTERS::InstFreqBased<double, NP_DSP::ONE_D::FILTERS::FilteringType::ValueBased,
         decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Average> non_opt_filter;
 
     signal1.show(NP_DSP::ONE_D::PlottingKind::Simple);

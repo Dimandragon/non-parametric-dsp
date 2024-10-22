@@ -39,7 +39,7 @@ int main(){
     }
     data.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
-    NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter
+    NP_DSP::ONE_D::FILTERS::InstFreqBased
         <double, NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased,
             NP_DSP::ONE_D::INTEGRATORS::Riman<NP_DSP::ONE_D::INTEGRATORS::PolygonType::ByPoint>,
                 NP_DSP::ONE_D::FILTERS::InstFreqKind::Average>
