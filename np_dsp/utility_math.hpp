@@ -691,7 +691,8 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
                 getResamplingSize(data.size(), target_freq);
         int pad = (res_data.new_size - data.size()) / 2;
         for (int i = 0; i < pad; i++){
-            out.push_back(data[data.size() - pad + i]);
+            //out.push_back(data[data.size() - pad + i]);
+            out.push_back(data[pad - i - 1]);
             //IC(data.size() - pad + i);
         }
         for (int i = pad; i < data.size() + pad; i++){
@@ -699,7 +700,7 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
             //IC(i - pad);
         }
         for (int i = data.size() + pad; i < res_data.new_size; i++){
-            out.push_back(data[i - data.size() - pad]);
+            out.push_back(data[data.size() - (i - data.size() - pad + 1)]);
             //IC(i - data.size() - pad);
         }
         //IC(res_data.new_size, out.size());
