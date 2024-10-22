@@ -114,6 +114,11 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
     
     template<typename xType, typename yType>
     yType linearInterpolate(std::pair<xType, yType> point1, std::pair<xType, yType> point2, xType x_in) {
+        if (point2.first < point1.first){
+            auto swap = point1;
+            point1 = point2;
+            point2 = swap;
+        }
         auto dx = point2.first - point1.first;
         auto dy = point2.second - point1.second;
         if (dx == 0) {
