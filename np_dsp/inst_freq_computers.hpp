@@ -15,10 +15,8 @@
 #include <math.h>
 
 namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
-    
     using InstFreqDerivativeBasedKind = PHASE_COMPUTERS::InstFreqDerivativeBasedKind;
 
-    
     template<typename U, Integrator<U> IntegratorT,
         Derivator<U> DerivatorT, InstFreqDerivativeBasedKind kind>
     struct DerivativeBased {
@@ -144,7 +142,6 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         return phase.interpolate(idx + pad, SignalKind::Monotone) - 
             phase.interpolate(idx - pad, SignalKind::Monotone);
     }
-
     
     template<typename U, Integrator<U> IntegratorT,
         Derivator<U> DerivatorT, InstFreqDerivativeBasedKind kind>
@@ -577,7 +574,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         }
     };
 
-     enum class ExtremumsBasedComputeInstFreqKind { Simple, Linear };
+    enum class ExtremumsBasedComputeInstFreqKind { Simple, Linear };
 
     
     template<ExtremumsBasedComputeInstFreqKind compute_kind>
@@ -1195,8 +1192,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
 
     template<Signal DataT, Signal OutT, Signal InstFreqT>
     double instFreqNormOnce(const DataT & data, OutT & out, const InstFreqT & inst_freq, 
-        std::vector<double> & freq_conv)
-    {   
+        std::vector<double> & freq_conv){   
         APPROX::ModifiedAkimaBasedWithNoTrain<DataT> approximator;
         approximator.loadData(data);
         double d_avg = 0.0;
