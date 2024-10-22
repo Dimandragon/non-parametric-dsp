@@ -1413,6 +1413,9 @@ namespace NP_DSP::ONE_D::APPROX {
         double min_bound = 0.0;
         double max_bound = 0.0;
 
+        std::optional<UTILITY_MATH::SquarePolynome> square_polynom = {};
+        std::optional<UTILITY_MATH::Linear> linear = {};
+
         void loadData(const T & x, const T & y){
             std::vector<double> x_(x.size());
             std::vector<double> y_(x.size());
@@ -1436,8 +1439,21 @@ namespace NP_DSP::ONE_D::APPROX {
             }
             min_bound = min;
             max_bound = max;
-            spline = boost::math::interpolators::pchip
+            if (x_.size() > 3) {
+                spline = boost::math::interpolators::pchip
                 <std::vector<double>>(std::move(x_), std::move(y_));
+            }
+            else if (x_.size() == 3) {
+                square_polynom = UTILITY_MATH::SquarePolynome{};
+                square_polynom->solve(x_[0], x_[1], x_[2], y_[0], y_[1], y_[2]);
+            }
+            else if (x_.size() == 2) {
+                linear = UTILITY_MATH::Linear{};
+                linear->solve(x_[0], x_[1], y_[0], y_[1]);
+            }
+            else{
+                //todo error
+            }
         }
 
         void loadData(const T & y){
@@ -1455,8 +1471,21 @@ namespace NP_DSP::ONE_D::APPROX {
             min_bound = 0.0;
             max_bound = y.size() - 1;
 
-            spline = boost::math::interpolators::pchip
+            if (x_.size() > 3) {
+                spline = boost::math::interpolators::pchip
                 <std::vector<double>>(std::move(x_), std::move(y_));
+            }
+            else if (x_.size() == 3) {
+                square_polynom = UTILITY_MATH::SquarePolynome{};
+                square_polynom->solve(x_[0], x_[1], x_[2], y_[0], y_[1], y_[2]);
+            }
+            else if (x_.size() == 2) {
+                linear = UTILITY_MATH::Linear{};
+                linear->solve(x_[0], x_[1], y_[0], y_[1]);
+            }
+            else{
+                //todo error
+            }
         }
 
         template<typename IdxT>
@@ -1471,7 +1500,19 @@ namespace NP_DSP::ONE_D::APPROX {
                 int64_t _size = static_cast<int64_t>(size); //todo size_
                 double new_idx = size + (_idx - static_cast<int64_t>(min_bound)) % _size + min_bound;
                 new_idx -= idx_;
-                return (*spline)(new_idx);
+                if (spline){
+                    return (*spline)(new_idx);
+                }
+                else if (square_polynom){
+                    return square_polynom->compute(new_idx);
+                }
+                else if (linear){
+                    return linear->compute(new_idx);
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
             }
             else{
                 int64_t _idx = static_cast<int64_t>(idx);
@@ -1479,14 +1520,38 @@ namespace NP_DSP::ONE_D::APPROX {
                 auto size = max_bound - min_bound;
                 auto _size = static_cast<int64_t>(size); //todo size_
                 double new_idx = _idx % _size + idx_;
-                return (*spline)(new_idx);
+                if (spline){
+                    return (*spline)(new_idx);
+                }
+                else if (square_polynom){
+                    return square_polynom->compute(new_idx);
+                }
+                else if (linear){
+                    return linear->compute(new_idx);
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
             }
         }
 
         template<typename IdxT>
         double computeDerive(IdxT idx){
             if (idx >= min_bound && idx <= max_bound){
-                return spline->prime(idx);
+                if (spline){
+                    return spline->prime(idx);
+                }
+                else if (square_polynom){
+                    return square_polynom->derive(idx);
+                }
+                else if (linear){
+                    return linear->derive(idx);
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
             }
             else if (idx < min_bound){
                 int64_t _idx = static_cast<int64_t>(idx);
@@ -1495,7 +1560,19 @@ namespace NP_DSP::ONE_D::APPROX {
                 int64_t _size = static_cast<int64_t>(size); //todo size_
                 double new_idx = size + (_idx - static_cast<int64_t>(min_bound)) % _size + min_bound;
                 new_idx -= idx_;
-                return spline->prime(new_idx);
+                if (spline){
+                    return spline->prime(new_idx);
+                }
+                else if (square_polynom){
+                    return square_polynom->derive(new_idx);
+                }
+                else if (linear){
+                    return linear->derive(new_idx);
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
             }
             else{
                 int64_t _idx = static_cast<int64_t>(idx);
@@ -1503,7 +1580,19 @@ namespace NP_DSP::ONE_D::APPROX {
                 auto size = max_bound - min_bound;
                 auto _size = static_cast<int64_t>(size); //todo size_
                 double new_idx = _idx % _size + idx_;
-                return spline->prime(new_idx);
+                if (spline){
+                    return spline->prime(new_idx);
+                }
+                else if (square_polynom){
+                    return square_polynom->derive(new_idx);
+                }
+                else if (linear){
+                    return linear->derive(new_idx);
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
             }
         }
     };
