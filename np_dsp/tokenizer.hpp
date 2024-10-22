@@ -23,7 +23,7 @@ struct Token{
 };
 
 namespace NP_DSP::ONE_D::Tokenizers {
-    struct instFreqNormSincTokenizer
+    struct InstFreqNormSincTokenizer
     {
         using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         DataType data;
@@ -62,12 +62,12 @@ namespace NP_DSP::ONE_D::Tokenizers {
         INST_AMPL_COMPUTERS::HilbertTransformBased
                 <UTILITY_MATH::HTKind::Mull> inst_ampl_computer;
 
-        FILTERS::SincResLocalFilter<double> filter;
+        FILTERS::MonoFreqFilters<double, FILTERS::MonoInstFreqFilteringType::SincPaddedFIR> filter;
 
 
         template<typename DataT>
         void compute(const DataT & data_in){
-            filter.locality_coeff = locality_coeff;
+            filter.gaussian_width_muller = locality_coeff;
             size_t iter_number = 0;
 
             if(data.size() != data_in.size()){
@@ -140,24 +140,15 @@ namespace NP_DSP::ONE_D::Tokenizers {
             while(true){
                 phase_computer_simple.compute(data, phase, nullptr);
 
-                //std::cout << "compute first phase  " << iter_number << std::endl;
-                //phases[iter_number]->show(PlottingKind::Simple);
-
                 if(phase[data.size() - 1] > 6.28){
                     inst_freq_computer.compute(phase, inst_freq, nullptr);
                     double base_inst_freq = INST_FREQ_COMPUTERS::instFreqNorm(data, data_buffer, inst_freq, freq_conv, freq_conv_image);
 
                     phase_computer_simple.compute(data_buffer, phase, nullptr);
 
-                    //std::cout << "compute resampled phase  " << iter_number << std::endl;
-                    //phases[iter_number]->show(PlottingKind::Simple);
-
                     base_inst_freq = 1.0 /
                                      (static_cast<double>(data.size()) /
                                       (phase[data.size() - 1] / 2.0 / std::numbers::pi)) / period_muller;
-
-                    //std::cout << "inst_freq_norm " << iter_number << std::endl;
-                    //data_buffer.show(PlottingKind::Simple);
 
                     for(int i = 0; i < data.size(); i++){
                         data[i] = data_buffer[i];
@@ -165,10 +156,7 @@ namespace NP_DSP::ONE_D::Tokenizers {
 
                     filter.freq = base_inst_freq;
                     filter.is_low_pass = true;
-                    filter.compute(data, data_buffer, nullptr);
-
-                    //std::cout << "get low freq part  " << iter_number << std::endl;
-                    //data_buffer.show(PlottingKind::Simple);//, label.str());
+                    filter.compute(data, data_buffer, data_buffer);
 
                     for(int i = 0; i < data.size(); i++){
                         auto swap = data_buffer[i];
@@ -176,23 +164,11 @@ namespace NP_DSP::ONE_D::Tokenizers {
                         data[i] = swap;
                     }
 
-                    //std::cout << "get mode " << iter_number << std::endl;
-                    //data_buffer.show(PlottingKind::Simple);
-
                     INST_FREQ_COMPUTERS::backInstFreqNorm(data_buffer, mode, freq_conv);
-
-                    //std::cout << "bask inst freq norm of mode " << iter_number << std::endl;
-                    //modes[iter_number]->show(PlottingKind::Simple);
 
                     phase_computer_simple.compute(mode, phase, nullptr);
 
-                    //std::cout << "compute result phase " << iter_number << std::endl;
-                    //phases[iter_number]->show(PlottingKind::Simple);
-
                     inst_freq_computer.compute(phase, inst_freq, nullptr);
-
-                    //std::cout << "compute result inst_freq " << iter_number << std::endl;
-                    //inst_freqs[iter_number]->show(PlottingKind::Simple);
 
                     inst_ampl_computer.compute(mode,  inst_ampl, nullptr);
 
@@ -220,8 +196,6 @@ namespace NP_DSP::ONE_D::Tokenizers {
                             tokens.push_back(token);
                         }
                     }
-                    //std::cout << "compute result inst_ampls " << iter_number << std::endl;
-                    //inst_ampls[iter_number]->show(PlottingKind::Simple);
 
                     iter_number++;
                 }
@@ -270,7 +244,7 @@ namespace NP_DSP::ONE_D::Tokenizers {
         }
     };
 
-    struct instFreqNormSincReqTokenizer
+    struct InstFreqNormSincReqTokenizer
     {
         using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         DataType data;
@@ -313,14 +287,14 @@ namespace NP_DSP::ONE_D::Tokenizers {
         INST_AMPL_COMPUTERS::HilbertTransformBased
                 <UTILITY_MATH::HTKind::Mull> inst_ampl_computer;
 
-        FILTERS::SincResLocalFilterWithResReq<double, decltype(phase_computer_simple), decltype(inst_freq_computer)> filter;
+        FILTERS::RecursiveFilter<double, FILTERS::LocalFilteringType::SincResampled> filter;
 
         template<typename DataT>
         void compute(const DataT & data_in){
             filter.locality_coeff = locality_coeff;
             filter.period_muller = period_muller;
-            filter.inst_freq_computer = &inst_freq_computer;
-            filter.phase_computer = &phase_computer_simple;
+            //filter.inst_freq_computer = &inst_freq_computer;
+            //filter.phase_computer = &phase_computer_simple;
             filter.debug = false;
             filter.max_iters = max_iter_number_for_filter;
 

@@ -44,7 +44,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
             INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage>
                 inst_ampl_computer;
 
-        FILTERS::NonOptPeriodBasedFilter<double, FILTERS::FilteringType::AverageBased,
+        FILTERS::InstFreqBased<double, FILTERS::FilteringType::AverageBased,
             decltype(integrator), FILTERS::InstFreqKind::Average>
                 filter1;
 
@@ -132,10 +132,10 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                     decltype(derivator), NP_DSP::ONE_D::PHASE_COMPUTERS::InstFreqDerivativeBasedKind::DeriveDouble, 
                         decltype(phase_computer_for_mode)> (integrator, derivator, phase_computer_for_mode);
         
-        NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+        NP_DSP::ONE_D::FILTERS::InstFreqBased<double, 
             NP_DSP::ONE_D::FILTERS::FilteringType::AverageBased,
                 decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
-                    filter1 = NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+                    filter1 = NP_DSP::ONE_D::FILTERS::InstFreqBased<double, 
                         NP_DSP::ONE_D::FILTERS::FilteringType::AverageBased,
                             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
                                 (integrator);
@@ -233,17 +233,17 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                     decltype(derivator), NP_DSP::ONE_D::PHASE_COMPUTERS::InstFreqDerivativeBasedKind::DeriveDouble, 
                         decltype(phase_computer_for_mode)> (integrator, derivator, phase_computer_for_mode);
 
-        NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+        NP_DSP::ONE_D::FILTERS::InstFreqBased<double, 
             NP_DSP::ONE_D::FILTERS::FilteringType::AverageBased,
                 decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
-                    non_opt_filter = NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+                    non_opt_filter = NP_DSP::ONE_D::FILTERS::InstFreqBased<double, 
                         NP_DSP::ONE_D::FILTERS::FilteringType::AverageBased,
                             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
                                 (integrator);
 
-        NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesWithConstInstFreqDouble<double, decltype(integrator), decltype(derivator),
+        NP_DSP::ONE_D::FILTERS::EXPERIMENTAL::RecursiveFilterInstAmplChangesWithConstInstFreqDouble<double, decltype(integrator), decltype(derivator),
         decltype(non_opt_filter), decltype(inst_ampl_computer_for_filtering)> filter1 =
-                NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesWithConstInstFreqDouble<double, decltype(integrator), decltype(derivator),
+                NP_DSP::ONE_D::FILTERS::EXPERIMENTAL::RecursiveFilterInstAmplChangesWithConstInstFreqDouble<double, decltype(integrator), decltype(derivator),
         decltype(non_opt_filter), decltype(inst_ampl_computer_for_filtering)> (integrator, derivator, non_opt_filter, inst_ampl_computer_for_filtering);
 
         //NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesDouble<double, decltype(integrator), decltype(derivator),
@@ -369,18 +369,18 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                     decltype(derivator), decltype(inst_freq_computer_for_opt_filter),
                     NP_DSP::ONE_D::INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveDouble>(integrator, derivator, inst_freq_computer_for_opt_filter);
         
-        NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+        NP_DSP::ONE_D::FILTERS::InstFreqBased<double, 
             NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased,
                 decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
-                    non_opt_filter = NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+                    non_opt_filter = NP_DSP::ONE_D::FILTERS::InstFreqBased<double, 
                         NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased,
                             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
                                 (integrator);
 
-        NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+        NP_DSP::ONE_D::FILTERS::InstFreqBased<double, 
             NP_DSP::ONE_D::FILTERS::FilteringType::ValueBased,
                 decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
-                    non_opt_filter2 = NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+                    non_opt_filter2 = NP_DSP::ONE_D::FILTERS::InstFreqBased<double, 
                         NP_DSP::ONE_D::FILTERS::FilteringType::ValueBased,
                             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
                                 (integrator);
@@ -390,9 +390,9 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                 <double, decltype(non_opt_filter), 
                     decltype(non_opt_filter2)>(non_opt_filter, non_opt_filter2);
 
-        NP_DSP::ONE_D::FILTERS::OptPeriodBasedFilterInstFreqDouble<double, decltype(cascade_filter), decltype(inst_freq_computer_for_opt_filter),
+        NP_DSP::ONE_D::FILTERS::EXPERIMENTAL::OptPeriodBasedFilterInstFreqDouble<double, decltype(cascade_filter), decltype(inst_freq_computer_for_opt_filter),
             decltype(phase_computer), decltype(inst_freq_computer_for_mode_for_opt_filter), decltype(phase_computer_for_mode)> filter1 =
-                NP_DSP::ONE_D::FILTERS::OptPeriodBasedFilterInstFreqDouble<double, decltype(cascade_filter), decltype(inst_freq_computer_for_opt_filter),
+                NP_DSP::ONE_D::FILTERS::EXPERIMENTAL::OptPeriodBasedFilterInstFreqDouble<double, decltype(cascade_filter), decltype(inst_freq_computer_for_opt_filter),
                     decltype(phase_computer), decltype(inst_freq_computer_for_mode_for_opt_filter), decltype(phase_computer_for_mode)>
                         (cascade_filter, inst_freq_computer_for_opt_filter, phase_computer,
                             inst_freq_computer_for_mode_for_opt_filter, phase_computer_for_mode);
@@ -493,18 +493,18 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                     decltype(derivator), decltype(inst_freq_computer_for_opt_filter),
                     NP_DSP::ONE_D::INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveDouble>(integrator, derivator, inst_freq_computer_for_opt_filter);
         
-        NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+        NP_DSP::ONE_D::FILTERS::InstFreqBased<double, 
             NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased,
                 decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
-                    non_opt_filter = NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+                    non_opt_filter = NP_DSP::ONE_D::FILTERS::InstFreqBased<double, 
                         NP_DSP::ONE_D::FILTERS::FilteringType::DerivativeBased,
                             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
                                 (integrator);
 
-        NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+        NP_DSP::ONE_D::FILTERS::InstFreqBased<double, 
             NP_DSP::ONE_D::FILTERS::FilteringType::ValueBased,
                 decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
-                    non_opt_filter2 = NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+                    non_opt_filter2 = NP_DSP::ONE_D::FILTERS::InstFreqBased<double, 
                         NP_DSP::ONE_D::FILTERS::FilteringType::ValueBased,
                             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
                                 (integrator);
@@ -514,16 +514,16 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                 <double, decltype(non_opt_filter), 
                     decltype(non_opt_filter2)>(non_opt_filter, non_opt_filter2);
 
-        NP_DSP::ONE_D::FILTERS::OptPeriodBasedFilterInstFreqDouble<double, decltype(cascade_filter), decltype(inst_freq_computer_for_opt_filter),
+        NP_DSP::ONE_D::FILTERS::EXPERIMENTAL::OptPeriodBasedFilterInstFreqDouble<double, decltype(cascade_filter), decltype(inst_freq_computer_for_opt_filter),
             decltype(phase_computer), decltype(inst_freq_computer_for_mode_for_opt_filter), decltype(phase_computer_for_mode)> opt_filter =
-                NP_DSP::ONE_D::FILTERS::OptPeriodBasedFilterInstFreqDouble<double, decltype(cascade_filter), decltype(inst_freq_computer_for_opt_filter),
+                NP_DSP::ONE_D::FILTERS::EXPERIMENTAL::OptPeriodBasedFilterInstFreqDouble<double, decltype(cascade_filter), decltype(inst_freq_computer_for_opt_filter),
                     decltype(phase_computer), decltype(inst_freq_computer_for_mode_for_opt_filter), decltype(phase_computer_for_mode)>
                         (cascade_filter, inst_freq_computer_for_opt_filter, phase_computer,
                             inst_freq_computer_for_mode_for_opt_filter, phase_computer_for_mode);
 
-        NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesDouble<double, decltype(integrator), decltype(derivator),
+        NP_DSP::ONE_D::FILTERS::EXPERIMENTAL::RecursiveFilterInstAmplChangesDouble<double, decltype(integrator), decltype(derivator),
             decltype(opt_filter), decltype(phase_computer), decltype(inst_ampl_computer_for_filtering), decltype(inst_freq_computer_for_mode_for_opt_filter)> filter1 = 
-                NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesDouble<double, decltype(integrator), decltype(derivator),
+                NP_DSP::ONE_D::FILTERS::EXPERIMENTAL::RecursiveFilterInstAmplChangesDouble<double, decltype(integrator), decltype(derivator),
             decltype(opt_filter), decltype(phase_computer), decltype(inst_ampl_computer_for_filtering), decltype(inst_freq_computer_for_mode_for_opt_filter)>
                 (integrator, derivator, opt_filter, phase_computer, inst_ampl_computer_for_filtering, inst_freq_computer_for_mode_for_opt_filter);
 
@@ -622,18 +622,18 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
             <NP_DSP::ONE_D::UTILITY_MATH::HTKind::Mull>
                 inst_ampl_computer_for_filter;
 
-        FILTERS::NonOptPeriodBasedFilter<double, 
+        FILTERS::InstFreqBased<double, 
             FILTERS::FilteringType::AverageBased,
                 decltype(integrator), FILTERS::InstFreqKind::Average>
                     non_opt_filter = 
-        FILTERS::NonOptPeriodBasedFilter<double, 
+        FILTERS::InstFreqBased<double, 
             FILTERS::FilteringType::AverageBased,
                 decltype(integrator), FILTERS::InstFreqKind::Average>(integrator);
 
-        FILTERS::RecursiveFilterInstAmplChangesWithConstInstFreq<double, decltype(integrator), decltype(derivator),
+        FILTERS::EXPERIMENTAL::RecursiveFilterInstAmplChangesWithConstInstFreq<double, decltype(integrator), decltype(derivator),
             decltype(non_opt_filter), decltype(inst_ampl_computer_for_filter)> 
                 filter2 = 
-        FILTERS::RecursiveFilterInstAmplChangesWithConstInstFreq<double, decltype(integrator), decltype(derivator),
+        FILTERS::EXPERIMENTAL::RecursiveFilterInstAmplChangesWithConstInstFreq<double, decltype(integrator), decltype(derivator),
             decltype(non_opt_filter), decltype(inst_ampl_computer_for_filter)> 
                 (integrator, derivator, non_opt_filter, inst_ampl_computer_for_filter);      
         
@@ -733,17 +733,17 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                     decltype(derivator), NP_DSP::ONE_D::PHASE_COMPUTERS::InstFreqDerivativeBasedKind::DeriveDouble, 
                         decltype(phase_computer_for_mode)> (integrator, derivator, phase_computer_for_mode);
 
-        NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+        NP_DSP::ONE_D::FILTERS::InstFreqBased<double, 
             NP_DSP::ONE_D::FILTERS::FilteringType::AverageBased,
                 decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
-                    non_opt_filter = NP_DSP::ONE_D::FILTERS::NonOptPeriodBasedFilter<double, 
+                    non_opt_filter = NP_DSP::ONE_D::FILTERS::InstFreqBased<double, 
                         NP_DSP::ONE_D::FILTERS::FilteringType::AverageBased,
                             decltype(integrator), NP_DSP::ONE_D::FILTERS::InstFreqKind::Double>
                                 (integrator);
 
-        NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesWithConstInstFreqDouble<double, decltype(integrator), decltype(derivator),
+        NP_DSP::ONE_D::FILTERS::EXPERIMENTAL::RecursiveFilterInstAmplChangesWithConstInstFreqDouble<double, decltype(integrator), decltype(derivator),
         decltype(non_opt_filter), decltype(inst_ampl_computer_for_filtering)> filter1 =
-                NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesWithConstInstFreqDouble<double, decltype(integrator), decltype(derivator),
+                NP_DSP::ONE_D::FILTERS::EXPERIMENTAL::RecursiveFilterInstAmplChangesWithConstInstFreqDouble<double, decltype(integrator), decltype(derivator),
         decltype(non_opt_filter), decltype(inst_ampl_computer_for_filtering)> (integrator, derivator, non_opt_filter, inst_ampl_computer_for_filtering);   
         
         /*NP_DSP::ONE_D::FILTERS::RecursiveFilterInstAmplChangesDouble<double, decltype(integrator), decltype(derivator),
@@ -1543,14 +1543,14 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         INST_AMPL_COMPUTERS::HilbertTransformBased
                 <UTILITY_MATH::HTKind::Mull> inst_ampl_computer;
 
-        FILTERS::NonOptPeriodBasedFilter<double,
+        FILTERS::InstFreqBased<double,
                 FILTERS::FilteringType::AverageBased,
                 decltype(integrator), FILTERS::InstFreqKind::Average>
-        non_opt_filter = FILTERS::NonOptPeriodBasedFilter<double,
+        non_opt_filter = FILTERS::InstFreqBased<double,
                 FILTERS::FilteringType::AverageBased,
                 decltype(integrator), FILTERS::InstFreqKind::Average>(integrator);
 
-        FILTERS::SincResLocalFilter<double> filter;
+        FILTERS::MonoFreqFilters<double, FILTERS::MonoInstFreqFilteringType::SincPaddedFIR> filter;
 
         template<Signal DataT>
         void compute(const DataT & data_in){
@@ -1671,13 +1671,13 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                     }
                     filter.is_low_pass = false;
                     filter.freq = base_inst_freq;
-                    filter.compute(data, *modes[iter_number], nullptr);
+                    filter.compute(data, *modes[iter_number], *phases[iter_number]); // phases is unused
 
                     std::cout << "get high freq part  " << iter_number << std::endl;
                     modes[iter_number]->show(PlottingKind::Simple);
 
                     filter.is_low_pass = true;
-                    filter.compute(data, data_buffer, nullptr);
+                    filter.compute(data, data_buffer, *phases[iter_number]);
 
                     std::cout << "get low freq part  " << iter_number << std::endl;
                     std::stringstream label;
@@ -1697,16 +1697,16 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                     ExpressionWrapper<double, size_t, decltype(val_expr),
                             GENERAL::Nil, decltype(size_expr), false> inst_freq_buffer(val_expr, size_expr);
 
-                    FILTERS::InstAmplNormalizatorNaive<double, decltype(inst_ampl_computer),
+                    FILTERS::EXPERIMENTAL::InstAmplNormalizatorNaive<double, decltype(inst_ampl_computer),
                             decltype(inst_freq_buffer), decltype(non_opt_filter)>
-                            naive_normalizer = FILTERS::InstAmplNormalizatorNaive<double, decltype(inst_ampl_computer),
+                            naive_normalizer = FILTERS::EXPERIMENTAL::InstAmplNormalizatorNaive<double, decltype(inst_ampl_computer),
                             decltype(inst_freq_buffer), decltype(non_opt_filter)>
                             (inst_ampl_computer, non_opt_filter);
 
-                    FILTERS::InstAmplNormalizatorNaiveReqursive
+                    FILTERS::EXPERIMENTAL::InstAmplNormalizatorNaiveReqursive
                             <double, decltype(naive_normalizer), decltype(inst_freq_buffer),
                                     decltype(non_opt_filter)> inst_ampl_req_norm =
-                            FILTERS::InstAmplNormalizatorNaiveReqursive
+                            FILTERS::EXPERIMENTAL::InstAmplNormalizatorNaiveReqursive
                                     <double, decltype(naive_normalizer), decltype(inst_freq_buffer),
                                             decltype(non_opt_filter)>
                                     (naive_normalizer, inst_freq_buffer, non_opt_filter);
@@ -1727,7 +1727,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                     data_buffer.show(PlottingKind::Simple);
 
                     filter.is_low_pass = true;
-                    filter.compute(data_buffer, compute_buffer, nullptr);
+                    filter.compute(data_buffer, compute_buffer, compute_buffer);
 
                     std::cout << "compute filtered signal " << iter_number << std::endl;
                     std::stringstream label2;
@@ -1819,18 +1819,18 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         INST_AMPL_COMPUTERS::HilbertTransformBased
                 <UTILITY_MATH::HTKind::Mull> inst_ampl_computer;
 
-        FILTERS::NonOptPeriodBasedFilter<double,
+        FILTERS::InstFreqBased<double,
                 FILTERS::FilteringType::AverageBased,
                 decltype(integrator), FILTERS::InstFreqKind::Average>
-                non_opt_filter = FILTERS::NonOptPeriodBasedFilter<double,
+                non_opt_filter = FILTERS::InstFreqBased<double,
                 FILTERS::FilteringType::AverageBased,
                 decltype(integrator), FILTERS::InstFreqKind::Average>(integrator);
 
-        FILTERS::SincResLocalFilter<double> filter;
+        FILTERS::MonoFreqFilters<double, FILTERS::MonoInstFreqFilteringType::SincPaddedFIR> filter;
 
         template<Signal DataT>
         void compute(const DataT & data_in){
-            filter.locality_coeff = locality_coeff;
+            filter.gaussian_width_muller = locality_coeff;
             size_t iter_number = 0;
             if(data.size() != data_in.size()){
                 data.base->vec->clear();
@@ -1950,7 +1950,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
 
                     filter.freq = base_inst_freq;
                     filter.is_low_pass = true;
-                    filter.compute(data, data_buffer, nullptr);
+                    filter.compute(data, data_buffer, data_buffer);
 
                     //std::cout << "get low freq part  " << iter_number << std::endl;
                     //data_buffer.show(PlottingKind::Simple);//, label.str());
@@ -2035,23 +2035,23 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                 phase_computer_simple;
 
         INST_FREQ_COMPUTERS::ComputedOnPhase<double, decltype(integrator),
-                decltype(derivator), INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveAverage>
+                decltype(derivator), INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage>
                 inst_freq_computer =
                 INST_FREQ_COMPUTERS::ComputedOnPhase<double, decltype(integrator),
-                        decltype(derivator), INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveAverage>
+                        decltype(derivator), INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage>
                         (integrator, derivator);
 
         INST_AMPL_COMPUTERS::HilbertTransformBased
                 <UTILITY_MATH::HTKind::Mull> inst_ampl_computer;
 
-        FILTERS::SincResLocalFilterWithResReq<double, decltype(phase_computer_simple), decltype(inst_freq_computer)> filter;
+        FILTERS::RecursiveFilter<double, FILTERS::LocalFilteringType::SincResampled> filter;
 
         template<typename DataT>
         void compute(const DataT & data_in){
             filter.locality_coeff = locality_coeff;
             filter.period_muller = period_muller;
-            filter.inst_freq_computer = &inst_freq_computer;
-            filter.phase_computer = &phase_computer_simple;
+            //filter.inst_freq_computer = &inst_freq_computer;
+            //filter.phase_computer = &phase_computer_simple;
             filter.max_iters = max_iter_number_for_filter;
             filter.debug = false;
             //filter.debug = debug;
@@ -2414,7 +2414,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
                     phases[iter_number]->show(PlottingKind::Simple);
                 }
 
-                if((*phases[iter_number])[data.size() - 1] > 6.28){
+                if((*phases[iter_number])[data.size() - 1] >= 6.28){
                     filter.compute(data, data_buffer, &compute_buffer);
 
                     if (debug){
