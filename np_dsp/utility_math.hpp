@@ -11,7 +11,48 @@
 #include <npdsp_config.hpp>
 
 namespace NP_DSP::ONE_D::UTILITY_MATH {
+namespace NP_DSP::ONE_D::UTILITY_MATH {   
+    struct SquarePolynome{
+        double a;
+        double b;
+        double c;
+
+        void solve(auto x1, auto x2, auto x3, auto y1, auto y2, auto y3){
+            b = ((y1-y3)*(x1*x1 - x2*x2) - (y1 - y2)*(x1*x1 - x3*x3))/
+            ((x1 - x2)*(x1 - x3)*(x2 - x3));
+            a = (y1 - y2 - b * (x1 - x2)) / (x1*x1 - x2*x2);
+            c = y3 - a*x3*x3 - b*x3;
+        }
+
+        double compute(auto x){
+            return a*x*x + b*x + c;
+        }
+
+        double derive(auto x){
+            return b + 2.0 * a;
+        }
+    };
+
+    struct Linear{
+        double k;
+        double b;
     
+        void solve(auto x1, auto x2, auto y1, auto y2){
+            auto dx = x2 - x1;
+            auto dy = y2 - y1;
+
+            k = dy/dx;
+            b = x1 - k*x1;
+        }
+    
+        double compute(auto x){
+            return k*x + b;
+        }
+        double derive(auto x){
+            return k;
+        }
+    };
+
     template<typename T>
     T complexL2(std::complex<T> a, std::complex<T> b) {
         return (a.imag() - b.imag()) * (a.imag() - b.imag()) + (a.real() - b.real()) * (a.real() - b.real());
