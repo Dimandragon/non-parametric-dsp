@@ -30,11 +30,15 @@ int main(){
     }
     
 
-    NP_DSP::ONE_D::MODES_EXTRACTORS::instFreqNormSincExtractorReq extractor;
-    extractor.locality_coeff = 5;
-    extractor.period_muller = 1.2;
+    NP_DSP::ONE_D::MODES_EXTRACTORS::MakimaBasedModeDecomposition extractor;
+    //extractor.locality_coeff = 5;
+    //extractor.period_muller = 1.2;
     extractor.max_iter_number_for_filter = 5;
     extractor.debug = true;
+    extractor.phase_shifts = {};
+    for (int i = 0; i < 100; i++){
+        extractor.phase_shifts.push_back(0.01 * i * std::numbers::pi);
+    }
 
     extractor.compute(data);
 

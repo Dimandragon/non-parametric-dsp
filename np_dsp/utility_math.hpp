@@ -10,7 +10,6 @@
 #include <npdsp_concepts.hpp>
 #include <npdsp_config.hpp>
 
-namespace NP_DSP::ONE_D::UTILITY_MATH {
 namespace NP_DSP::ONE_D::UTILITY_MATH {   
     struct SquarePolynome{
         double a;

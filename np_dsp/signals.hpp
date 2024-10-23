@@ -454,7 +454,7 @@ namespace NP_DSP::ONE_D {
                 return accum.real();
             } else if (kind == SignalKind::Stohastic) {
                 if (idx >= 0 && idx < static_cast<Idx>(size() - 2)) {
-                    if constexpr (NP_DSP::CONFIG::debug) {
+                    if constexpr (CONFIG::debug) {
                         std::string mark = "1b";
                         IC(mark);
                     }
@@ -833,7 +833,7 @@ namespace NP_DSP::ONE_D {
                 return accum.real();
             } else if (kind == SignalKind::Stohastic) {
                 if (idx >= 0 && idx < static_cast<Idx>(size() - 2)) {
-                    if constexpr (NP_DSP::CONFIG::debug) {
+                    if constexpr (CONFIG::debug) {
                         std::string mark = "1b";
                         IC(mark);
                     }
@@ -1185,7 +1185,7 @@ namespace NP_DSP::ONE_D {
                 return accum.real();
             } else if (kind == SignalKind::Stohastic) {
                 if (idx >= 0 && idx < static_cast<Idx>(size() - 2)) {
-                    if constexpr (NP_DSP::CONFIG::debug) {
+                    if constexpr (CONFIG::debug) {
                         std::string mark = "1b";
                         IC(mark);
                     }
@@ -1294,5 +1294,5 @@ namespace NP_DSP::ONE_D {
     };
 
 
-    static_assert(ONE_D::is_signal<GenericSignal<SimpleVecWrapper<int>, true>>);
+    static_assert(is_signal<GenericSignal<SimpleVecWrapper<int>, true>>);
 }
