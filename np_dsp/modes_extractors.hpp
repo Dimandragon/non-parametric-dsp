@@ -1646,7 +1646,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
     };
 
-    struct instFreqNormSincExtractor
+    struct InstFreqNormSincExtractor
     {
         using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         DataType data;
