@@ -15,8 +15,6 @@ int main(){
         aaa.base->vec->push_back(std::rand());
     }
 
-    aaa.show(NP_DSP::ONE_D::PlottingKind::Simple);
-
     NP_DSP::ONE_D::Tokenizers::InstFreqNormSincTokenizer tokenizer;
     tokenizer.locality_coeff = 2.5;
     tokenizer.period_muller = 1.0;
@@ -25,8 +23,6 @@ int main(){
 
     auto tokens = tokenizer.getTokens();
 
-    //IC(tokens[0]);
-    //IC(tokens);
 
     for(const auto & token: tokens){
         std::cout << token.mode_num << " " << token.t <<

@@ -15,10 +15,8 @@
 #include <math.h>
 
 namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
-    
     using InstFreqDerivativeBasedKind = PHASE_COMPUTERS::InstFreqDerivativeBasedKind;
 
-    
     template<typename U, Integrator<U> IntegratorT,
         Derivator<U> DerivatorT, InstFreqDerivativeBasedKind kind>
     struct DerivativeBased {
@@ -144,7 +142,6 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         return phase.interpolate(idx + pad, SignalKind::Monotone) - 
             phase.interpolate(idx - pad, SignalKind::Monotone);
     }
-
     
     template<typename U, Integrator<U> IntegratorT,
         Derivator<U> DerivatorT, InstFreqDerivativeBasedKind kind>
@@ -180,124 +177,14 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
 
         template<Signal DataType, Signal OutType>
         void compute(const DataType& phase, OutType& out, auto * nil) {
-            using T = typename OutType::SampleType;
-            //nil may bee nullptr
-            if constexpr (counting_kind == InstFreqDerivativeBasedKind::Momental) {
-                derivator.compute(phase, out, nullptr);
-                for (int i = 0; i < phase.size(); i++) {
-                    out[i] = out[i] / (std::numbers::pi * 2.0);
-                }
-            } else if constexpr (counting_kind == InstFreqDerivativeBasedKind::TimeAverage) {
-                for (auto i = 0; i < phase.size(); i++) {
-                    auto approx_answer_x = 0.0;
-                    auto approx_answer_y = 0.0;
-                    auto counter = 0;
-                    double x_left = 0.0;
-                    double x_right = phase.size();
-                    double y_left = 0.0;
-                    double y_right = findPeriodDistanceAverage(phase, i, x_right);
-
-
-                    while (x_right - x_left > 1.0) {
-                        approx_answer_x = UTILITY_MATH::backLinearInterpolate<double, double>
-                            ({x_left, y_left}, {x_right, y_right}, 
-                                2.0 * std::numbers::pi * variability);
-                        approx_answer_y = findPeriodDistanceAverage(phase, i, approx_answer_x);
-                        if (approx_answer_y > y_right){
-                            y_left = y_right;
-                            y_right = approx_answer_y;
-                            x_left = x_right;
-                            x_right = approx_answer_x;
-                        }
-                        else if (approx_answer_y < y_left){
-                            y_right = y_left;
-                            x_right = x_left;
-                            y_left = approx_answer_y;
-                            x_left = approx_answer_x;
-                        }
-                        else if (approx_answer_y > 2.0 * std::numbers::pi * variability){
-                            y_right = approx_answer_y;
-                            y_left = approx_answer_x;
-                        }
-                        else if (approx_answer_y < 2.0 * std::numbers::pi * variability){
-                            y_left = approx_answer_y;
-                            y_left = approx_answer_x;
-                        }
-                    }
-                    auto period = 1.0 / UTILITY_MATH::backLinearInterpolate<double, double>
-                        ({x_left, y_left}, {x_right, y_right}, 
-                                2.0 * std::numbers::pi * variability) * 2.0;
-                    out[i] = static_cast<T>(1.0 / period) * variability;
-                }
-            } else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveAverage) {
-                for (auto i = 0; i < phase.size(); i++) {
-                    auto approx_answer_right = static_cast<T>(0.0);
-                    auto old_approx_answer_right = approx_answer_right;
-                    auto counter = 0;
-                    while (approx_answer_right < std::numbers::pi * variability) {
-                        counter++;
-                        old_approx_answer_right = approx_answer_right;
-                        approx_answer_right = phase.interpolate(i + counter, SignalKind::Monotone) - phase.interpolate(i, SignalKind::Monotone);
-                    }
-                    auto left_loss_right_edge = std::numbers::pi * variability - old_approx_answer_right;
-                    auto right_loss_right_edge = approx_answer_right - std::numbers::pi * variability;
-                    auto sum_loss_right_edge = left_loss_right_edge + right_loss_right_edge;
-                    auto right_edge = static_cast<T>(counter) - right_loss_right_edge / sum_loss_right_edge;
-
-                    auto approx_answer_left = static_cast<T>(0.0);
-                    auto old_approx_answer_left = approx_answer_left;
-                    counter = 0;
-                    while (approx_answer_left < std::numbers::pi * variability) {
-                        counter++;
-                        old_approx_answer_left = approx_answer_left;
-                        approx_answer_left = phase.interpolate(i, SignalKind::Monotone) - phase.interpolate(i - counter, SignalKind::Monotone);
-                    }
-                    auto left_loss_left_edge = std::numbers::pi * variability - old_approx_answer_left;
-                    auto right_loss_left_edge = approx_answer_left - std::numbers::pi * variability;
-                    auto sum_loss_left_edge = left_loss_left_edge + right_loss_left_edge;
-                    auto left_edge = static_cast<T>(counter) - right_loss_left_edge / sum_loss_left_edge;
-
-                    auto period = right_edge + left_edge;
-                    out[i] = static_cast<T>(1.0 / period) * variability;
-                }
-            } else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveDouble) {
-                for (auto i = 0; i < phase.size(); i++) {
-                    auto approx_answer_right = 0.0;
-                    auto old_approx_answer_right = approx_answer_right;
-                    auto counter = 0;
-                    while (approx_answer_right < std::numbers::pi * variability) {
-                        counter++;
-                        old_approx_answer_right = approx_answer_right;
-                        approx_answer_right = phase.interpolate(i + counter, SignalKind::Monotone) - phase.interpolate(i, SignalKind::Monotone);
-                    }
-                    auto left_loss_right_edge = std::numbers::pi * variability - old_approx_answer_right;
-                    auto right_loss_right_edge = approx_answer_right - std::numbers::pi * variability;
-                    auto sum_loss_right_edge = left_loss_right_edge + right_loss_right_edge;
-                    auto right_edge = static_cast<double>(counter) - right_loss_right_edge / sum_loss_right_edge;
-
-                    auto approx_answer_left = 0.0;
-                    auto old_approx_answer_left = approx_answer_left;
-                    counter = 0;
-                    while (approx_answer_left < std::numbers::pi * variability) {
-                        counter++;
-                        old_approx_answer_left = approx_answer_left;
-                        approx_answer_left = phase.interpolate(i, SignalKind::Monotone) - phase.interpolate(i - counter, SignalKind::Monotone);
-                    }
-                    auto left_loss_left_edge = std::numbers::pi * variability - old_approx_answer_left;
-                    auto right_loss_left_edge = approx_answer_left - std::numbers::pi * variability;
-                    auto sum_loss_left_edge = left_loss_left_edge + right_loss_left_edge;
-                    auto left_edge = static_cast<double>(counter) - right_loss_left_edge / sum_loss_left_edge;
-
-                    out[i].first = 0.5 / left_edge * variability;
-                    out[i].second = 0.5 / right_edge * variability;
-                }
-            }
+            compute(phase, out, nullptr);
         }
 
         template<Signal DataType, Signal OutType>
         void compute(const DataType& phase, OutType& out, std::nullptr_t nil) {
             using T = typename OutType::SampleType;
             //nil may bee nullptr
+            auto delta = 0.01;
             if constexpr (counting_kind == InstFreqDerivativeBasedKind::Momental) {
                 derivator.compute(phase, out, nullptr);
                 for (int i = 0; i < phase.size(); i++) {
@@ -305,44 +192,19 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                 }
             } else if constexpr (counting_kind == InstFreqDerivativeBasedKind::TimeAverage) {
                 for (auto i = 0; i < phase.size(); i++) {
-                    auto approx_answer_x = 0.0;
-                    auto approx_answer_y = 0.0;
-                    auto counter = 0;
-                    double x_left = 0.0;
-                    double x_right = phase.size();
-                    double y_left = 0.0;
-                    double y_right = findPeriodDistanceAverage(phase, i, x_right);
+                    auto val_expr = [&](double idx){
+                        return std::abs(phase.interpolate(i + idx, SignalKind::Monotone) - phase.interpolate(i - idx, SignalKind::Monotone));
+                    };
+                    auto size_expr = [&](){
+                        return phase.size();
+                    };
+                    ExpressionWrapper<double, double, decltype(val_expr), GENERAL::Nil,
+                        decltype(size_expr), false> expr_wrapper(val_expr, size_expr);
+                    GenericSignal<decltype(expr_wrapper), false> phase_(expr_wrapper);
+                    double approx_answer_x = phase_.findMonotone
+                        (2.0 * std::numbers::pi * variability, {}, {}, {}, 0.01);
 
-
-                    while (x_right - x_left > 1.0) {
-                        approx_answer_x = UTILITY_MATH::backLinearInterpolate<double, double>
-                            ({x_left, y_left}, {x_right, y_right}, 
-                                2.0 * std::numbers::pi * variability);
-                        approx_answer_y = findPeriodDistanceAverage(phase, i, approx_answer_x);
-                        if (approx_answer_y > y_right){
-                            y_left = y_right;
-                            y_right = approx_answer_y;
-                            x_left = x_right;
-                            x_right = approx_answer_x;
-                        }
-                        else if (approx_answer_y < y_left){
-                            y_right = y_left;
-                            x_right = x_left;
-                            y_left = approx_answer_y;
-                            x_left = approx_answer_x;
-                        }
-                        else if (approx_answer_y > 2.0 * std::numbers::pi * variability){
-                            y_right = approx_answer_y;
-                            y_left = approx_answer_x;
-                        }
-                        else if (approx_answer_y < 2.0 * std::numbers::pi * variability){
-                            y_left = approx_answer_y;
-                            y_left = approx_answer_x;
-                        }
-                    }
-                    auto period = 1.0 / UTILITY_MATH::backLinearInterpolate<double, double>
-                        ({x_left, y_left}, {x_right, y_right}, 
-                                2.0 * std::numbers::pi * variability) * 2.0;
+                    auto period = approx_answer_x * 2.0;
                     out[i] = static_cast<T>(1.0 / period) * variability;
                 }
             } else if constexpr (counting_kind == InstFreqDerivativeBasedKind::DeriveAverage) {
@@ -666,7 +528,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         }
     };
 
-     enum class ExtremumsBasedComputeInstFreqKind { Simple, Linear };
+    enum class ExtremumsBasedComputeInstFreqKind { Simple, Linear };
 
     
     template<ExtremumsBasedComputeInstFreqKind compute_kind>
@@ -1284,8 +1146,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
 
     template<Signal DataT, Signal OutT, Signal InstFreqT>
     double instFreqNormOnce(const DataT & data, OutT & out, const InstFreqT & inst_freq, 
-        std::vector<double> & freq_conv)
-    {   
+        std::vector<double> & freq_conv){   
         APPROX::ModifiedAkimaBasedWithNoTrain<DataT> approximator;
         approximator.loadData(data);
         double d_avg = 0.0;
@@ -1315,9 +1176,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
             }
             temp += 1.0 / (inst_freq[i] + inst_freq[i + 1]) * 2.0 / d_avg;
         }
-        //IC(temp);
         return d_avg;
-        //std::optional<std::pair<>>
     }
 
     template<Signal DataT, Signal OutT>
@@ -1333,8 +1192,6 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         approximator.loadData(x_data, y_data);
 
         for (size_t i = 0; i < data.size(); i++){
-            //out[i] = data.interpolate(freq_conv[i], SignalKind::Universal);
-            //IC(freq_conv[i], i);
             while (freq_conv[counter] < i){
                 counter++;
             }
@@ -1345,6 +1202,104 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
             }
             //out[i] = data.interpolate(idx, SignalKind::Universal);
             out[i] = approximator.compute(i);
+        }
+    }
+
+    template<Signal DataT, Signal OutT>
+    double instFreqNormExtrBased(DataT const & data, OutT & out,
+        APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain<std::vector<double>> & idx_approx, 
+        std::vector<double> & extremums)
+    {
+        //std::vector<double> extremums;
+        UTILITY_MATH::computeExtremums<DataT, double>
+            (data, extremums, UTILITY_MATH::ExtremumsKind::Simple);
+        
+        double period = static_cast<double>(data.size() - 1) / static_cast<double>(extremums.size() - 1);
+
+        std::vector<double> extremums_old_idx;
+        std::vector<double> extremums_new_idx;
+        extremums_old_idx.push_back(-extremums[1]);
+        extremums_new_idx.push_back(-period);
+        for (int i = 0; i < extremums.size(); i++){
+            extremums_old_idx.push_back(extremums[i]);
+            extremums_new_idx.push_back(i * period);
+        }
+        extremums_old_idx.push_back(extremums[extremums.size() - 1] * 2 - extremums[extremums.size() - 2]);
+        extremums_new_idx.push_back(extremums.size() * period);
+
+        idx_approx.loadData(extremums_new_idx, extremums_old_idx);
+
+        APPROX::ModifiedAkimaBasedWithNoTrain<std::vector<double>> signal_approx;
+        //signal_approx.loadData(*(data.base->vec));
+        std::vector<double> data_vec;
+        for (int i = 0; i < data.size(); i++){
+            data_vec.push_back(data[i]);
+        }
+        signal_approx.loadData(data_vec);
+
+        for (int i = 0; i < data.size(); i++){
+            out[i] = signal_approx.compute(idx_approx.compute(i));
+        }
+
+        return period;
+    }
+
+    template<Signal DataT, Signal OutT>
+    double instFreqNormComputedOnExtremums(DataT const & data, OutT & out,
+        APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain<std::vector<double>> & idx_approx, 
+        const std::vector<double> & extremums)
+    {   
+        double period = static_cast<double>(data.size() - 1) / static_cast<double>(extremums.size() - 1);
+
+        std::vector<double> extremums_old_idx;
+        std::vector<double> extremums_new_idx;
+        extremums_old_idx.push_back(-extremums[1]);
+        extremums_new_idx.push_back(-period);
+        for (int i = 0; i < extremums.size(); i++){
+            extremums_old_idx.push_back(extremums[i]);
+            extremums_new_idx.push_back(i * period);
+        }
+        extremums_old_idx.push_back(extremums[extremums.size() - 1] * 2 - extremums[extremums.size() - 2]);
+        extremums_new_idx.push_back(extremums.size() * period);
+
+        idx_approx.loadData(extremums_new_idx, extremums_old_idx);
+
+        APPROX::ModifiedAkimaBasedWithNoTrain<std::vector<double>> signal_approx;
+        std::vector<double> data_vec;
+        for (int i = 0; i < data.size(); i++){
+            data_vec.push_back(data[i]);
+        }
+        signal_approx.loadData(data_vec);
+
+        for (int i = 0; i < data.size(); i++){
+            out[i] = signal_approx.compute(idx_approx.compute(i));
+        }
+
+        return period;
+    }
+
+    template<Signal DataT, Signal OutT>
+    void backInstFreqNormExtrBased(DataT const & data, OutT & out,
+        APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain<std::vector<double>> & idx_approx){
+        APPROX::ModifiedAkimaBasedWithNoTrain<std::vector<double>> signal_res_approx;
+        std::vector<double> data_vec;
+
+        auto val_expr = [&](double idx){
+            return idx_approx.compute(idx);
+        };
+        auto size_expr = [&](){
+            return data.size();
+        };
+        ExpressionWrapper<double, double, decltype(val_expr), GENERAL::Nil, decltype(size_expr), false> expr_wrapper(val_expr, size_expr);
+        GenericSignalRExpr<decltype(expr_wrapper)> resampled_idx_signal(expr_wrapper);
+
+        for (int i = 0; i < data.size(); i++){
+            data_vec.push_back(data[i]);
+        }
+        signal_res_approx.loadData(data_vec);
+
+        for(int i = 0; i < data.size(); i++){
+            out[i] = signal_res_approx.compute(resampled_idx_signal.findMonotone(i, {}, {}, {}, 0.01));
         }
     }
     
@@ -1454,10 +1409,8 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                 counter++;
             }
             else{
-                //arrout.push(linear_interpolate::<T>(arrin, temp));
                 if (counter < data.size()){
                     out[counter] = data.interpolate(temp, SignalKind::Universal);
-                    //IC(counter, temp, out[counter]);
                     counter++;
                     temp = temp + one / fc;
                 }
@@ -1472,7 +1425,6 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                 break;
             }
         }
-        //IC(sum, iter_predict, temp);
     }
 
     template<Signal DataT, Signal OutT>

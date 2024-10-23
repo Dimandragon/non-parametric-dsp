@@ -33,97 +33,97 @@ using namespace NP_DSP::ONE_D;
     }
 
     template<typename U, typename Conf>
-    U getScalarValue(const Conf & config, size_t channel_number, size_t mode_number, size_t idx, size_t dim_couters){
-        if (dim_couter == 0){
+    U getScalarValue(const Conf & config, size_t channel_number, size_t mode_number, size_t idx, size_t dim_counters){
+        if (dim_counter == 0){
             return idx;
         } 
-        else if  (dim_couter == 1){
+        else if  (dim_counter == 1){
             return mode_number;
         }
-        else if  (dim_couter == 2){
+        else if  (dim_counter == 2){
             return channel_number;
         }
-        else if  (dim_couter == 3){
+        else if  (dim_counter == 3){
             return (*config.modes[mode_number])[idx];
         }
-        else if  (dim_couter == 4){
+        else if  (dim_counter == 4){
             return (*config.inst_freq[mode_number])[idx];
         }
-        else if  (dim_couter == 5){
+        else if  (dim_counter == 5){
             return (*config.inst_ampl[mode_number])[idx];
         }
-        else if  (dim_couter == 6){
+        else if  (dim_counter == 6){
             return (*config.phases[mode_number])[idx];
         }
-        else if (dim_couter == -1){
+        else if (dim_counter == -1){
             return 7;
         }
-        else if (dim_couter == -2){
+        else if (dim_counter == -2){
             return 3;
         }
     }
 
     template<typename U, typename Conf>
-    U getScalarValueDouble(const Conf & config, size_t mode_number, size_t idx, size_t dim_couter){
-        if  (dim_couter == 0){
+    U getScalarValueDouble(const Conf & config, size_t mode_number, size_t idx, size_t dim_counter){
+        if  (dim_counter == 0){
             return idx;
         } 
-        else if  (dim_couter == 1){
+        else if  (dim_counter == 1){
             return mode_number;
         } 
-        else if  (dim_couter == 2){
+        else if  (dim_counter == 2){
             return channel_number;
         }
-        else if  (dim_couter == 3){
+        else if  (dim_counter == 3){
             return (*config.modes[mode_number])[idx];
         }
-        else if  (dim_couter == 4){
+        else if  (dim_counter == 4){
             return (*config.inst_freq[mode_number])[idx];
         }
-        else if  (dim_couter == 5){
+        else if  (dim_counter == 5){
             return (*config.inst_freq[mode_number])[idx].first;
         }
-        else if  (dim_couter == 6){
+        else if  (dim_counter == 6){
             return (*config.inst_ampl[mode_number])[idx].second;
         }
-        else if  (dim_couter == 7){
+        else if  (dim_counter == 7){
             return (*config.phases[mode_number])[idx];
         }
-        else if (dim_couter == -1){
+        else if (dim_counter == -1){
             return 8;
         }
-        else if (dim_couter == -2){
+        else if (dim_counter == -2){
             return 3;
         }
     }
 
     template<typename U, typename Conf>
-    U getScalarValueDoubleAsMono(const Conf & config, size_t mode_number, size_t idx, dim_couter){
-        if  (dim_couter == 0){
+    U getScalarValueDoubleAsMono(const Conf & config, size_t mode_number, size_t idx, dim_counter){
+        if  (dim_counter == 0){
             return idx;
         } 
-        else if  (dim_couter == 1){
+        else if  (dim_counter == 1){
             return mode_number;
         } 
-        else if (dim_couter == 2){
+        else if (dim_counter == 2){
             return channel_number;
         }
-        else if (dim_couter == 3){
+        else if (dim_counter == 3){
             return (*config.modes[mode_number])[idx];
         }
-        else if (dim_couter == 4){
+        else if (dim_counter == 4){
             return 0.5 * ((*config.inst_freq[mode_number])[idx].first + (*config.inst_freq[mode_number])[idx].second);
         }
-        else if (dim_couter == 5){
+        else if (dim_counter == 5){
             return (*config.inst_ampl[mode_number])[idx];
         }
-        else if (dim_couter == 6){
+        else if (dim_counter == 6){
             return (*config.phases[mode_number])[idx];
         }
-        else if (dim_couter == -1){
+        else if (dim_counter == -1){
             return 7;
         }
-        else if (dim_couter == -2){
+        else if (dim_counter == -2){
             return 3;
         }
     }

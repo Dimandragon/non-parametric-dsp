@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <npdsp_concepts.hpp>
 #include <npdsp_config.hpp>
 #include <vector>
@@ -8,11 +10,11 @@
 #include <numbers>
 #include <string>
 #include <makima.hpp>
-#include <optional>
 #include <pchip.hpp>
+#include <optional>
 
 namespace NP_DSP::ONE_D::APPROX {
-     enum class FSApproxKind { Simple, Positive };
+    enum class FSApproxKind { Simple, Positive };
 
     
     template<typename LossFunc, typename StopPointFunc, FSApproxKind kind_v, typename BySampleLoss>
@@ -52,10 +54,6 @@ namespace NP_DSP::ONE_D::APPROX {
             tile_size = signal_in.size();
         }
 
-        size_t mirrorIdx(size_t const i) const {
-            return i / tile_size * tile_size + i / tile_size * tile_size + tile_size - i;
-        }
-
         template<Signal SignalType>
         void computeFSFromData(SignalType& signal_in){
             for (size_t i = 0; i < signal_in.size(); i++){
@@ -68,6 +66,10 @@ namespace NP_DSP::ONE_D::APPROX {
             }
             auto const pad = approximated_data.size() / tile_size * tile_size;
             UTILITY_MATH::fftc2c(approximated_data, fourier_series, approximated_data.size() - pad, pad);
+        }
+
+        size_t mirrorIdx(size_t const i) const {
+            return i / tile_size * tile_size + i / tile_size * tile_size + tile_size - i;
         }
 
         void applyMirror(size_t const i) {
@@ -304,28 +306,11 @@ namespace NP_DSP::ONE_D::APPROX {
                 auto central_loss = check_loss({static_cast<SampleType>(1.), theta_central});
                 auto right_loss = check_loss({static_cast<SampleType>(1.), theta_max});
 
-                if constexpr (CONFIG::debug) {
-                    std::string mark = "end compute first losses";
-                    //IC(mark);
-
-                    //IC(theta_min, left_loss, theta_central, central_loss, theta_max, right_loss);
-                }
 
                 auto period_opt_iter = 0;
 
-                if constexpr (CONFIG::debug) {
-                    std::string mark = "start optimize period";
-                    //IC(mark);
-                }
-
 
                 while (!(*stopPont)(std::abs(right_loss - central_loss) + std::abs(left_loss - central_loss), *this)) {
-                    if constexpr (CONFIG::debug) {
-                        //IC(period_opt_iter, left_loss, central_loss, right_loss, theta_min, theta_central, theta_max);
-                        //IC(right_loss-central_loss, left_loss-central_loss, right_loss-left_loss);
-                        //IC(theta_central - theta_min, theta_max-theta_central);
-                    }
-
                     auto left_diff = left_loss - central_loss;
                     auto right_diff = right_loss - central_loss;
                     if (left_diff > 0 && right_diff <= 0) {
@@ -379,11 +364,6 @@ namespace NP_DSP::ONE_D::APPROX {
                 }
                 trigonometric_sample.second = theta_central;
 
-
-                if constexpr (CONFIG::debug) {
-                    std::string mark = "start optimize ampl";
-                    //IC(mark);
-                }
                 SampleType ampl_twenty_procent = ampl * 0.2;
                 SampleType ampl_left = ampl;
                 SampleType ampl_right = ampl;
@@ -408,58 +388,32 @@ namespace NP_DSP::ONE_D::APPROX {
                 //while(!(*stopPont)(std::abs(ampl_right - ampl_left), *this)) {
                 auto errors_counter = 0;
                 while (!(*stopPont)(std::abs(loss_right - loss_central) + std::abs(loss_left - loss_central), *this)) {
-                    if constexpr (CONFIG::debug) {
-                        //IC(ampl_opt_iter, loss_left, loss_central, loss_right, ampl_left, ampl_central, ampl_right);
-                        //IC(loss_right-loss_central, loss_left-loss_central, loss_right-loss_left);
-                        //IC(ampl_central - ampl_left, ampl_right - ampl_central);
-                    }
-
                     auto left_diff = loss_left - loss_central;
                     auto right_diff = loss_right - loss_central;
                     if (left_diff > 0 && right_diff <= 0) {
-                        if constexpr (CONFIG::debug) {
-                            std::string point_mark = "ampl 1 branch";
-                            //IC(point_mark);
-                        }
                         loss_left = loss_central;
                         ampl_left = ampl_central;
                         ampl_central = (ampl_left + ampl_right) / 2;
                         trigonometric_sample.first = ampl_central;
                         loss_central = check_loss(trigonometric_sample);
                     } else if (left_diff <= 0 && right_diff > 0) {
-                        if constexpr (CONFIG::debug) {
-                            std::string point_mark = "ampl 2 branch";
-                            //IC(point_mark);
-                        }
                         loss_right = loss_central;
                         ampl_right = ampl_central;
                         ampl_central = (ampl_left + ampl_right) / 2;
                         trigonometric_sample.first = ampl_central;
                         loss_central = check_loss(trigonometric_sample);
                     } else if (left_diff > right_diff) {
-                        if constexpr (CONFIG::debug) {
-                            std::string point_mark = "ampl 3 branch";
-                            //IC(point_mark);
-                        }
                         //left branch is higher
                         auto ampl_left_avg = (ampl_left + ampl_central) / 2;
                         trigonometric_sample.first = ampl_left_avg;
                         auto new_loss_left = check_loss(trigonometric_sample);
                         if (new_loss_left < loss_left && new_loss_left > central_loss) {
-                            if constexpr (CONFIG::debug) {
-                                std::string point_mark = "ampl 3.1 branch";
-                                //IC(point_mark);
-                            }
                             loss_left = new_loss_left;
                             ampl_left = ampl_left_avg;
                             ampl_central = (ampl_left + ampl_right) / 2;
                             trigonometric_sample.first = ampl_central;
                             loss_central = check_loss(trigonometric_sample);
                         } else {
-                            if constexpr (CONFIG::debug) {
-                                std::string point_mark = "ampl 3.2 branch";
-                                //IC(point_mark);
-                            }
                             ampl_right = (ampl_central + ampl_right) / 2;
                             trigonometric_sample.first = ampl_right;
                             loss_right = check_loss(trigonometric_sample);
@@ -468,28 +422,16 @@ namespace NP_DSP::ONE_D::APPROX {
                             loss_central = check_loss(trigonometric_sample);
                         }
                     } else if (left_diff <= right_diff) {
-                        if constexpr (CONFIG::debug) {
-                            std::string point_mark = "ampl 4 branch";
-                            //IC(point_mark);
-                        }
                         auto ampl_right_avg = (ampl_right + ampl_central) / 2;
                         trigonometric_sample.first = ampl_right_avg;
                         auto new_loss_right = check_loss(trigonometric_sample);
                         if (new_loss_right < loss_right && new_loss_right > loss_central) {
-                            if constexpr (CONFIG::debug) {
-                                std::string point_mark = "ampl 4.1 branch";
-                                //IC(point_mark);
-                            }
                             loss_right = new_loss_right;
                             ampl_right = ampl_right_avg;
                             ampl_central = (ampl_left + ampl_right) / 2;
                             trigonometric_sample.first = ampl_central;
                             loss_central = check_loss(trigonometric_sample);
                         } else {
-                            if constexpr (CONFIG::debug) {
-                                std::string point_mark = "ampl 4.2 branch";
-                                //IC(point_mark);
-                            }
                             ampl_left = (ampl_central + ampl_left) / 2;
                             trigonometric_sample.first = ampl_left;
                             loss_left = check_loss(trigonometric_sample);
@@ -500,26 +442,9 @@ namespace NP_DSP::ONE_D::APPROX {
                     }
                     if (left_diff == (loss_left - loss_central)) {
                         if (right_diff == (loss_right - loss_central)) {
-                            if constexpr (CONFIG::debug) {
-                                //IC(left_diff, loss_left-loss_central, right_diff, loss_right-loss_central);
-                            }
 
                             errors_counter++;
-                            if constexpr (CONFIG::debug) {
-                                //IC(errors_counter);
-                            }
-
-                            if (errors_counter > 10) {
-                                if constexpr (CONFIG::debug) {
-                                    for (;;) {
-                                    }
-                                }
-                            }
                         } else {
-                            if constexpr (CONFIG::debug) {
-                                //IC(right_diff == loss_right-loss_central);
-                                //IC(left_diff, loss_left-loss_central, right_diff, loss_right-loss_central);
-                            }
                         }
                     }
                     ampl_opt_iter++;
@@ -552,17 +477,6 @@ namespace NP_DSP::ONE_D::APPROX {
                 }
                 std::pair<SampleType, SampleType> trigonometric_sample;
                 trigonometric_sample.first = 1.;
-                if constexpr (CONFIG::debug) {
-                    std::string mark = "comopute fs cf";
-                    //IC(mark);
-                    //IC(i);
-                }
-
-                if constexpr (CONFIG::debug) {
-                    std::string mark = "compute first losses";
-                    //IC(mark);
-                }
-
                 auto check_loss = [&](std::pair<SampleType, SampleType> data) {
                     auto const complex_sample = UTILITY_MATH::convertFSampleT2C<SampleType>(data);
                     fourier_series[i] = complex_sample;
@@ -659,29 +573,12 @@ namespace NP_DSP::ONE_D::APPROX {
                 auto right_loss = check_loss({static_cast<SampleType>(max_ampl), theta_max});
                 auto central_loss = check_loss({static_cast<SampleType>(max_ampl), theta_central});
 
-                if constexpr (CONFIG::debug) {
-                    std::string mark = "end compute first losses";
-                    //IC(mark);
-
-                    //IC(theta_min, left_loss, theta_central, central_loss, theta_max, right_loss);
-                }
 
                 auto period_opt_iter = 0;
-
-                if constexpr (CONFIG::debug) {
-                    std::string mark = "start optimize period";
-                    //IC(mark);
-                }
 
 
                 while (!(*stopPont)(std::abs(right_loss - central_loss) + std::abs(left_loss - central_loss),
                                      *this)) {
-                    if constexpr (CONFIG::debug) {
-                        //IC(period_opt_iter, left_loss, central_loss, right_loss, theta_min, theta_central, theta_max);
-                        //IC(right_loss-central_loss, left_loss-central_loss, right_loss-left_loss);
-                        //IC(theta_central - theta_min, theta_max-theta_central);
-                    }
-
                     auto left_diff = left_loss - central_loss;
                     auto right_diff = right_loss - central_loss;
                     if (left_diff > 0 && right_diff <= 0) {
@@ -735,12 +632,6 @@ namespace NP_DSP::ONE_D::APPROX {
                 }
                 trigonometric_sample.second = theta_central;
 
-
-                if constexpr (CONFIG::debug) {
-                    std::string mark = "start optimize ampl";
-                    //IC(mark);
-                }
-
                 SampleType ampl_left = 0.0;
                 SampleType ampl_right = max_value;
                 if constexpr (kind == FSApproxKind::Positive) {
@@ -759,58 +650,33 @@ namespace NP_DSP::ONE_D::APPROX {
                 auto errors_counter = 0;
                 while (!((*stopPont)(std::abs(loss_right - loss_central) + std::abs(loss_left - loss_central),
                                      *this))) {
-                    if constexpr (CONFIG::debug) {
-                        //IC(ampl_opt_iter, loss_left, loss_central, loss_right, ampl_left, ampl_central, ampl_right);
-                        //IC(loss_right-loss_central, loss_left-loss_central, loss_right-loss_left);
-                        //IC(ampl_central - ampl_left, ampl_right - ampl_central);
-                    }
 
                     auto left_diff = loss_left - loss_central;
                     auto right_diff = loss_right - loss_central;
                     if (left_diff > 0 && right_diff <= 0) {
-                        if constexpr (CONFIG::debug) {
-                            std::string point_mark = "ampl 1 branch";
-                            //IC(point_mark);
-                        }
                         loss_left = loss_central;
                         ampl_left = ampl_central;
                         ampl_central = (ampl_left + ampl_right) / 2;
                         trigonometric_sample.first = ampl_central;
                         loss_central = check_loss(trigonometric_sample);
                     } else if (left_diff <= 0 && right_diff > 0) {
-                        if constexpr (CONFIG::debug) {
-                            std::string point_mark = "ampl 2 branch";
-                            //IC(point_mark);
-                        }
                         loss_right = loss_central;
                         ampl_right = ampl_central;
                         ampl_central = (ampl_left + ampl_right) / 2;
                         trigonometric_sample.first = ampl_central;
                         loss_central = check_loss(trigonometric_sample);
                     } else if (left_diff > right_diff) {
-                        if constexpr (CONFIG::debug) {
-                            std::string point_mark = "ampl 3 branch";
-                            //IC(point_mark);
-                        }
                         //left branch is higher
                         auto ampl_left_avg = (ampl_left + ampl_central) / 2;
                         trigonometric_sample.first = ampl_left_avg;
                         auto new_loss_left = check_loss(trigonometric_sample);
                         if (new_loss_left < loss_left && new_loss_left > central_loss) {
-                            if constexpr (CONFIG::debug) {
-                                std::string point_mark = "ampl 3.1 branch";
-                                //IC(point_mark);
-                            }
                             loss_left = new_loss_left;
                             ampl_left = ampl_left_avg;
                             ampl_central = (ampl_left + ampl_right) / 2;
                             trigonometric_sample.first = ampl_central;
                             loss_central = check_loss(trigonometric_sample);
                         } else {
-                            if constexpr (CONFIG::debug) {
-                                std::string point_mark = "ampl 3.2 branch";
-                                //IC(point_mark);
-                            }
                             ampl_right = (ampl_central + ampl_right) / 2;
                             trigonometric_sample.first = ampl_right;
                             loss_right = check_loss(trigonometric_sample);
@@ -819,28 +685,16 @@ namespace NP_DSP::ONE_D::APPROX {
                             loss_central = check_loss(trigonometric_sample);
                         }
                     } else if (left_diff <= right_diff) {
-                        if constexpr (CONFIG::debug) {
-                            std::string point_mark = "ampl 4 branch";
-                            //IC(point_mark);
-                        }
                         auto ampl_right_avg = (ampl_right + ampl_central) / 2;
                         trigonometric_sample.first = ampl_right_avg;
                         auto new_loss_right = check_loss(trigonometric_sample);
                         if (new_loss_right < loss_right && new_loss_right > loss_central) {
-                            if constexpr (CONFIG::debug) {
-                                std::string point_mark = "ampl 4.1 branch";
-                                //IC(point_mark);
-                            }
                             loss_right = new_loss_right;
                             ampl_right = ampl_right_avg;
                             ampl_central = (ampl_left + ampl_right) / 2;
                             trigonometric_sample.first = ampl_central;
                             loss_central = check_loss(trigonometric_sample);
                         } else {
-                            if constexpr (CONFIG::debug) {
-                                std::string point_mark = "ampl 4.2 branch";
-                                //IC(point_mark);
-                            }
                             ampl_left = (ampl_central + ampl_left) / 2;
                             trigonometric_sample.first = ampl_left;
                             loss_left = check_loss(trigonometric_sample);
@@ -851,33 +705,11 @@ namespace NP_DSP::ONE_D::APPROX {
                     }
                     if (left_diff == loss_left - loss_central) {
                         if (right_diff == (loss_right - loss_central)) {
-                            if constexpr (CONFIG::debug) {
-                                //IC(left_diff, loss_left-loss_central, right_diff, loss_right-loss_central);
-                            }
 
                             errors_counter++;
-                            if constexpr (CONFIG::debug) {
-                                //IC(errors_counter);
-                            }
-
-                            if (errors_counter > 10) {
-                                if constexpr (CONFIG::debug) {
-                                    for (;;) {
-                                    }
-                                }
-                            }
                         } else {
-                            if constexpr (CONFIG::debug) {
-                                //IC(right_diff == (loss_right-loss_central));
-                                //IC(left_diff, loss_left-loss_central, right_diff, loss_right-loss_central);
-                            }
                         }
                     } else {
-                        if constexpr (CONFIG::debug) {
-                            std::string point_mark = "aaaa fuck";
-                            //IC(point_mark);
-                            //IC(left_diff, loss_left-loss_central, right_diff, loss_right-loss_central);
-                        }
                     }
                     ampl_opt_iter++;
                     if (ampl_central - ampl_left < 0.000001 || ampl_right - ampl_central < 0.000001) {
@@ -897,17 +729,15 @@ namespace NP_DSP::ONE_D::APPROX {
         }
 
         void show(const PlottingKind kind) {
-            
         }
 
         void show(const PlottingKind kind, const std::string& filename, const std::string& format) {
-            
         }
 
         void show(const PlottingKind kind, const std::string& filename) {
-            
         }
     };
+
 
     struct FourierSeriesBasedWithNoTrain {
         //static constexpr bool is_signal_approximator = true;
@@ -1063,15 +893,12 @@ namespace NP_DSP::ONE_D::APPROX {
         }
 
         void show(const PlottingKind kind) {
-            
         }
 
         void show(const PlottingKind kind, const std::string& filename, const std::string& format) {
-            
         }
 
         void show(const PlottingKind kind, const std::string& filename) {
-            
         }
     };
 
@@ -1079,6 +906,9 @@ namespace NP_DSP::ONE_D::APPROX {
     struct ModifiedAkimaBasedWithNoTrain {
         //using boost::math::interpolators::makima;
         std::optional<boost::math::interpolators::makima<std::vector<double>>> spline = {};
+        std::optional<UTILITY_MATH::SquarePolynome> square_polynom = {};
+        std::optional<UTILITY_MATH::Linear> linear = {};
+        
         double min_bound = 0.0;
         double max_bound = 0.0;
 
@@ -1105,12 +935,25 @@ namespace NP_DSP::ONE_D::APPROX {
             }
             min_bound = min;
             max_bound = max;
-            spline = boost::math::interpolators::makima
-                <std::vector<double>>(std::move(x_), std::move(y_));
+
+            if (x_.size() > 3) {
+                spline = boost::math::interpolators::makima
+                    <std::vector<double>>(std::move(x_), std::move(y_));
+            }
+            else if (x_.size() == 3) {
+                square_polynom = UTILITY_MATH::SquarePolynome{};
+                square_polynom->solve(x_[0], x_[1], x_[2], y_[0], y_[1], y_[2]);
+            }
+            else if (x_.size() == 2) {
+                linear = UTILITY_MATH::Linear{};
+                linear->solve(x_[0], x_[1], y_[0], y_[1]);
+            }
+            else{
+                //todo error
+            }
         }
 
         void loadData(const T & y){
-            //IC(y.size());
             std::vector<double> x_(y.size());
             std::vector<double> y_(y.size());
             for (int i = 0; i < y.size(); i++){
@@ -1120,18 +963,42 @@ namespace NP_DSP::ONE_D::APPROX {
                 auto const & el = y[i];
                 y_[i] = el;
             }
-            //IC(y_.size());
             min_bound = 0.0;
             max_bound = y.size() - 1;
 
-            spline = boost::math::interpolators::makima
-                <std::vector<double>>(std::move(x_), std::move(y_));
+            if (x_.size() > 3) {
+                spline = boost::math::interpolators::makima
+                    <std::vector<double>>(std::move(x_), std::move(y_));
+            }
+            else if (x_.size() == 3) {
+                square_polynom = UTILITY_MATH::SquarePolynome{};
+                square_polynom->solve(x_[0], x_[1], x_[2], y_[0], y_[1], y_[2]);
+            }
+            else if (x_.size() == 2) {
+                linear = UTILITY_MATH::Linear{};
+                linear->solve(x_[0], x_[1], y_[0], y_[1]);
+            }
+            else{
+                //todo error
+            }
         }
 
         template<typename IdxT>
         double compute(IdxT idx){
             if (idx >= min_bound && idx <= max_bound){
-                return (*spline)(idx);
+                if (spline){
+                    return (*spline)(idx);
+                }
+                else if (square_polynom){
+                    return square_polynom->compute(idx);
+                }
+                else if (linear){
+                    return linear->compute(idx);
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
             }
             else if (idx < min_bound){
                 int64_t _idx = static_cast<int64_t>(idx);
@@ -1140,7 +1007,19 @@ namespace NP_DSP::ONE_D::APPROX {
                 int64_t _size = static_cast<int64_t>(size); //todo size_
                 double new_idx = size + (_idx - static_cast<int64_t>(min_bound)) % _size + min_bound;
                 new_idx -= idx_;
-                return (*spline)(new_idx);
+                if (spline){
+                    return (*spline)(new_idx);
+                }
+                else if (square_polynom){
+                    return square_polynom->compute(new_idx);
+                }
+                else if (linear){
+                    return linear->compute(new_idx);
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
             }
             else{
                 int64_t _idx = static_cast<int64_t>(idx);
@@ -1148,14 +1027,38 @@ namespace NP_DSP::ONE_D::APPROX {
                 auto size = max_bound - min_bound;
                 auto _size = static_cast<int64_t>(size); //todo size_
                 double new_idx = _idx % _size + idx_;
-                return (*spline)(new_idx);
+                if (spline){
+                    return (*spline)(new_idx);
+                }
+                else if (square_polynom){
+                    return square_polynom->compute(new_idx);
+                }
+                else if (linear){
+                    return linear->compute(new_idx);
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
             }
         }
 
         template<typename IdxT>
         double computeDerive(IdxT idx){
             if (idx >= min_bound && idx <= max_bound){
-                return spline->prime(idx);
+                if (spline){
+                    return spline->prime(idx);
+                }
+                else if (square_polynom){
+                    return square_polynom->derive(idx);
+                }
+                else if (linear){
+                    return linear->derive(idx);
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
             }
             else if (idx < min_bound){
                 int64_t _idx = static_cast<int64_t>(idx);
@@ -1164,7 +1067,19 @@ namespace NP_DSP::ONE_D::APPROX {
                 int64_t _size = static_cast<int64_t>(size); //todo size_
                 double new_idx = size + (_idx - static_cast<int64_t>(min_bound)) % _size + min_bound;
                 new_idx -= idx_;
-                return spline->prime(new_idx);
+                if (spline){
+                    return spline->prime(new_idx);
+                }
+                else if (square_polynom){
+                    return square_polynom->derive(new_idx);
+                }
+                else if (linear){
+                    return linear->derive(new_idx);
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
             }
             else{
                 int64_t _idx = static_cast<int64_t>(idx);
@@ -1172,7 +1087,79 @@ namespace NP_DSP::ONE_D::APPROX {
                 auto size = max_bound - min_bound;
                 auto _size = static_cast<int64_t>(size); //todo size_
                 double new_idx = _idx % _size + idx_;
-                return spline->prime(new_idx);
+                if (spline){
+                    return spline->prime(new_idx);
+                }
+                else if (square_polynom){
+                    return square_polynom->derive(new_idx);
+                }
+                else if (linear){
+                    return linear->derive(new_idx);
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
+            }
+        }
+
+        template<typename IdxT>
+        double computeDerive(IdxT idx, double a){
+            if (idx >= min_bound && idx <= max_bound){
+                if (spline){
+                    return spline->derive(idx, a);
+                }
+                else if (square_polynom){
+                    return square_polynom->derive(idx); //todo
+                }
+                else if (linear){
+                    return linear->derive(idx); //todo
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
+            }
+            else if (idx < min_bound){
+                int64_t _idx = static_cast<int64_t>(idx);
+                double idx_ = idx - _idx;
+                auto size = max_bound - min_bound;
+                int64_t _size = static_cast<int64_t>(size); //todo size_
+                double new_idx = size + (_idx - static_cast<int64_t>(min_bound)) % _size + min_bound;
+                new_idx -= idx_;
+                if (spline){
+                    return spline->derive(idx, a);
+                }
+                else if (square_polynom){
+                    return square_polynom->derive(new_idx); //todo
+                }
+                else if (linear){
+                    return linear->derive(new_idx); //todo
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
+            }
+            else{
+                int64_t _idx = static_cast<int64_t>(idx);
+                double idx_ = idx - _idx;
+                auto size = max_bound - min_bound;
+                auto _size = static_cast<int64_t>(size); //todo size_
+                double new_idx = _idx % _size + idx_;
+                if (spline){
+                    return spline->prime(new_idx);
+                }
+                else if (square_polynom){
+                    return square_polynom->derive(new_idx);
+                }
+                else if (linear){
+                    return linear->derive(new_idx);
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
             }
         }
     };
@@ -1184,6 +1171,9 @@ namespace NP_DSP::ONE_D::APPROX {
         double min_bound = 0.0;
         double max_bound = 0.0;
 
+        std::optional<UTILITY_MATH::SquarePolynome> square_polynom = {};
+        std::optional<UTILITY_MATH::Linear> linear = {};
+
         void loadData(const T & x, const T & y){
             std::vector<double> x_(x.size());
             std::vector<double> y_(x.size());
@@ -1207,12 +1197,24 @@ namespace NP_DSP::ONE_D::APPROX {
             }
             min_bound = min;
             max_bound = max;
-            spline = boost::math::interpolators::pchip
+            if (x_.size() > 3) {
+                spline = boost::math::interpolators::pchip
                 <std::vector<double>>(std::move(x_), std::move(y_));
+            }
+            else if (x_.size() == 3) {
+                square_polynom = UTILITY_MATH::SquarePolynome{};
+                square_polynom->solve(x_[0], x_[1], x_[2], y_[0], y_[1], y_[2]);
+            }
+            else if (x_.size() == 2) {
+                linear = UTILITY_MATH::Linear{};
+                linear->solve(x_[0], x_[1], y_[0], y_[1]);
+            }
+            else{
+                //todo error
+            }
         }
 
         void loadData(const T & y){
-            //IC(y.size());
             std::vector<double> x_(y.size());
             std::vector<double> y_(y.size());
             for (int i = 0; i < y.size(); i++){
@@ -1222,12 +1224,24 @@ namespace NP_DSP::ONE_D::APPROX {
                 auto const & el = y[i];
                 y_[i] = el;
             }
-            //IC(y_.size());
             min_bound = 0.0;
             max_bound = y.size() - 1;
 
-            spline = boost::math::interpolators::pchip
+            if (x_.size() > 3) {
+                spline = boost::math::interpolators::pchip
                 <std::vector<double>>(std::move(x_), std::move(y_));
+            }
+            else if (x_.size() == 3) {
+                square_polynom = UTILITY_MATH::SquarePolynome{};
+                square_polynom->solve(x_[0], x_[1], x_[2], y_[0], y_[1], y_[2]);
+            }
+            else if (x_.size() == 2) {
+                linear = UTILITY_MATH::Linear{};
+                linear->solve(x_[0], x_[1], y_[0], y_[1]);
+            }
+            else{
+                //todo error
+            }
         }
 
         template<typename IdxT>
@@ -1242,7 +1256,19 @@ namespace NP_DSP::ONE_D::APPROX {
                 int64_t _size = static_cast<int64_t>(size); //todo size_
                 double new_idx = size + (_idx - static_cast<int64_t>(min_bound)) % _size + min_bound;
                 new_idx -= idx_;
-                return (*spline)(new_idx);
+                if (spline){
+                    return (*spline)(new_idx);
+                }
+                else if (square_polynom){
+                    return square_polynom->compute(new_idx);
+                }
+                else if (linear){
+                    return linear->compute(new_idx);
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
             }
             else{
                 int64_t _idx = static_cast<int64_t>(idx);
@@ -1250,14 +1276,38 @@ namespace NP_DSP::ONE_D::APPROX {
                 auto size = max_bound - min_bound;
                 auto _size = static_cast<int64_t>(size); //todo size_
                 double new_idx = _idx % _size + idx_;
-                return (*spline)(new_idx);
+                if (spline){
+                    return (*spline)(new_idx);
+                }
+                else if (square_polynom){
+                    return square_polynom->compute(new_idx);
+                }
+                else if (linear){
+                    return linear->compute(new_idx);
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
             }
         }
 
         template<typename IdxT>
         double computeDerive(IdxT idx){
             if (idx >= min_bound && idx <= max_bound){
-                return spline->prime(idx);
+                if (spline){
+                    return spline->prime(idx);
+                }
+                else if (square_polynom){
+                    return square_polynom->derive(idx);
+                }
+                else if (linear){
+                    return linear->derive(idx);
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
             }
             else if (idx < min_bound){
                 int64_t _idx = static_cast<int64_t>(idx);
@@ -1266,7 +1316,19 @@ namespace NP_DSP::ONE_D::APPROX {
                 int64_t _size = static_cast<int64_t>(size); //todo size_
                 double new_idx = size + (_idx - static_cast<int64_t>(min_bound)) % _size + min_bound;
                 new_idx -= idx_;
-                return spline->prime(new_idx);
+                if (spline){
+                    return spline->prime(new_idx);
+                }
+                else if (square_polynom){
+                    return square_polynom->derive(new_idx);
+                }
+                else if (linear){
+                    return linear->derive(new_idx);
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
             }
             else{
                 int64_t _idx = static_cast<int64_t>(idx);
@@ -1274,7 +1336,19 @@ namespace NP_DSP::ONE_D::APPROX {
                 auto size = max_bound - min_bound;
                 auto _size = static_cast<int64_t>(size); //todo size_
                 double new_idx = _idx % _size + idx_;
-                return spline->prime(new_idx);
+                if (spline){
+                    return spline->prime(new_idx);
+                }
+                else if (square_polynom){
+                    return square_polynom->derive(new_idx);
+                }
+                else if (linear){
+                    return linear->derive(new_idx);
+                }
+                else {
+                    return 0.0;
+                    //todo error
+                }
             }
         }
     };

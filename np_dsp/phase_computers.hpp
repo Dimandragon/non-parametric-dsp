@@ -14,9 +14,7 @@
 namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
     
     enum class InstFreqDerivativeBasedKind { Momental, TimeAverage, DeriveAverage, DeriveDouble };
-
-    
-    enum class ExtremumsKind { Simple, DerArctg };
+    using namespace UTILITY_MATH;
 
     
     template<typename U, ExtremumsKind kind_e, Derivator<U> DerivatorT>
@@ -77,10 +75,6 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 support.push_back({extremums[i], i * std::numbers::pi});
             }
 
-            if constexpr (CONFIG::debug) {
-                //IC(support);
-            }
-
             support[0] = {
                 0, UTILITY_MATH::linearInterpolate<int, double>
                 (support[0], support[1], 0)
@@ -94,10 +88,6 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 out.size() - 1, UTILITY_MATH::linearInterpolate<int, double>
                 (support[support.size() - 2], support[support.size() - 1], out.size() - 1)
             };
-
-            if constexpr (CONFIG::debug) {
-                //IC(support);
-            }
 
             for (int i = 0; i < support.size() - 1; i++) {
                 for (int j = support[i].first; j < support[i + 1].first; j++) {
@@ -162,10 +152,6 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 support.push_back({extremums[i], i * std::numbers::pi});
             }
 
-            if constexpr (CONFIG::debug) {
-                //IC(support);
-            }
-
             support[0] = {
                 0, UTILITY_MATH::linearInterpolate<int, double>
                 (support[0], support[1], 0)
@@ -179,10 +165,6 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 out.size() - 1, UTILITY_MATH::linearInterpolate<int, double>
                 (support[support.size() - 2], support[support.size() - 1], out.size() - 1)
             };
-
-            if constexpr (CONFIG::debug) {
-                //IC(support);
-            }
 
             for (int i = 0; i < support.size() - 1; i++) {
                 for (int j = support[i].first; j < support[i + 1].first; j++) {
@@ -245,12 +227,6 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
             for (auto i = 0; i < extremums.size(); i++) {
                 phase_base.push_back(i * std::numbers::pi);
             }
-
-
-            //IC(phase_base.size(), extremums.size());
-            //for (int i = 0; i < phase_base.size(); i++){
-            //    IC(phase_base[i], extremums[i]);
-            //}
 
             approximator = APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain
                 <std::vector<double>>();
@@ -394,10 +370,6 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 support.push_back({extremums[i], i * std::numbers::pi});
             }
 
-            if constexpr (CONFIG::debug) {
-                //IC(support);
-            }
-
             support[0] = {
                 0, UTILITY_MATH::linearInterpolate<int, double>
                 (support[0], support[1], 0)
@@ -412,10 +384,6 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 (support[support.size() - 2], support[support.size() - 1], out.size() - 1)
             };
 
-            if constexpr (CONFIG::debug) {
-                //IC(support);
-            }
-
             derivator.compute(data, *computer_buffer, nullptr);
             for (int i = 0; i < data.size(); i++) {
                 (*computer_buffer)[i] = std::atan((*computer_buffer)[i]);
@@ -425,7 +393,6 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 out[i] = std::abs((*computer_buffer)[i]);
             }
             integrator.compute(out, *computer_buffer, nullptr);
-            //computer_buffer.show(NP_DSP::ONE_D::PlottingKind::Simple);
             std::vector<double> errors_cache;
 
             auto loss = [&](auto& approximator) {
@@ -581,10 +548,6 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 support.push_back({extremums[i], i * std::numbers::pi});
             }
 
-            if constexpr (CONFIG::debug) {
-                //IC(support);
-            }
-
             support[0] = {
                 0, UTILITY_MATH::linearInterpolate<int, double>
                 (support[0], support[1], 0)
@@ -598,9 +561,6 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 out.size() - 1, UTILITY_MATH::linearInterpolate<int, double>
                 (support[support.size() - 2], support[support.size() - 1], out.size() - 1)
             };
-            if constexpr (CONFIG::debug) {
-                //IC(support);
-            }
 
             derivator.compute(data, *computer_buffer, nullptr);
             for (int i = 0; i < data.size(); i++) {
@@ -611,16 +571,12 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 (*computer_buffer)[i] = std::abs(out[i]);
             }
             integrator.compute(*computer_buffer, out, nullptr);
-            if constexpr (CONFIG::debug) {
-                //out.show(NP_DSP::ONE_D::PlottingKind::Simple);
-            }
 
             //norm
 
             std::vector<std::pair<int, double>> div_support;
 
             for (auto i = 0; i < support.size(); i = i + 1) {
-                ////IC(i, support.size());
                 if (i == 0) {
                     div_support.push_back({0, 1});
                 } else {
@@ -632,10 +588,6 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
             }
 
             div_support[0].second = div_support[1].second;
-
-            if constexpr (CONFIG::debug) {
-                //IC(div_support);
-            }
 
             for (int i = 0; i < div_support.size() - 1; i++) {
                 for (int j = div_support[i].first; j < div_support[i + 1].first; j++) {
@@ -721,10 +673,6 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 support.push_back({extremums[i], i * std::numbers::pi});
             }
 
-            if constexpr (CONFIG::debug) {
-                //IC(support);
-            }
-
             derivator.compute(data, *computer_buffer, nullptr);
             for (int i = 0; i < data.size(); i++) {
                 (*computer_buffer)[i] = std::atan(computer_buffer[i]);
@@ -734,9 +682,6 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 out[i] = std::abs(out[i]);
             }
             integrator.compute(out, *computer_buffer, nullptr);
-            if constexpr (CONFIG::debug) {
-                computer_buffer->show(PlottingKind::Simple);
-            }
 
             if constexpr (kind == InstFreqDerivativeBasedKind::TimeAverage) {
                 for (auto i = 0; i < data.size(); i++) {
@@ -818,14 +763,9 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
                 (support[support.size() - 2], support[support.size() - 1], data.size() - 1)
             };
 
-            if constexpr (CONFIG::debug) {
-                //IC(support);
-            }
-
             std::vector<std::pair<int, double>> div_support;
 
             for (auto i = 0; i < support.size(); i = i + 1) {
-                ////IC(i, support.size());
                 if (i == 0) {
                     div_support.push_back({0, 1});
                 } else {
@@ -837,10 +777,6 @@ namespace NP_DSP::ONE_D::PHASE_COMPUTERS {
             }
 
             div_support[0].second = div_support[1].second;
-
-            if constexpr (CONFIG::debug) {
-                //IC(div_support);
-            }
 
             for (int i = 0; i < div_support.size() - 1; i++) {
                 for (int j = div_support[i].first; j < div_support[i + 1].first; j++) {

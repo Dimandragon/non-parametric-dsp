@@ -34,7 +34,6 @@ double computeOrthogonality(const Data1T & data1, const Data2T & data2){
     for (auto i = 0; i < data1.size(); i++){
         normed_dot += data1_normed(i) * data2_normed(i)/data1_l2 /data2_l2/data1.size()/data2.size();
     }
-    //IC(data1_l2, data2_l2, data1.size(), data2.size());
 
     return normed_dot;
 }

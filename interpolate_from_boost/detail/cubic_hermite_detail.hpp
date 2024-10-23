@@ -12,6 +12,7 @@
 #include <iostream>
 #include <sstream>
 #include <limits>
+#include <cmath>
 
 namespace boost {
 namespace math {
@@ -87,10 +88,12 @@ public:
             return y_.back();
         }
 
-        auto it = std::upper_bound(x_.begin(), x_.end(), x);
+        auto it = std::upper_bound(x_.begin(), x_.end(), x); 
+        //it - итератор на первый элемент x_, который больше x
         auto i = std::distance(x_.begin(), it) -1;
-        Real x0 = *(it-1);
-        Real x1 = *it;
+        //i - номер элемента под итератором it
+        Real x0 = *(it-1); //элемент x_ до it 
+        Real x1 = *it; //элемент x_ под it
         Real y0 = y_[i];
         Real y1 = y_[i+1];
         Real s0 = dydx_[i];
@@ -102,7 +105,96 @@ public:
         // https://en.wikipedia.org/wiki/Cubic_Hermite_spline
         Real y = (1-t)*(1-t)*(y0*(1+2*t) + s0*(x-x0))
               + t*t*(y1*(3-2*t) + dx*s1*(t-1));
+        /*Real a_ = (s0/pow(dx, 2) + s1/pow(dx, 2) + 2*y0/pow(dx, 3) 
+            - 2*y1/pow(dx, 3)) ; // * pow(x, 3)
+        Real b_ = (-2*s0/dx - s1/dx - 3*s0*x0/pow(dx, 2) - 3*s1*x0/pow(dx, 2) 
+            - 3*y0/pow(dx, 2) + 3*y1/pow(dx, 2) - 6*x0*y0/pow(dx, 3) 
+            + 6*x0*y1/pow(dx, 3)); // * pow(x, 2)
+        Real c_ = (s0 + 4*s0*x0/dx + 2*s1*x0/dx + 3*s0*pow(x0, 2)/pow(dx, 2) 
+            + 3*s1*pow(x0, 2)/pow(dx, 2) + 6*x0*y0/pow(dx, 2) 
+            - 6*x0*y1/pow(dx, 2) + 6*pow(x0, 2)*y0/pow(dx, 3) 
+            - 6*pow(x0, 2)*y1/pow(dx, 3)); // * x
+        Real d_ =  y0 - 2*s0*pow(x0, 2)/dx - s1*pow(x0, 2)/dx - s0*pow(x0, 3)/pow(dx, 2) 
+            - s1*pow(x0, 3)/pow(dx, 2) - 3*pow(x0, 2)*y0/pow(dx, 2) + 3*pow(x0, 2)*y1/pow(dx, 2) 
+            - 2*pow(x0, 3)*y0/pow(dx, 3) + 2*pow(x0, 3)*y1/pow(dx, 3) - s0*x0; 
+        double y_ = a_ * pow(x, 3) + b_ * pow(x, 2) + c_ * x + d_;
+        IC(y, y_);*/
         return y;
+    }
+
+    Real derive(Real x, double a) const
+    {
+        if  (x < x_[0] || x > x_.back())
+        {
+            std::ostringstream oss;
+            oss.precision(std::numeric_limits<Real>::digits10+3);
+            oss << "Requested abscissa x = " << x << ", which is outside of allowed range ["
+                << x_[0] << ", " << x_.back() << "]";
+            throw std::domain_error(oss.str());
+        }
+        if (x == x_.back())
+        {
+            return y_.back();
+        } //что делать с последней точкой? нужна лт для нее дробная производная?
+
+        //double tgamma(double a); //надо нормально подключить функцию гамма
+        auto it = std::upper_bound(x_.begin(), x_.end(), x);
+        auto i = std::distance(x_.begin(), it) -1;
+        Real x0 = *(it-1);
+        Real x1 = *it;
+        Real y0 = y_[i];
+        Real y1 = y_[i+1];
+        Real s0 = dydx_[i];
+        Real s1 = dydx_[i+1];
+        Real dx = (x1-x0);
+        Real t = (x-x0)/dx;
+
+
+        Real a_ = (s0/pow(dx, 2) + s1/pow(dx, 2) + 2*y0/pow(dx, 3) 
+            - 2*y1/pow(dx, 3)) ; // * pow(x, 3)
+        Real b_ = (-2*s0/dx - s1/dx - 3*s0*x0/pow(dx, 2) - 3*s1*x0/pow(dx, 2) 
+            - 3*y0/pow(dx, 2) + 3*y1/pow(dx, 2) - 6*x0*y0/pow(dx, 3) 
+            + 6*x0*y1/pow(dx, 3)); // * pow(x, 2)
+        Real c_ = (s0 + 4*s0*x0/dx + 2*s1*x0/dx + 3*s0*pow(x0, 2)/pow(dx, 2) 
+            + 3*s1*pow(x0, 2)/pow(dx, 2) + 6*x0*y0/pow(dx, 2) 
+            - 6*x0*y1/pow(dx, 2) + 6*pow(x0, 2)*y0/pow(dx, 3) 
+            - 6*pow(x0, 2)*y1/pow(dx, 3)); // * x
+        Real d_ =  y0 - 2*s0*pow(x0, 2)/dx - s1*pow(x0, 2)/dx - s0*pow(x0, 3)/pow(dx, 2) 
+            - s1*pow(x0, 3)/pow(dx, 2) - 3*pow(x0, 2)*y0/pow(dx, 2) + 3*pow(x0, 2)*y1/pow(dx, 2) 
+            - 2*pow(x0, 3)*y0/pow(dx, 3) + 2*pow(x0, 3)*y1/pow(dx, 3) - s0*x0; 
+
+        //IC(a_, pow(x, 3.0-a), tgamma(4.0-a), b_, pow(x, 2.0-a), tgamma(3.0-a), c_, pow(x, 1.0-a), tgamma(2.0-a));
+        /*return a_ * pow(x, 3-a)/tgamma(4-a) + b_ * pow(x, 2-a) / tgamma(3-a)
+            + c_ * pow(x, 1-a) / tgamma(2-a);*/
+        //IC(x*x, pow(x, 2));
+        /*Real derive = a_ * pow(x, 3.0-a) * tgamma(4) / tgamma(4.0 - a) * 
+            + b_ * pow(x, 2.0-a) * tgamma(3) / tgamma(3.0 - a)
+            + c_ * pow(x, 1.0 - a) * tgamma(2) / tgamma(2.0 - a);
+            + d_ * pow(x, 0.0 - a) * tgamma(1) / tgamma(1.0 - a);*/
+        
+        /*Real derive = 6*a_*pow(x, 3.0)/(pow(x, a)*tgamma(4.0 - a)) + 
+            2*b_*pow(x, 2.0)/(pow(x, a)*tgamma(3.0 - a)) + 
+            c_*x/(pow(x, a)*tgamma(2.0 - a)) + 
+            d_/(pow(x, a)*tgamma(1 - a));*/
+        //return a_ * x*x * 3. + b_ * 2. * x + c_;
+        Real tc_ = dx*s0; //*t + 
+        Real ta_ = (dx*s0 + dx*s1 + 2*y0 - 2*y1); // *t**3 
+        Real tb_ = (-2*dx*s0 - dx*s1 - 3*y0 + 3*y1); // * t**2 
+        Real td_ = y0;
+        Real derive_t = 
+            ta_ * pow(t, 3.0-a) * tgamma(4) / tgamma(4.0 - a) * 
+            + tb_ * pow(t, 2.0-a) * tgamma(3) / tgamma(3.0 - a)
+            + tc_ * pow(t, 1.0 - a) * tgamma(2) / tgamma(2.0 - a);
+            //+ td_ * pow(t, 0.0 - a) * tgamma(1) / tgamma(1.0 - a);
+        Real tx_c = dx; //*x
+        Real tx_d = -x0 * dx;
+
+        Real derive_t_x = tx_c * pow(x, 1.0 - a) * tgamma(2) / tgamma(2.0 - a);
+            //+ tx_d * pow(x, 0.0 - a) * tgamma(1) / tgamma(1.0 - a);
+        //Real derive_x = pow(x, 1.0 - a) * tgamma(2) / tgamma(2.0 - a);
+        //return derive * derive_x;
+        //Real dtdx = 
+        return derive_t;// * derive_t_x;
     }
 
     Real prime(Real x) const

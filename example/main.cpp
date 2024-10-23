@@ -3,7 +3,7 @@
 #include <npdsp_concepts.hpp>
 #include <vector>
 #include <cstdlib>
-#include <mode_colleretion_tester.cpp>
+#include <mode_colleretion_tester.hpp>
 #include <iostream>
 #include <tokenizer.hpp>
 
@@ -15,9 +15,11 @@ void tokenizerTest(){
         data.base->vec->push_back(std::rand());
     }
 
-    NP_DSP::ONE_D::Tokenizers::InstFreqNormSincReqTokenizer tokenizer;
-    tokenizer.locality_coeff = 2.5;
-    tokenizer.period_muller = 1.05;
+    NP_DSP::ONE_D::Tokenizers::MakimaModeDecompositionBasedTokenizer tokenizer;
+    tokenizer.phase_shifts = {};
+    for (int i = 0; i < 100; i++){
+        tokenizer.phase_shifts.push_back(0.01 * i * std::numbers::pi / 2.0);
+    }
     tokenizer.max_iter_number_for_filter = 3;
     tokenizer.debug = false;
 
@@ -40,10 +42,12 @@ void extractorTest(){
         data.base->vec->push_back(std::rand());
     }
 
-    NP_DSP::ONE_D::MODES_EXTRACTORS::InstFreqNormSincExtractorReq extractor;
-    extractor.locality_coeff = 5;
-    extractor.period_muller = 1.05;
+    NP_DSP::ONE_D::MODES_EXTRACTORS::MakimaBasedModeDecomposition extractor;
     extractor.max_iter_number_for_filter = 3;
+    extractor.phase_shifts = {};
+    for (int i = 0; i < 100; i++){
+        extractor.phase_shifts.push_back(0.01 * i * std::numbers::pi);
+    }
     extractor.debug = false;
     //extractor.non_opt_filter.period_muller = 1.0;
     //NP_DSP::ONE_D::MODES_EXTRACTORS::ByIterStopFunc stop;

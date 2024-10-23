@@ -9,8 +9,48 @@
 #include <npdsp_concepts.hpp>
 #include <npdsp_config.hpp>
 
-namespace NP_DSP::ONE_D::UTILITY_MATH {
+namespace NP_DSP::ONE_D::UTILITY_MATH {   
+    struct SquarePolynome{
+        double a;
+        double b;
+        double c;
+
+        void solve(auto x1, auto x2, auto x3, auto y1, auto y2, auto y3){
+            b = ((y1-y3)*(x1*x1 - x2*x2) - (y1 - y2)*(x1*x1 - x3*x3))/
+            ((x1 - x2)*(x1 - x3)*(x2 - x3));
+            a = (y1 - y2 - b * (x1 - x2)) / (x1*x1 - x2*x2);
+            c = y3 - a*x3*x3 - b*x3;
+        }
+
+        double compute(auto x){
+            return a*x*x + b*x + c;
+        }
+
+        double derive(auto x){
+            return b + 2.0 * a;
+        }
+    };
+
+    struct Linear{
+        double k;
+        double b;
     
+        void solve(auto x1, auto x2, auto y1, auto y2){
+            auto dx = x2 - x1;
+            auto dy = y2 - y1;
+
+            k = dy/dx;
+            b = x1 - k*x1;
+        }
+    
+        double compute(auto x){
+            return k*x + b;
+        }
+        double derive(auto x){
+            return k;
+        }
+    };
+
     template<typename T>
     T complexL2(std::complex<T> a, std::complex<T> b) {
         return (a.imag() - b.imag()) * (a.imag() - b.imag()) + (a.real() - b.real()) * (a.real() - b.real());
@@ -72,6 +112,11 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
     
     template<typename xType, typename yType>
     yType linearInterpolate(std::pair<xType, yType> point1, std::pair<xType, yType> point2, xType x_in) {
+        if (point2.first < point1.first){
+            auto swap = point1;
+            point1 = point2;
+            point2 = swap;
+        }
         auto dx = point2.first - point1.first;
         auto dy = point2.second - point1.second;
         if (dx == 0) {
@@ -334,9 +379,6 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
                 break;
             }
             auto idx_new = static_cast<TIndex>(idx1 + dx * (value - data[idx1]) / dy);
-            if constexpr (CONFIG::debug) {
-                //IC((idx1, idx2, dx, dy, idx_new);
-            }
             if (data[idx_new] > value) {
                 idx2 = idx_new;
             } else if (data[idx_new] < value) {
@@ -344,9 +386,6 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
             } else if (data[idx_new] == value) {
                 idx1 = idx_new;
                 idx2 = idx1 + 1;
-            }
-            if constexpr (CONFIG::debug) {
-                //IC((idx1, idx2);
             }
         }
         return {idx1, idx2};
@@ -369,10 +408,6 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
                 break;
             }
             auto idx_new = static_cast<TIndex>(idx1 + dx * (value - idx_lambda(idx1)) / dy);
-            if constexpr (CONFIG::debug) {
-                std::string mark = "creating idx_new in interpolation search";
-                //IC((idx1, idx2, dx, dy, idx_new);
-            }
             if (idx_lambda(idx_new) > value) {
                 idx2 = idx_new;
             } else if (idx_lambda(idx_new) < value) {
@@ -380,9 +415,6 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
             } else if (idx_lambda(idx_new) == value) {
                 idx1 = idx_new;
                 idx2 = idx1 + 1;
-            }
-            if constexpr (CONFIG::debug) {
-                //IC((idx1, idx2);
             }
         }
         return {idx1, idx2};
@@ -627,7 +659,6 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
         out.clear();
         double step = static_cast<double>(size - 1) / static_cast<double>(target_size - 1);
         for (int i = 0; i < target_size; i++){
-            //IC((data.interpolate(static_cast<double>(i) * step, SignalKind::Universal), i, i * step);
             out.push_back(data.interpolate(static_cast<double>(i) * step, SignalKind::Universal));
         }
     }
@@ -644,22 +675,87 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
                 getResamplingSize(data.size(), target_freq);
         int pad = (res_data.new_size - data.size()) / 2;
         for (int i = 0; i < pad; i++){
-            out.push_back(data[data.size() - pad + i]);
-            ////IC((data.size() - pad + i);
+            out.push_back(data[pad - i - 1]);
         }
         for (int i = pad; i < data.size() + pad; i++){
             out.push_back(data[i - pad]);
-            ////IC((i - pad);
         }
         for (int i = data.size() + pad; i < res_data.new_size; i++){
-            out.push_back(data[i - data.size() - pad]);
-            ////IC((i - data.size() - pad);
+            out.push_back(data[data.size() - (i - data.size() - pad + 1)]);
         }
-        ////IC((res_data.new_size, out.size());
         circleExtendResult res;
         res.freq_idx = res_data.new_idx;
         res.pad = pad;
 
         return res;
+    }
+
+    enum class ExtremumsKind { Simple, DerArctg };
+
+    template<typename T, typename U>
+    void computeExtremums(const T & signal, std::vector<U> & extremums, ExtremumsKind kind){
+        extremums.clear();
+        extremums.push_back(0);
+        if (kind == ExtremumsKind::Simple){
+            for (int i = 1; i < signal.size() - 1; i++) {
+                if ((signal[i] >= signal[i - 1] &&
+                     signal[i] > signal[i + 1]) ||
+                    (signal[i] > signal[i - 1] &&
+                     signal[i] >= signal[i + 1]) ||
+                    (signal[i] <= signal[i - 1] &&
+                     signal[i] < signal[i + 1]) ||
+                    (signal[i] < signal[i - 1] &&
+                     signal[i] <= signal[i + 1])) {
+                    extremums.push_back(i);
+                }
+            }
+        }
+        /*else if (kind == ExtremumsKind::DerArctg){
+            std::vector<double> der;
+            //der.has_ovnership = true;
+            for (int i = 0; i < signal.size(); i++){
+                der.push_back(0.0);
+            }
+            GENERAL::Nil nil;
+            DERIVATORS::FinniteDifference<DERIVATORS::FinniteDifferenceType::Backward> derivator;
+            derivator.compute(signal, der, &nil);
+            for (int i = 1; i < der.size() - 1; i++) {
+                if ((der[i] >= der[i - 1] &&
+                     der[i] > der[i + 1]) ||
+                    (der[i] > der[i - 1] &&
+                     der[i] >= der[i + 1]) ||
+                    (der[i] <= der[i - 1] &&
+                     der[i] < der[i + 1]) ||
+                    (der[i] < der[i - 1] &&
+                     der[i] <= der[i + 1])) {
+                    extremums.push_back(i);
+                }
+            }
+        }*/
+        
+        extremums.push_back(static_cast<int>(signal.size() - 1));
+    }
+
+    template<typename T, typename U>
+    bool compareSignals(const T & signal1, const T & signal2){
+        if (signal1.size() != signal2.size()){
+            return false;
+        }
+        else{
+            for (auto i = 0; i < signal1.size(); i++){
+                if (signal1[i] != signal2[i]){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    template<typename T, typename U>
+    void assignVectors(T & vec1, const U & vec2){
+        vec1.clear();
+        for (int i = 0; i < vec2.size(); i++){
+            vec1.push_back(vec2[i]);
+        }
     }
 }
