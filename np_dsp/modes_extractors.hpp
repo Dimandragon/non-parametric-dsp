@@ -58,7 +58,7 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
 
         FILTERS::MonoFreqFilters<double, FILTERS::MonoInstFreqFilteringType::SincPaddedFIR> filter;
 
-        template<Signal DataT>
+        template<typename DataT>
         void compute(const DataT & data_in){
             filter.gaussian_width_muller = locality_coeff;
             size_t iter_number = 0;
