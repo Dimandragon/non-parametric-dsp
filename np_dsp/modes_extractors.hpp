@@ -2766,6 +2766,8 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         std::vector<double> freq_conv_image;
 
         double max_iter_number_for_filter = 10;
+        NP_DSP::ONE_D::PHASE_SHIFTERS::RotateKind extremums_rotation_kind_e = NP_DSP::ONE_D::PHASE_SHIFTERS::RotateKind::Naive;
+        double oversampling_ratio_for_ft_der = 1.0;
 
         bool debug = false;
 
@@ -2804,8 +2806,11 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
             //filter.inst_freq_computer = &inst_freq_computer;
             //filter.phase_computer = &phase_computer_simple;
             filter.max_iters = max_iter_number_for_filter;
-            filter.debug = false;
-            //filter.debug = debug;
+            filter.filter.extremums_rotation_kind_e = extremums_rotation_kind_e;
+            //filter.debug = false;
+            filter.filter.oversampling_ratio_for_ft_der = oversampling_ratio_for_ft_der;
+            filter.debug = debug;
+            filter.filter.debug = debug;
 
             size_t iter_number = 0;
 

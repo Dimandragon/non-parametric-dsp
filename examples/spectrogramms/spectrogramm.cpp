@@ -36,9 +36,9 @@ int main(){
     }
     
 
-    NP_DSP::ONE_D::MODES_EXTRACTORS::instFreqNormSincExtractorReq extractor;
-    extractor.locality_coeff = 3;
-    extractor.period_muller = 1.5;
+    NP_DSP::ONE_D::MODES_EXTRACTORS::MakimaBasedModeDecomposition extractor;
+    //extractor.locality_coeff = 3;
+    //extractor.period_muller = 1.5;
     extractor.max_iter_number_for_filter = 5;
     extractor.debug = true;
 

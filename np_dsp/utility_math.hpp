@@ -778,4 +778,34 @@ namespace NP_DSP::ONE_D::UTILITY_MATH {
             vec1.push_back(vec2[i]);
         }
     }
+
+    template<typename DataT, typename Signal2T>
+    void normalizeSTD(const DataT & signal1, Signal2T & signal2){
+        double average1 = 0.0;
+        double average2 = 0.0;
+        
+        for (int i = 0; i < signal1.size(); i++){
+            average1 += signal1[i];
+        }
+        for (int i = 0; i < signal2.size(); i++){
+            average2 += signal2[i];
+        }
+        average1 /= signal1.size();
+        average2 /= signal2.size();
+        
+        double standart1 = 0.0;
+        double standart2 = 0.0;
+        for (int i = 0; i < signal1.size(); i++){
+            standart1 += std::abs(signal1[i] - average1);// / signal1.size();
+        }
+        for (int i = 0; i < signal2.size(); i++){
+            standart2 += std::abs(signal2[i] - average2);// / signal2.size();
+        }
+        standart1 /= signal1.size();
+        standart2 /= signal2.size();
+        
+        for (int i = 0; i < signal2.size(); i++){
+            signal2[i] = average2 + (signal2[i] - average2) / standart2 * standart1;
+        }
+    }
 }

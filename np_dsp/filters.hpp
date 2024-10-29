@@ -17,38 +17,10 @@
 #include <utility>
 #include <utility_math.hpp>
 #include <vector>
+#include <phase_shifters.hpp>
 
 namespace NP_DSP::ONE_D::FILTERS {
 enum class InstFreqKind { Average, Double };
-
-void rotateExtremums(const std::vector<double> & extremums, 
-  std::vector<double> & rotated_extremums, double phase_shift)
-{
-  APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain<std::vector<double>> approx;
-  rotated_extremums.clear();
-  std::vector<double> phase_x;
-  std::vector<double> phase_y;
-  for (int i = 0; i < extremums.size(); i++){
-    phase_x.push_back(extremums[i]);
-    phase_y.push_back(i * std::numbers::pi);
-  }
-  approx.loadData(phase_y, phase_x);
-  
-  rotated_extremums.push_back(extremums[0]);
-
-  for (int i = 0; i < phase_y.size() - 1; i++){
-    double temp = approx.compute(phase_y[i] + phase_shift);
-    //rotated_extremums.push_back(approx.compute(phase_y[i] + phase_shift));
-    if (rotated_extremums[rotated_extremums.size() - 1] == temp){
-      continue;
-    }
-    rotated_extremums.push_back(temp);
-  }
-  if (rotated_extremums[rotated_extremums.size() - 1] != 
-      extremums[extremums.size() - 1]){
-    rotated_extremums.push_back(extremums[extremums.size() - 1]);
-  }
-}
 
 enum class MaskKind { Gaussian, Triangle, Flat };
 template <Signal MaskT>
@@ -874,14 +846,12 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
     0.4 * std::numbers::pi / 2.0, 0.6 * std::numbers::pi / 2.0, 
     0.8 * std::numbers::pi / 2.0};*/
   std::vector<double> phase_shifts = {0.0};
+  PHASE_SHIFTERS::RotateKind extremums_rotation_kind_e = PHASE_SHIFTERS::RotateKind::NaiveFTFracDir;
+  double oversampling_ratio_for_ft_der = 1.0;
 
   template <Signal DataT, Signal OutT>
   void compute(const DataT &data, OutT &out, std::nullptr_t nil) {
     if constexpr (kind_e == LocalFilteringType::MakimaInterpolationExtremums) {
-      std::vector<double> extremums;
-      UTILITY_MATH::computeExtremums<decltype(data), double>(
-          data, extremums, UTILITY_MATH::ExtremumsKind::Simple);
-
       InterpolationBasedWithExternalPoints<double> interpolation_filter;
       GenericSignal<SimpleVecWrapper<double>, true> buffer;
       buffer.has_ovnership = true;
@@ -895,8 +865,18 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
         std::vector<double> extremums_bot_x;
 
         std::vector<double> rotated_extremums;
+
         
-        rotateExtremums(extremums, rotated_extremums, phase_shifts[iter]);
+        PHASE_SHIFTERS::ExtremumsRotator extremums_rotator;
+        extremums_rotator.kind_e = extremums_rotation_kind_e;
+        extremums_rotator.oversampling_ratio_for_ft_der = oversampling_ratio_for_ft_der;
+        extremums_rotator.rotateSignalsExtremums(data, phase_shifts[iter]);
+        for (int i = 0; i < extremums_rotator.rotated_extremums.size(); i++){
+          rotated_extremums.push_back(extremums_rotator.rotated_extremums[i]);
+        }
+        //IC(extremums_rotator.extremums.size(), extremums_rotator.rotated_extremums.size());
+
+        
         //IC(extremums.size(), rotated_extremums.size());
 
         bool is_first_top = false;
@@ -3087,7 +3067,7 @@ struct SincResLocalFilterWithResSolveNoneDeterminityLowFreq {
     double base_inst_freq = 1.0 / (period * period_muller * 2);
     // base_inst_freq = base_inst_freq * period_muller;
 
-    IC(base_inst_freq);
+    //IC(base_inst_freq);
 
     filter.freq = base_inst_freq;
     filter.is_low_pass = is_low_pass;
@@ -3149,7 +3129,7 @@ struct SincResLocalFilterWithResSolveNoneDeterminityLowFreq {
       double base_inst_freq = 1.0 / (period * period_muller * 2);
       // base_inst_freq = base_inst_freq * period_muller;
 
-      IC(base_inst_freq);
+      //IC(base_inst_freq);
 
       filter.freq = base_inst_freq;
       filter.is_low_pass = is_low_pass;
@@ -3175,7 +3155,7 @@ struct SincResLocalFilterWithResSolveNoneDeterminityLowFreq {
       attemts++;
     }
 
-    IC(attemts, max_attempts);
+    //IC(attemts, max_attempts);
 
     // INST_FREQ_COMPUTERS::backInstFreqNormOnce(compute_buffer, out,
     // freq_conv);
@@ -3273,7 +3253,6 @@ struct RecursiveFilter {
     //low_freq_mode_phase.has_ovnership = true;
     high_freq_mode.has_ovnership = true;
     compute_buffer2.has_ovnership = true;
-
 
     // filter.phase_computer = phase_computer;
     filter.locality_coeff = locality_coeff;

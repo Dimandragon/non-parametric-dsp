@@ -74,6 +74,8 @@ namespace NP_DSP::ONE_D::DERIVATORS {
         }
     };
 
+    enum class FTDerivativeKind {Naive, Rieze, Weyl}; 
+    template<FTDerivativeKind kind_e>
     struct FTBased{
         constexpr static bool is_derivator = true;
         using AdditionalDataType = GENERAL::Nil;
@@ -89,11 +91,28 @@ namespace NP_DSP::ONE_D::DERIVATORS {
             }
             UTILITY_MATH::fftc2c<double>(signal, spectre);
             for (int i = 1; i < data.size(); i++){
-                double imag = std::numbers::pi * i / (double)data.size() * 2.0;
-                std::complex<double> muller = {0.0, std::numbers::pi * i / data.size()};
-                muller = std::pow(muller, power);
-                //IC(spectre[i], muller, muller*spectre[i]);
-                spectre[i] = spectre[i] * muller;
+                if constexpr(kind_e == FTDerivativeKind::Naive){
+                    double imag = std::numbers::pi * i / (double)data.size() * 2.0;
+                    std::complex<double> muller = {0.0, imag};
+                    muller = std::pow(muller, power);
+                    //IC(spectre[i], muller, muller*spectre[i]);
+                    spectre[i] = spectre[i] * muller;
+                    //naive
+                }
+                if constexpr(kind_e == FTDerivativeKind::Rieze){
+                    std::complex<double> muller = {std::numbers::pi * i / (double)data.size() * 2.0, 0.0};
+                    muller = std::pow(muller, power);
+                    //IC(spectre[i], muller, muller*spectre[i]);
+                    spectre[i] = spectre[i] * muller;
+                    //Rieze
+                }
+                if constexpr(kind_e == FTDerivativeKind::Weyl){
+                    std::complex<double> muller = {0.0, i};
+                    muller = std::pow(muller, -power);
+                    //IC(spectre[i], muller, muller*spectre[i]);
+                    spectre[i] = spectre[i] * muller;
+                    //wiel
+                }
             }
             UTILITY_MATH::ifftc2c<double>(spectre, signal);
             for (int i = 0; i < data.size(); i++){
