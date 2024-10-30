@@ -37,8 +37,8 @@ int main(){
     extractor.debug = false;
     extractor.oversampling_ratio_for_ft_der = 10.0;
     extractor.extremums_rotation_kind_e = NP_DSP::ONE_D::PHASE_SHIFTERS::RotateKind::NaiveFTFracDir;
-    extractor.phase_shifts = {};
-    for (int i = 0; i < 100; i++){
+    extractor.phase_shifts = {0};
+    for (int i = 0; i < 1; i++){
         extractor.phase_shifts.push_back(0.01 * i * std::numbers::pi);
     }
 
