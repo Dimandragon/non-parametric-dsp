@@ -37,6 +37,8 @@ non-parametric-dsp - исследовательский проект, предо
 
 #### <img src="https://xmake.io/assets/img/logo.svg" width="24" height="24" alt="XMake Logo"/> XMake
 
+#### <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cmake/cmake-original.svg" width="24" height="24" alt="CMake"/> CMake
+
 #### <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg" width="24" height="24" alt="C++ Logo"/> C++ Компиляторы:
 - Clang
 - GCC
