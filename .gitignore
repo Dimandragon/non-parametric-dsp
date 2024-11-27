@@ -7,7 +7,6 @@ compile_commands.json
 CMakeFiles
 examples/utility/fft/images
 makefile
-*.svg
 /.cache
 clangd-trace.json
 profile
@@ -16,3 +15,4 @@ profile
 *.perf-folded
 FlameGraph/
 *.png
+examples/**/*.svg

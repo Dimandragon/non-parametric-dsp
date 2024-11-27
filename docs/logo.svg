@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100">
+    <!-- Текст -->
+    <text
+        x="10"
+        y="60"
+        font-family="Arial, sans-serif"
+        font-weight="bold"
+        font-size="24"
+        fill="#333">
+        non-parametric-dsp
+    </text>
+
+    <!-- Rainbow Origin Point -->
+    <defs>
+        <linearGradient id="rainbowGradient">
+            <stop offset="0%" stop-color="#FF0000"/>
+            <stop offset="16.67%" stop-color="#FF7F00"/>
+            <stop offset="33.33%" stop-color="#FFFF00"/>
+            <stop offset="50%" stop-color="#00CC66"/>
+            <stop offset="66.67%" stop-color="#0000FF"/>
+            <stop offset="83.33%" stop-color="#4B0082"/>
+            <stop offset="100%" stop-color="#9400D3"/>
+        </linearGradient>
+    </defs>
+
+    <!-- Single Rainbow Origin -->
+    <path
+        d="M300,80
+        Q300,50 300,20"
+        fill="none"
+        stroke="url(#rainbowGradient)"
+        stroke-width="10"/>
+
+    <!-- Diverging Signals -->
+    <path d="M300,20 C280,40 260,60 270,70" fill="none" stroke="#FF0000" stroke-width="5"/>
+    <path d="M300,20 C290,45 295,65 310,70" fill="none" stroke="#FF7F00" stroke-width="5"/>
+    <path d="M300,20 C300,50 310,70 330,70" fill="none" stroke="#FFFF00" stroke-width="5"/>
+    <path d="M300,20 C310,55 325,70 350,70" fill="none" stroke="#00CC66" stroke-width="5"/>
+    <path d="M300,20 C320,60 340,70 370,70" fill="none" stroke="#0000FF" stroke-width="5"/>
+    <path d="M300,20 C330,65 350,75 390,70" fill="none" stroke="#4B0082" stroke-width="5"/>
+    <path d="M300,20 C340,70 360,80 410,70" fill="none" stroke="#9400D3" stroke-width="5"/>
+</svg>
