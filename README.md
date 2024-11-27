@@ -39,10 +39,7 @@ non-parametric-dsp - исследовательский проект, предо
 
 #### <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cmake/cmake-original.svg" width="24" height="24" alt="CMake"/> CMake
 
-#### <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg" width="24" height="24" alt="C++ Logo"/> C++ Компиляторы:
-- Clang
-- GCC
-- MSVC
+#### <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg" width="24" height="24" alt="C++ Logo"/> C++ Компилятор (Clang, GCC или MSVC)
 
 #### <img src="https://images.sftcdn.net/images/t_app-icon-m/p/4f6f9692-96da-11e6-9846-00163ed833e7/2948317542/gnuplot-gnuplot-logo.png" width="24" height="24" alt="Gnuplot Logo"/> Gnuplot
 
