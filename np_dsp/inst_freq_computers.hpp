@@ -574,7 +574,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         }
     };
 
-    enum class ExtremumsBasedComputeInstFreqKind { Simple, Linear };
+    enum class ExtremumsBasedComputeInstFreqKind { Simple, Linear, Makima, TPS, Multiquadric };
 
     
     template<ExtremumsBasedComputeInstFreqKind compute_kind>
@@ -664,7 +664,94 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
                     }
                     out[i] = UTILITY_MATH::linearInterpolate(left, right, static_cast<T>(i));
                 }
-            } else {
+            } 
+            else if (kind == ExtremumsBasedComputeInstFreqKind::Makima) {
+                std::vector<std::pair<T, T>> points;
+                points.push_back({static_cast<T>(0), static_cast<T>(0.5 / (extremums[1] - extremums[0]))});
+                for (auto i = 0; i < extremums.size() - 1; i++) {
+                    points.push_back({
+                        static_cast<T>((extremums[i + 1] + extremums[i]) / 2.0),
+                        static_cast<T>(0.5 / (extremums[i + 1] - extremums[i]))
+                    });
+                }
+                points.push_back({
+                    static_cast<T>(data.size() - 1), static_cast<T>
+                    (0.5 / (extremums[extremums.size() - 1] - extremums[extremums.size() - 2]))
+                });
+
+                std::vector<double> x_data {};
+                std::vector<double> y_data {};
+                for (int i = 0; i < points.size(); i++){
+                    x_data.push_back(points[i].first);
+                    y_data.push_back(points[i].second);
+                }
+
+                APPROX::ModifiedAkimaBasedWithNoTrain<std::vector<double>> approximator;
+                approximator.loadData(x_data, y_data);
+
+                for (int i = 0; i < data.size(); i++){
+                    out[i] = approximator.compute(i);
+                }
+            }
+            else if (kind == ExtremumsBasedComputeInstFreqKind::TPS){
+                std::vector<std::pair<T, T>> points;
+                points.push_back({static_cast<T>(0), static_cast<T>(0.5 / (extremums[1] - extremums[0]))});
+                for (auto i = 0; i < extremums.size() - 1; i++) {
+                    points.push_back({
+                        static_cast<T>((extremums[i + 1] + extremums[i]) / 2.0),
+                        static_cast<T>(0.5 / (extremums[i + 1] - extremums[i]))
+                    });
+                }
+                points.push_back({
+                    static_cast<T>(data.size() - 1), static_cast<T>
+                    (0.5 / (extremums[extremums.size() - 1] - extremums[extremums.size() - 2]))
+                });
+
+                std::vector<double> x_data {};
+                std::vector<double> y_data {};
+                for (int i = 0; i < points.size(); i++){
+                    x_data.push_back(points[i].first);
+                    y_data.push_back(points[i].second);
+                }
+
+                APPROX::RBFBasedWithNoTrain approximator;
+                approximator.kind = APPROX::RBFKind::TPS;
+                approximator.loadData(x_data, y_data);
+
+                for (int i = 0; i < data.size(); i++){
+                    out[i] = approximator.compute(i);
+                }
+            }
+            else if (kind == ExtremumsBasedComputeInstFreqKind::Multiquadric){
+                std::vector<std::pair<T, T>> points;
+                points.push_back({static_cast<T>(0), static_cast<T>(0.5 / (extremums[1] - extremums[0]))});
+                for (auto i = 0; i < extremums.size() - 1; i++) {
+                    points.push_back({
+                        static_cast<T>((extremums[i + 1] + extremums[i]) / 2.0),
+                        static_cast<T>(0.5 / (extremums[i + 1] - extremums[i]))
+                    });
+                }
+                points.push_back({
+                    static_cast<T>(data.size() - 1), static_cast<T>
+                    (0.5 / (extremums[extremums.size() - 1] - extremums[extremums.size() - 2]))
+                });
+
+                std::vector<double> x_data {};
+                std::vector<double> y_data {};
+                for (int i = 0; i < points.size(); i++){
+                    x_data.push_back(points[i].first);
+                    y_data.push_back(points[i].second);
+                }
+
+                APPROX::RBFBasedWithNoTrain approximator;
+                approximator.kind = APPROX::RBFKind::MultiquadricAuto;
+                approximator.loadData(x_data, y_data);
+
+                for (int i = 0; i < data.size(); i++){
+                    out[i] = approximator.compute(i);
+                }
+            }
+            else {
                 /*std::unreachable();*/
             }
         }
@@ -751,6 +838,127 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         }
     };
 
+    template<UTILITY_MATH::HTKind ht_kind>
+    struct HilbertTransformBased{
+        std::vector<std::complex<double>> buffer;
+        std::vector<std::complex<double>> specter;
+
+        using AdditionalDataType = GENERAL::Nil;
+
+        constexpr static bool is_inst_freq_computer = true;
+        constexpr static bool is_phase_based = false;
+
+        UTILITY_MATH::HTKind kind = ht_kind;
+
+        template<Signal DataT, Signal OutT>
+        void compute(const DataT & data, OutT & out, std::nullptr_t nil){
+            if (buffer.size() != data.size()){
+                buffer.clear();
+                for (int i = 0; i < data.size(); i++){
+                    buffer.push_back({data[i], 0.0});
+                }
+            }
+            else{
+                for (int i = 0; i < data.size(); i++){
+                    buffer[i] = {data[i], 0.0};
+                }
+            }
+            if (specter.size() != data.size()){
+                specter.clear();
+                for (int i = 0; i < data.size(); i++){
+                    specter.push_back({data[i], 0.0});
+                }
+            }
+            else{
+                for (int i = 0; i < data.size(); i++){
+                    specter[i] = {data[i], 0.0};
+                }
+            }
+            
+            UTILITY_MATH::hilbertTransformConst<DataT, OutT, ht_kind>
+                (data, out, specter, buffer);
+
+            for(int i = 0; i < data.size(); i++) {
+                std::complex<double> sample {data[i], out[i]};
+                out[i] = std::arg(sample);
+            }
+
+            double const_term = 0.0;
+            for(int i = 1; i < data.size(); i++){
+                if (out[i] + const_term < out[i-1]){
+                    IC(const_term);
+                    const_term += std::numbers::pi + const_term - out[i-1];
+                    const_term += std::numbers::pi * 2.0;
+                    IC(out[i-1], out[i], std::numbers::pi + const_term - out[i-1], const_term);
+                }
+                out[i] += const_term;
+            }
+            
+            /*APPROX::RBFBasedWithNoTrain approximator;
+            approximator.kind = APPROX::RBFKind::MultiquadricAuto;
+            approximator.loadData(out);
+            */
+            for (int i = 0; i < data.size() - 1; i++){
+                out[i] = out[i+1] - out[i];
+            }
+            out[data.size() - 1] =  out[data.size() - 2];
+        }
+
+        template<Signal DataT, Signal OutT, typename NilT>
+        void compute(const DataT & data, OutT & out, NilT * nil){
+            if (buffer.size() != data.size()){
+                buffer.clear();
+                for (int i = 0; i < data.size(); i++){
+                    buffer.push_back({data[i], 0.0});
+                }
+            }
+            else{
+                for (int i = 0; i < data.size(); i++){
+                    buffer[i] = {data[i], 0.0};
+                }
+            }
+            if (specter.size() != data.size()){
+                specter.clear();
+                for (int i = 0; i < data.size(); i++){
+                    specter.push_back({data[i], 0.0});
+                }
+            }
+            else{
+                for (int i = 0; i < data.size(); i++){
+                    specter[i] = {data[i], 0.0};
+                }
+            }
+            
+            UTILITY_MATH::hilbertTransformConst<DataT, OutT, ht_kind>
+                (data, out, specter, buffer);
+
+            for(int i = 0; i < data.size(); i++) {
+                std::complex<double> sample {data[i], out[i]};
+                out[i] = std::arg(sample);
+            }
+
+            double const_term = 0.0;
+            for(int i = 1; i < data.size(); i++){
+                if (out[i] + const_term < out[i-1]){
+                    IC(const_term);
+                    const_term += std::numbers::pi + const_term - out[i-1];
+                    const_term += std::numbers::pi * 2.0;
+                    IC(out[i-1], out[i], std::numbers::pi + const_term - out[i-1], const_term);
+                }
+                out[i] += const_term;
+            }
+
+            /*APPROX::RBFBasedWithNoTrain approximator;
+            approximator.kind = APPROX::RBFKind::MultiquadricAuto;
+            approximator.loadData(out);
+            */
+
+            for (int i = 0; i < data.size() - 1; i++){
+                out[i] = out[i+1] - out[i];
+            }
+            out[data.size() - 1] =  out[data.size() - 2];
+        }
+    };
     
     template<typename U, Integrator<U> IntegratorT,
         Derivator<U> DerivatorT, InstFreqDerivativeBasedKind kind>
@@ -947,7 +1155,6 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
         }
     };
 
-    
     template<typename U, Integrator<U> IntegratorT,
         Derivator<U> DerivatorT, InstFreqDerivativeBasedKind kind>
     struct PeriodAndExtremumsBasedExternal {
@@ -1052,8 +1259,6 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
             }
         }
     };
-
-    
 
     template<Signal DataT, Signal OutT, Signal InstFreqT>
     double instFreqNorm(const DataT & data, OutT & out, const InstFreqT & inst_freq, 
