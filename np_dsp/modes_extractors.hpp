@@ -2751,7 +2751,10 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
         }
     };
 
-    struct MakimaBasedModeDecomposition
+    enum class InstFreqType {HTBased, ExtremumsBased}; 
+    enum class InstAmplKind {HTBased, ExtremumsBased};
+
+    struct SOTAEMD
     {
         using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
         DataType data;
@@ -2798,10 +2801,55 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
             0.6 * std::numbers::pi, 0.7 * std::numbers::pi, 0.8 * std::numbers::pi, 
             0.9 * std::numbers::pi};
 
-        FILTERS::RecursiveFilter<double, FILTERS::LocalFilteringType::MakimaInterpolationExtremums> filter;
+        FILTERS::RecursiveFilter<double, FILTERS::LocalFilteringType::InterpolationExtremums> filter;
+
+        int idw_layers = 15;              
+        double idw_search_radius = 100;
+
+        double rbf_r_base = 20;
+        double rbf_n_layers = 20;
+        double rbf_lambda_n_s = 0.0;
+        double rbf_search_r = 0.4;
+        bool rbf_v3tol = true;
+
+        double rbf_lambda_v = 0.0;
+
+        double rbf_alpha = 10.0;
+        FILTERS::InterpolationKind interpolation_kind = FILTERS::InterpolationKind::Makima;
+
+        template<Signal DataInT>
+        void load(const DataInT& data_in) {
+            data.base->vec->clear();
+            for (auto i = 0; i < data_in.size(); i++) {
+                data.base->vec->push_back(data_in[i]);
+            }
+            for (int i = 0; i < modes.size(); i++) {
+                modes[i]->base->vec->clear();
+            }
+            for (int i = 0; i < inst_freqs.size(); i++) {
+                inst_freqs[i]->base->vec->clear();
+            }
+            for (int i = 0; i < phases.size(); i++) {
+                phases[i]->base->vec->clear();
+            }
+            for (int i = 0; i < inst_ampls.size(); i++) {
+                inst_ampls[i]->base->vec->clear();
+            }
+        }
 
         template<typename DataT>
         void compute(const DataT & data_in){
+            filter.filter.idw_layers = idw_layers;              
+            filter.filter.idw_search_radius = idw_search_radius;
+            filter.filter.rbf_r_base = rbf_r_base;
+            filter.filter.rbf_n_layers = rbf_n_layers;
+            filter.filter.rbf_lambda_n_s = rbf_lambda_n_s;
+            filter.filter.rbf_search_r = rbf_search_r;
+            filter.filter.rbf_v3tol = rbf_v3tol;
+            filter.filter.rbf_lambda_v = rbf_lambda_v;
+            filter.filter.rbf_alpha = rbf_alpha;
+            filter.filter.interpolation_kind = interpolation_kind;
+            
             filter.filter.phase_shifts = phase_shifts;
             //filter.inst_freq_computer = &inst_freq_computer;
             //filter.phase_computer = &phase_computer_simple;
@@ -2986,22 +3034,22 @@ namespace NP_DSP::ONE_D::MODES_EXTRACTORS {
             }
         }
 
-        int getModesCount(){
+        int getModesCount() const{
             return static_cast<int>(modes.size());
         }
-        int getDataSize(){
+        int getDataSize() const{
             return static_cast<int>(modes[0]->size());
         }
-        std::vector<double> getMode(int idx){
+        std::vector<double> getMode(int idx) const{
             return *(modes[idx]->base->vec);
         }
-        std::vector<double> getInstFreq(int idx){
+        std::vector<double> getInstFreq(int idx) const{
             return *(inst_freqs[idx]->base->vec);
         }
-        std::vector<double> getInstAmpl(int idx){
+        std::vector<double> getInstAmpl(int idx) const{
             return *(inst_ampls[idx]->base->vec);
         }
-        std::vector<double> getPhase(int idx){
+        std::vector<double> getPhase(int idx) const{
             return *(phases[idx]->base->vec);
         }
     };

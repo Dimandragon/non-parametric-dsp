@@ -30,17 +30,18 @@ int main(){
     }
     
 
-    NP_DSP::ONE_D::MODES_EXTRACTORS::MakimaBasedModeDecomposition extractor;
+    NP_DSP::ONE_D::MODES_EXTRACTORS::SOTAEMD extractor;
     //extractor.locality_coeff = 5;
     //extractor.period_muller = 1.2;
     extractor.max_iter_number_for_filter = 5;
     extractor.debug = false;
     extractor.oversampling_ratio_for_ft_der = 10.0;
-    extractor.extremums_rotation_kind_e = NP_DSP::ONE_D::PHASE_SHIFTERS::RotateKind::NaiveFTFracDir;
+    extractor.extremums_rotation_kind_e = NP_DSP::ONE_D::PHASE_SHIFTERS::RotateKind::Naive;
     extractor.phase_shifts = {0};
-    for (int i = 0; i < 1; i++){
+    for (int i = 0; i < 100; i++){
         extractor.phase_shifts.push_back(0.01 * i * std::numbers::pi);
     }
+    extractor.interpolation_kind = NP_DSP::ONE_D::FILTERS::InterpolationKind::RBFMultiquadricAuto;
 
     extractor.compute(data);
 

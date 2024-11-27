@@ -524,7 +524,7 @@ namespace NP_DSP::ONE_D::Tokenizers {
         INST_AMPL_COMPUTERS::HilbertTransformBased
                 <UTILITY_MATH::HTKind::Mull> inst_ampl_computer;
 
-        FILTERS::RecursiveFilter<double, FILTERS::LocalFilteringType::MakimaInterpolationExtremums> filter;
+        FILTERS::RecursiveFilter<double, FILTERS::LocalFilteringType::InterpolationExtremums> filter;
 
         template<typename DataT>
         void compute(const DataT & data_in){

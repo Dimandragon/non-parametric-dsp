@@ -31,8 +31,13 @@ int main(){
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple, "/home/dmitry/projects/non-parametric-dsp/examples/inst_freq_computers/images/signal2_1.svg");
 
     NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBased
-        <NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBasedComputeInstFreqKind::Simple>
+        <NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBasedComputeInstFreqKind::Multiquadric>
                 inst_freq_computer2;
     inst_freq_computer2.compute(signal1, signal2, &nil);
     signal2.show(NP_DSP::ONE_D::PlottingKind::Simple, "/home/dmitry/projects/non-parametric-dsp/examples/inst_freq_computers/images/signal2_2.svg");
+
+    NP_DSP::ONE_D::INST_FREQ_COMPUTERS::HilbertTransformBased
+        <NP_DSP::ONE_D::UTILITY_MATH::HTKind::Mull> inst_freq_computer3;
+    inst_freq_computer3.compute(signal1, signal2, &nil);
+    signal2.show(NP_DSP::ONE_D::PlottingKind::Simple, "/home/dmitry/projects/non-parametric-dsp/examples/inst_freq_computers/images/signal2_3.svg");
 }

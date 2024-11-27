@@ -27,8 +27,10 @@ int main(){
     }
 
     NP_DSP::ONE_D::FILTERS::LocalFilter<double, 
-        NP_DSP::ONE_D::FILTERS::LocalFilteringType::MakimaInterpolationExtremums> 
+        NP_DSP::ONE_D::FILTERS::LocalFilteringType::InterpolationExtremums> 
             filter;
+    
+    filter.interpolation_kind = NP_DSP::ONE_D::FILTERS::InterpolationKind::Makima;
 
     filter.extremums_rotation_kind_e = NP_DSP::ONE_D::PHASE_SHIFTERS::RotateKind::NaiveFTFracDir;
     filter.debug = true;
