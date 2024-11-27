@@ -94,6 +94,76 @@ int generateConvMask(double inst_freq, double period_muller, MaskT &mask,
   return mask.size();
 }
 
+int generateConvMask(double inst_freq, double period_muller, std::vector<double> &mask,
+                     MaskKind kind, double pow) {
+  // todo
+  double period = 1.0 / inst_freq * period_muller;
+  size_t mask_size = period;
+  mask.clear();
+  for (int i = 0; i < mask_size; i++) {
+    mask.push_back(0.0);
+  }
+  if (kind == MaskKind::Gaussian) {
+    double width = period * period_muller;
+    double c = width / 2.35482;
+    double a = 1.0 / (2.506628275 * c);
+    // double b = width / 2.0;
+
+    for (int i = 0; i < 2; i++) {
+      mask.push_back(0.0);
+    }
+
+    int width_i = static_cast<int>(width) + 2;
+    double b = static_cast<double>(width_i) / 2.0 - 0.5;
+
+    for (int i = 0; i < width_i; i++) {
+      mask[i] =
+          a * std::pow(std::numbers::e, -((i - b) * (i - b) / (2 * c * c)));
+    }
+    return width_i;
+  } else if (kind == MaskKind::Triangle) {
+    double temp = mask_size / 2.0;
+    double mn = UTILITY_MATH::powFact(temp, pow);
+    mn = mn * 2.0;
+    double mn_temp = mn;
+    mn = 1.0 / (mn_temp + (mask_size % 2) * powf(mask_size / 2 + 1, pow));
+    if (mask_size % 2 == 1) {
+      temp = temp + 1;
+    }
+    for (int i = 0; i < mask.size(); i++) {
+      // mask[i].imag() = 0.0;
+      mask[i] = 0.0;
+    }
+    for (int i = 0; i < temp; i++) {
+      mask[i] = mn * std::pow((i + 1.0), pow);
+      // mask[mask_size - i - 1].real() = mn * std::pow((i + 1.0), pow);
+    }
+    double sum = 0.0;
+    for (int i = 0; i < mask.size(); i++) {
+      sum = sum + mask[i];
+    }
+    for (int i = 0; i < mask.size(); i++) {
+      mask[i] = mask[i] / sum;
+    }
+  } else if (kind == MaskKind::Flat) {
+    double val = 1.0 / mask.size();
+    for (int i = 0; i < mask_size; i++) {
+      mask[i] = val;
+    }
+  }
+  double avg = 0.0;
+
+  for (int i = 0; i < mask.size(); i++) {
+    avg += mask[i];
+  }
+
+  for (int i = 0; i < mask.size(); i++) {
+    mask[i] /= avg;
+  }
+
+  return mask.size();
+}
+
 enum class FilteringType {
   DerivativeBased,
   ValueBased,
@@ -703,6 +773,9 @@ template <typename U, MonoInstFreqFilteringType kind_e> struct MonoFreqFilters {
 
 //enum class InterpolationFlteringKind { extremums, points };
 enum class PlotInterpKind {First, Interim, Last, Single, None};
+
+enum class InterpolationKind { Makima, IDW, RBFTPS, RBFGaussian, RBFBell, RBFMultiquadricAuto, RBFMultiquadricManual};
+
 template <typename U>
 struct InterpolationBasedWithExternalPoints{
   //constexpr bool is_filter = true;
@@ -711,6 +784,20 @@ struct InterpolationBasedWithExternalPoints{
   bool is_low_pass = true;
 
   PlotInterpKind plotting_kind;
+  InterpolationKind kind;
+
+  int idw_layers = 15;
+  double idw_search_radius = 100;
+
+  double rbf_r_base = 20;
+  double rbf_n_layers = 20;
+  double rbf_lambda_n_s = 0.0;
+  double rbf_search_r = 0.4;
+  bool rbf_v3tol = true;
+
+  double rbf_lambda_v = 0.0;
+
+  double rbf_alpha = 10.0;
   
   template<typename DataT, typename OutT>
   void compute(const DataT &data, OutT &out, const std::vector<double> & points_x)
@@ -721,11 +808,82 @@ struct InterpolationBasedWithExternalPoints{
     for (int i = 0; i < points_x.size(); i++){
       points_y.push_back(data_approximator.compute(points_x[i]));
     }
-    NP_DSP::ONE_D::APPROX::ModifiedAkimaBasedWithNoTrain
-      <std::vector<double>> approximator;
-    approximator.loadData(points_x, points_y);
-    for (int i = 0; i < out.size(); i++){
-      out[i] = approximator.compute(i);
+
+    if (kind == InterpolationKind::Makima){
+      NP_DSP::ONE_D::APPROX::ModifiedAkimaBasedWithNoTrain
+        <std::vector<double>> approximator;
+      approximator.loadData(points_x, points_y);
+      for (int i = 0; i < out.size(); i++){
+        out[i] = approximator.compute(i);
+      }
+    }
+    else if (kind == InterpolationKind::IDW){
+      APPROX::InverseDistanceWeightingBasedWithNoTrain approximator;
+      approximator.layers = idw_layers;
+      approximator.search_radius = idw_search_radius;
+      approximator.loadData(points_x, points_y);
+      for (int i = 0; i < out.size(); i++){
+        out[i] = approximator.compute(i);
+      }
+    }
+    else if (kind == InterpolationKind::RBFBell){
+      APPROX::RBFBasedWithNoTrain approximator;
+      approximator.kind = APPROX::RBFKind::Bell;
+      approximator.r_base = this->rbf_r_base;
+      approximator.n_layers = this->rbf_n_layers;
+      approximator.lambda_n_s = this->rbf_lambda_n_s;
+      approximator.search_r = this->rbf_search_r;
+      approximator.v3tol = this->rbf_v3tol;
+
+      approximator.loadData(points_x, points_y);
+      for (int i = 0; i < out.size(); i++){
+        out[i] = approximator.compute(i);
+      }
+    }
+    else if (kind == InterpolationKind::RBFGaussian){
+      APPROX::RBFBasedWithNoTrain approximator;
+      approximator.kind = APPROX::RBFKind::Gaussian;
+      approximator.r_base = this->rbf_r_base;
+      approximator.n_layers = this->rbf_n_layers;
+      approximator.lambda_n_s = this->rbf_lambda_n_s;
+      approximator.search_r = this->rbf_search_r;
+      approximator.v3tol = this->rbf_v3tol;
+
+      approximator.loadData(points_x, points_y);
+      for (int i = 0; i < out.size(); i++){
+        out[i] = approximator.compute(i);
+      }
+    }
+    else if (kind == InterpolationKind::RBFMultiquadricAuto){
+      APPROX::RBFBasedWithNoTrain approximator;
+      approximator.kind = APPROX::RBFKind::MultiquadricAuto;
+      approximator.lambda_v = this->rbf_lambda_v;
+
+      approximator.loadData(points_x, points_y);
+      for (int i = 0; i < out.size(); i++){
+        out[i] = approximator.compute(i);
+      }
+    } 
+    else if (kind == InterpolationKind::RBFMultiquadricManual){
+      APPROX::RBFBasedWithNoTrain approximator;
+      approximator.kind = APPROX::RBFKind::Multiquadric;
+      approximator.lambda_v = this->rbf_lambda_v;
+      approximator.alpha = this->rbf_alpha;
+
+      approximator.loadData(points_x, points_y);
+      for (int i = 0; i < out.size(); i++){
+        out[i] = approximator.compute(i);
+      }
+    }
+    else if (kind == InterpolationKind::RBFTPS){
+      APPROX::RBFBasedWithNoTrain approximator;
+      approximator.kind = APPROX::RBFKind::TPS;
+      approximator.lambda_v = this->rbf_lambda_v;
+
+      approximator.loadData(points_x, points_y);
+      for (int i = 0; i < out.size(); i++){
+        out[i] = approximator.compute(i);
+      }
     }
     if (!is_low_pass) {
       for (int i = 0; i < data.size(); i++) {
@@ -740,6 +898,7 @@ struct InterpolationBasedWithExternalPoints{
       const std::vector<double> & top_x, 
         const std::vector<double> & bot_x)
   {
+    std::vector<double> top, bot, res, data_;
     std::vector<double> top_y;
     std::vector<double> bot_y;
     
@@ -771,30 +930,235 @@ struct InterpolationBasedWithExternalPoints{
       top_y[top_y.size() - 1] = top_y[top_y.size() - 2];
     }
 
-    
-    NP_DSP::ONE_D::APPROX::ModifiedAkimaBasedWithNoTrain
-      <std::vector<double>> approximator_top;
-    NP_DSP::ONE_D::APPROX::ModifiedAkimaBasedWithNoTrain
-        <std::vector<double>> approximator_bot;
+    if (kind == InterpolationKind::Makima){
+      NP_DSP::ONE_D::APPROX::ModifiedAkimaBasedWithNoTrain
+        <std::vector<double>> approximator_top;
+      NP_DSP::ONE_D::APPROX::ModifiedAkimaBasedWithNoTrain
+          <std::vector<double>> approximator_bot;
+      approximator_top.loadData(top_x, top_y);
+      approximator_bot.loadData(bot_x, bot_y);
 
-    approximator_top.loadData(top_x, top_y);
-    approximator_bot.loadData(bot_x, bot_y);
-
-    for (int i = 0; i < data.size(); i++) {
-      out[i] = (approximator_top.compute(i) + 
-        approximator_bot.compute(i)) / 2.0;
-    }
-    if (!is_low_pass) {
       for (int i = 0; i < data.size(); i++) {
-        out[i] = data[i] - out[i];
+        out[i] = (approximator_top.compute(i) + 
+          approximator_bot.compute(i)) / 2.0;
+      }
+
+      if (!is_low_pass) {
+        for (int i = 0; i < data.size(); i++) {
+          out[i] = data[i] - out[i];
+        }
+      }
+      
+      if (plotting_kind != PlotInterpKind::None){
+        for (int i = 0; i < data.size(); i++){
+          top.push_back(approximator_top.compute(i));
+          bot.push_back(approximator_bot.compute(i));
+          res.push_back(out[i]);
+          data_.push_back(data[i]);
+        }
       }
     }
-    std::vector<double> top, bot, res, data_;
-    for (int i = 0; i < data.size(); i++){
-      top.push_back(approximator_top.compute(i));
-      bot.push_back(approximator_bot.compute(i));
-      res.push_back(out[i]);
-      data_.push_back(data[i]);
+    else if (kind == InterpolationKind::IDW){
+      APPROX::InverseDistanceWeightingBasedWithNoTrain approximator_top;
+      APPROX::InverseDistanceWeightingBasedWithNoTrain approximator_bot;
+      approximator_top.layers = idw_layers;
+      approximator_top.search_radius = idw_search_radius;
+      approximator_bot.layers = idw_layers;
+      approximator_bot.search_radius = idw_search_radius;
+
+      approximator_top.loadData(top_x, top_y);
+      approximator_bot.loadData(bot_x, bot_y);
+      for (int i = 0; i < data.size(); i++) {
+        out[i] = (approximator_top.compute(i) + 
+          approximator_bot.compute(i)) / 2.0;
+      }
+
+      if (!is_low_pass) {
+        for (int i = 0; i < data.size(); i++) {
+          out[i] = data[i] - out[i];
+        }
+      }
+      
+      if (plotting_kind != PlotInterpKind::None){
+        for (int i = 0; i < data.size(); i++){
+          top.push_back(approximator_top.compute(i));
+          bot.push_back(approximator_bot.compute(i));
+          res.push_back(out[i]);
+          data_.push_back(data[i]);
+        }
+      }
+    }
+    else if (kind == InterpolationKind::RBFBell){
+      APPROX::RBFBasedWithNoTrain approximator_top;
+      APPROX::RBFBasedWithNoTrain approximator_bot;
+      approximator_top.kind = APPROX::RBFKind::Bell;
+      approximator_top.r_base = this->rbf_r_base;
+      approximator_top.n_layers = this->rbf_n_layers;
+      approximator_top.lambda_n_s = this->rbf_lambda_n_s;
+      approximator_top.search_r = this->rbf_search_r;
+      approximator_top.v3tol = this->rbf_v3tol;
+      approximator_bot.kind = APPROX::RBFKind::Bell;
+      approximator_bot.r_base = this->rbf_r_base;
+      approximator_bot.n_layers = this->rbf_n_layers;
+      approximator_bot.lambda_n_s = this->rbf_lambda_n_s;
+      approximator_bot.search_r = this->rbf_search_r;
+      approximator_bot.v3tol = this->rbf_v3tol;
+
+      approximator_top.loadData(top_x, top_y);
+      approximator_bot.loadData(bot_x, bot_y);
+      for (int i = 0; i < data.size(); i++) {
+        out[i] = (approximator_top.compute(i) + 
+          approximator_bot.compute(i)) / 2.0;
+      }
+
+      if (!is_low_pass) {
+        for (int i = 0; i < data.size(); i++) {
+          out[i] = data[i] - out[i];
+        }
+      }
+      
+      if (plotting_kind != PlotInterpKind::None){
+        for (int i = 0; i < data.size(); i++){
+          top.push_back(approximator_top.compute(i));
+          bot.push_back(approximator_bot.compute(i));
+          res.push_back(out[i]);
+          data_.push_back(data[i]);
+        }
+      }
+    }
+    else if (kind == InterpolationKind::RBFGaussian){
+      APPROX::RBFBasedWithNoTrain approximator_top;
+      APPROX::RBFBasedWithNoTrain approximator_bot;
+
+      approximator_top.kind = APPROX::RBFKind::Gaussian;
+      approximator_top.r_base = this->rbf_r_base;
+      approximator_top.n_layers = this->rbf_n_layers;
+      approximator_top.lambda_n_s = this->rbf_lambda_n_s;
+      approximator_top.search_r = this->rbf_search_r;
+      approximator_top.v3tol = this->rbf_v3tol;
+      approximator_bot.kind = APPROX::RBFKind::Gaussian;
+      approximator_bot.r_base = this->rbf_r_base;
+      approximator_bot.n_layers = this->rbf_n_layers;
+      approximator_bot.lambda_n_s = this->rbf_lambda_n_s;
+      approximator_bot.search_r = this->rbf_search_r;
+      approximator_bot.v3tol = this->rbf_v3tol;
+
+      approximator_top.loadData(top_x, top_y);
+      approximator_bot.loadData(bot_x, bot_y);
+      for (int i = 0; i < data.size(); i++) {
+        out[i] = (approximator_top.compute(i) + 
+          approximator_bot.compute(i)) / 2.0;
+      }
+
+      if (!is_low_pass) {
+        for (int i = 0; i < data.size(); i++) {
+          out[i] = data[i] - out[i];
+        }
+      }
+      
+      if (plotting_kind != PlotInterpKind::None){
+        for (int i = 0; i < data.size(); i++){
+          top.push_back(approximator_top.compute(i));
+          bot.push_back(approximator_bot.compute(i));
+          res.push_back(out[i]);
+          data_.push_back(data[i]);
+        }
+      }
+    }
+    else if (kind == InterpolationKind::RBFMultiquadricAuto){
+      APPROX::RBFBasedWithNoTrain approximator_top;
+      APPROX::RBFBasedWithNoTrain approximator_bot;
+
+      approximator_top.kind = APPROX::RBFKind::MultiquadricAuto;
+      approximator_top.lambda_v = this->rbf_lambda_v;
+      approximator_bot.kind = APPROX::RBFKind::MultiquadricAuto;
+      approximator_bot.lambda_v = this->rbf_lambda_v;
+
+      approximator_top.loadData(top_x, top_y);
+      approximator_bot.loadData(bot_x, bot_y);
+      for (int i = 0; i < data.size(); i++) {
+        out[i] = (approximator_top.compute(i) + 
+          approximator_bot.compute(i)) / 2.0;
+      }
+
+      if (!is_low_pass) {
+        for (int i = 0; i < data.size(); i++) {
+          out[i] = data[i] - out[i];
+        }
+      }
+      
+      if (plotting_kind != PlotInterpKind::None){
+        for (int i = 0; i < data.size(); i++){
+          top.push_back(approximator_top.compute(i));
+          bot.push_back(approximator_bot.compute(i));
+          res.push_back(out[i]);
+          data_.push_back(data[i]);
+        }
+      }
+    } 
+    else if (kind == InterpolationKind::RBFMultiquadricManual){
+      APPROX::RBFBasedWithNoTrain approximator_top;
+      APPROX::RBFBasedWithNoTrain approximator_bot;
+
+      approximator_top.kind = APPROX::RBFKind::Multiquadric;
+      approximator_top.lambda_v = this->rbf_lambda_v;
+      approximator_top.alpha = this->rbf_alpha;
+      approximator_bot.kind = APPROX::RBFKind::Multiquadric;
+      approximator_bot.lambda_v = this->rbf_lambda_v;
+      approximator_bot.alpha = this->rbf_alpha;
+
+      approximator_top.loadData(top_x, top_y);
+      approximator_bot.loadData(bot_x, bot_y);
+      for (int i = 0; i < data.size(); i++) {
+        out[i] = (approximator_top.compute(i) + 
+          approximator_bot.compute(i)) / 2.0;
+      }
+
+      if (!is_low_pass) {
+        for (int i = 0; i < data.size(); i++) {
+          out[i] = data[i] - out[i];
+        }
+      }
+      
+      if (plotting_kind != PlotInterpKind::None){
+        for (int i = 0; i < data.size(); i++){
+          top.push_back(approximator_top.compute(i));
+          bot.push_back(approximator_bot.compute(i));
+          res.push_back(out[i]);
+          data_.push_back(data[i]);
+        }
+      }
+    }
+    else if (kind == InterpolationKind::RBFTPS){
+      APPROX::RBFBasedWithNoTrain approximator_top;
+      APPROX::RBFBasedWithNoTrain approximator_bot;
+
+      approximator_top.kind = APPROX::RBFKind::TPS;
+      approximator_top.lambda_v = this->rbf_lambda_v;
+      approximator_bot.kind = APPROX::RBFKind::TPS;
+      approximator_bot.lambda_v = this->rbf_lambda_v;
+
+      approximator_top.loadData(top_x, top_y);
+      approximator_bot.loadData(bot_x, bot_y);
+      for (int i = 0; i < data.size(); i++) {
+        out[i] = (approximator_top.compute(i) + 
+          approximator_bot.compute(i)) / 2.0;
+      }
+
+      if (!is_low_pass) {
+        for (int i = 0; i < data.size(); i++) {
+          out[i] = data[i] - out[i];
+        }
+      }
+
+      if (plotting_kind != PlotInterpKind::None){
+        for (int i = 0; i < data.size(); i++){
+          top.push_back(approximator_top.compute(i));
+          bot.push_back(approximator_bot.compute(i));
+          res.push_back(out[i]);
+          data_.push_back(data[i]);
+        }
+      }
     }
 
     if (plotting_kind == PlotInterpKind::Single){
@@ -832,14 +1196,34 @@ struct InterpolationBasedWithExternalPoints{
 };
 
 //todo mixed and strict extremums 
-enum class LocalFilteringType { MakimaInterpolationExtremums, MakimaInterpolation, SincResampled };
+enum class LocalFilteringType { 
+  Interpolation,
+  InterpolationExtremums,
+  SincResampled, 
+};
+
 template <typename U, LocalFilteringType kind_e> struct LocalFilter {
   constexpr static bool is_filter = true;
   bool debug = true;
 
+  InterpolationKind interpolation_kind = InterpolationKind::Makima;
+
   bool is_low_pass = true;
   double locality_coeff = 5.0; // for sinc filter now
   double period_muller = 1.05; // for sinc filter now
+
+  int idw_layers = 15;              
+  double idw_search_radius = 100;
+
+  double rbf_r_base = 20;
+  double rbf_n_layers = 20;
+  double rbf_lambda_n_s = 0.0;
+  double rbf_search_r = 0.4;
+  bool rbf_v3tol = true;
+
+  double rbf_lambda_v = 0.0;
+
+  double rbf_alpha = 10.0;
 
   /*std::vector<double> phase_shifts = 
     {0.0, 0.2 * std::numbers::pi / 2.0, 
@@ -851,8 +1235,21 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
 
   template <Signal DataT, Signal OutT>
   void compute(const DataT &data, OutT &out, std::nullptr_t nil) {
-    if constexpr (kind_e == LocalFilteringType::MakimaInterpolationExtremums) {
+    if constexpr (kind_e == LocalFilteringType::InterpolationExtremums) {
       InterpolationBasedWithExternalPoints<double> interpolation_filter;
+
+      interpolation_filter.kind = interpolation_kind;
+      interpolation_filter.idw_layers = idw_layers;              
+      interpolation_filter.idw_search_radius = idw_search_radius;
+      interpolation_filter.rbf_r_base = rbf_r_base;
+      interpolation_filter.rbf_n_layers = rbf_n_layers;
+      interpolation_filter.rbf_lambda_n_s = rbf_lambda_n_s;
+      interpolation_filter.rbf_search_r = rbf_search_r;
+      interpolation_filter.rbf_v3tol = rbf_v3tol;
+      interpolation_filter.rbf_lambda_v = rbf_lambda_v;
+      interpolation_filter.rbf_alpha = rbf_alpha;
+
+
       GenericSignal<SimpleVecWrapper<double>, true> buffer;
       buffer.has_ovnership = true;
       for (int i = 0; i < data.size(); i++){
@@ -865,7 +1262,6 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
         std::vector<double> extremums_bot_x;
 
         std::vector<double> rotated_extremums;
-
         
         PHASE_SHIFTERS::ExtremumsRotator extremums_rotator;
         extremums_rotator.kind_e = extremums_rotation_kind_e;
@@ -934,83 +1330,163 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
         }
       }
     } 
-    else if constexpr (kind_e == LocalFilteringType::MakimaInterpolation) {
+    else if constexpr (kind_e == LocalFilteringType::Interpolation) {
       std::vector<double> extremums;
-      APPROX::ModifiedAkimaBasedWithNoTrain<decltype(data)> approximator;
-      approximator.loadData(data);
-      auto val_expression = [&](double idx){
-        return approximator.computeDerive(idx);
-      };
-      auto size_expr = [&](){
-        return data.size();
-      };
-      ExpressionWrapper<double, double, decltype(val_expression), GENERAL::Nil, 
-        decltype(size_expr), false> data_derive_ (val_expression, size_expr);
-      GenericSignal<decltype(data_derive_), false> data_derive(data_derive_);
 
-      UTILITY_MATH::computeExtremums<decltype(data_derive), double>(
-          data_derive, extremums, UTILITY_MATH::ExtremumsKind::Simple);
-
-      /*std::vector<double> extremums_top_x;
-      std::vector<double> extremums_bot_x;
-      extremums_top_x.push_back(0);
-      extremums_bot_x.push_back(0);
-      for (int i = 1; i < extremums.size() - 1; i++) {
-        if (i % 2 == 0) {
-          extremums_top_x.push_back(extremums[i]);
-        } else {
-          extremums_bot_x.push_back(extremums[i]);
-        }
-      }
-
-      extremums_top_x.push_back(data.size() - 1);
-      extremums_bot_x.push_back(data.size() - 1);
-
-      std::vector<double> extremums_top_y;
-      std::vector<double> extremums_bot_y;
-
-      if (extremums_top_x.size() == 3){
-        auto x1 = extremums_top_x[0];
-        auto x2 = extremums_top_x[1];
-        auto x3 = extremums_top_x[2];
-
-        if (x2 - x1 > x3 - x2){
-          auto x_new = x1 + 1;
-          auto insert_pos_x = extremums_top_x.begin() + 1;
-          extremums_top_x.insert(insert_pos_x, x_new);
-        }
-        else{
-          auto x_new = x3 - 1;
-          auto insert_pos_x = extremums_top_x.begin() + 2;
-          extremums_top_x.insert(insert_pos_x, x_new);
-        }
-      }
-      if (extremums_bot_x.size() == 3){
-        auto x1 = extremums_bot_x[0];
-        auto x2 = extremums_bot_x[1];
-        auto x3 = extremums_bot_x[2];
-        if (x2 - x1 > x3 - x2){
-          auto x_new = x1 + 1;
-          auto insert_pos_x = extremums_bot_x.begin() + 1;
-          extremums_bot_x.insert(insert_pos_x, x_new);
-        }
-        else{
-          auto x_new = x3 - 1;
-          auto insert_pos_x = extremums_bot_x.begin() + 2;
-          extremums_bot_x.insert(insert_pos_x, x_new);
-        }
-        //todo better handling
-      }
-
-      for (int i = 0; i < extremums_top_x.size(); i++) {
-        extremums_top_y.push_back(data[extremums_top_x[i]]);
-      }
-      for (int i = 0; i < extremums_bot_x.size(); i++) {
-        extremums_bot_y.push_back(data[extremums_bot_x[i]]);
-      }*/
-      
       InterpolationBasedWithExternalPoints<double> interpolation_filter;
+
+      interpolation_filter.kind = interpolation_kind;
+      interpolation_filter.idw_layers = idw_layers;              
+      interpolation_filter.idw_search_radius = idw_search_radius;
+      interpolation_filter.rbf_r_base = rbf_r_base;
+      interpolation_filter.rbf_n_layers = rbf_n_layers;
+      interpolation_filter.rbf_lambda_n_s = rbf_lambda_n_s;
+      interpolation_filter.rbf_search_r = rbf_search_r;
+      interpolation_filter.rbf_v3tol = rbf_v3tol;
+      interpolation_filter.rbf_lambda_v = rbf_lambda_v;
+      interpolation_filter.rbf_alpha = rbf_alpha;
+
       interpolation_filter.is_low_pass = true;
+
+      if (interpolation_kind == InterpolationKind::Makima){
+        NP_DSP::ONE_D::APPROX::ModifiedAkimaBasedWithNoTrain
+          <std::vector<double>> approximator;
+        approximator.loadData(data);
+        auto val_expression = [&](double idx){
+          return approximator.computeDerive(idx);
+        };
+        auto size_expr = [&](){
+          return data.size();
+        };
+        ExpressionWrapper<double, double, decltype(val_expression), GENERAL::Nil, 
+          decltype(size_expr), false> data_derive_ (val_expression, size_expr);
+        GenericSignal<decltype(data_derive_), false> data_derive(data_derive_);
+
+        UTILITY_MATH::computeExtremums<decltype(data_derive), double>(
+            data_derive, extremums, UTILITY_MATH::ExtremumsKind::Simple);
+      }
+      else if (interpolation_kind == InterpolationKind::IDW){
+        NP_DSP::ONE_D::APPROX::ModifiedAkimaBasedWithNoTrain
+          <std::vector<double>> approximator;
+        approximator.loadData(data);
+        auto val_expression = [&](double idx){
+          return approximator.computeDerive(idx);
+        };
+        auto size_expr = [&](){
+          return data.size();
+        };
+        ExpressionWrapper<double, double, decltype(val_expression), GENERAL::Nil, 
+          decltype(size_expr), false> data_derive_ (val_expression, size_expr);
+        GenericSignal<decltype(data_derive_), false> data_derive(data_derive_);
+
+        UTILITY_MATH::computeExtremums<decltype(data_derive), double>(
+            data_derive, extremums, UTILITY_MATH::ExtremumsKind::Simple);
+      }
+      else if (interpolation_kind == InterpolationKind::RBFBell){
+        APPROX::RBFBasedWithNoTrain approximator;
+        approximator.kind = APPROX::RBFKind::Bell;
+        approximator.r_base = this->rbf_r_base;
+        approximator.n_layers = this->rbf_n_layers;
+        approximator.lambda_n_s = this->rbf_lambda_n_s;
+        approximator.search_r = this->rbf_search_r;
+        approximator.v3tol = this->rbf_v3tol;
+  
+        approximator.loadData(data);
+        auto val_expression = [&](double idx){
+          return approximator.computeDerive(idx);
+        };
+        auto size_expr = [&](){
+          return data.size();
+        };
+        ExpressionWrapper<double, double, decltype(val_expression), GENERAL::Nil, 
+          decltype(size_expr), false> data_derive_ (val_expression, size_expr);
+        GenericSignal<decltype(data_derive_), false> data_derive(data_derive_);
+
+        UTILITY_MATH::computeExtremums<decltype(data_derive), double>(
+            data_derive, extremums, UTILITY_MATH::ExtremumsKind::Simple);
+      }
+      else if (interpolation_kind == InterpolationKind::RBFGaussian){
+        APPROX::RBFBasedWithNoTrain approximator;
+        approximator.kind = APPROX::RBFKind::Gaussian;
+        approximator.r_base = this->rbf_r_base;
+        approximator.n_layers = this->rbf_n_layers;
+        approximator.lambda_n_s = this->rbf_lambda_n_s;
+        approximator.search_r = this->rbf_search_r;
+        approximator.v3tol = this->rbf_v3tol;
+  
+        approximator.loadData(data);
+        auto val_expression = [&](double idx){
+          return approximator.computeDerive(idx);
+        };
+        auto size_expr = [&](){
+          return data.size();
+        };
+        ExpressionWrapper<double, double, decltype(val_expression), GENERAL::Nil, 
+          decltype(size_expr), false> data_derive_ (val_expression, size_expr);
+        GenericSignal<decltype(data_derive_), false> data_derive(data_derive_);
+
+        UTILITY_MATH::computeExtremums<decltype(data_derive), double>(
+            data_derive, extremums, UTILITY_MATH::ExtremumsKind::Simple);
+      }
+      else if (interpolation_kind == InterpolationKind::RBFMultiquadricAuto){
+        APPROX::RBFBasedWithNoTrain approximator;
+        approximator.kind = APPROX::RBFKind::MultiquadricAuto;
+        approximator.lambda_v = this->rbf_lambda_v;
+  
+        approximator.loadData(data);
+        auto val_expression = [&](double idx){
+          return approximator.computeDerive(idx);
+        };
+        auto size_expr = [&](){
+          return data.size();
+        };
+        ExpressionWrapper<double, double, decltype(val_expression), GENERAL::Nil, 
+          decltype(size_expr), false> data_derive_ (val_expression, size_expr);
+        GenericSignal<decltype(data_derive_), false> data_derive(data_derive_);
+
+        UTILITY_MATH::computeExtremums<decltype(data_derive), double>(
+            data_derive, extremums, UTILITY_MATH::ExtremumsKind::Simple);
+      } 
+      else if (interpolation_kind == InterpolationKind::RBFMultiquadricManual){
+        APPROX::RBFBasedWithNoTrain approximator;
+        approximator.kind = APPROX::RBFKind::Multiquadric;
+        approximator.lambda_v = this->rbf_lambda_v;
+        approximator.alpha = this->rbf_alpha;
+  
+        approximator.loadData(data);
+        auto val_expression = [&](double idx){
+          return approximator.computeDerive(idx);
+        };
+        auto size_expr = [&](){
+          return data.size();
+        };
+        ExpressionWrapper<double, double, decltype(val_expression), GENERAL::Nil, 
+          decltype(size_expr), false> data_derive_ (val_expression, size_expr);
+        GenericSignal<decltype(data_derive_), false> data_derive(data_derive_);
+
+        UTILITY_MATH::computeExtremums<decltype(data_derive), double>(
+            data_derive, extremums, UTILITY_MATH::ExtremumsKind::Simple);
+      }
+      else if (interpolation_kind == InterpolationKind::RBFTPS){
+        APPROX::RBFBasedWithNoTrain approximator;
+        approximator.kind = APPROX::RBFKind::TPS;
+        approximator.lambda_v = this->rbf_lambda_v;
+  
+        approximator.loadData(data);
+        auto val_expression = [&](double idx){
+          return approximator.computeDerive(idx);
+        };
+        auto size_expr = [&](){
+          return data.size();
+        };
+        ExpressionWrapper<double, double, decltype(val_expression), GENERAL::Nil, 
+          decltype(size_expr), false> data_derive_ (val_expression, size_expr);
+        GenericSignal<decltype(data_derive_), false> data_derive(data_derive_);
+
+        UTILITY_MATH::computeExtremums<decltype(data_derive), double>(
+            data_derive, extremums, UTILITY_MATH::ExtremumsKind::Simple);
+      }
+     
       interpolation_filter.compute(data, out, extremums);
     }
     else if constexpr (kind_e == LocalFilteringType::SincResampled) {
@@ -1046,8 +1522,6 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
     }
   }
 };
-
-
 
 enum class PhaseComputingKind { extremums_based_non_opt, arctg_scaled };
 
