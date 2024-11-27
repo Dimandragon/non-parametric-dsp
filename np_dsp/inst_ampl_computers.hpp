@@ -1,284 +1,307 @@
 #pragma once
 
-#include <npdsp_concepts.hpp>
-#include <inst_freq_computers.hpp>
 #include <cmath>
-#include <utility>
-#include <signals.hpp>
 #include <concepts>
+#include <inst_freq_computers.hpp>
+#include <npdsp_concepts.hpp>
+#include <signals.hpp>
+#include <utility>
 
 namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
-    
-    template<typename U,
-        Integrator<U> IntegratorT, Derivator<U> DerivatorT,
-            INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind kind_e>
-    struct DerivativeBasedUsingExternalInstFreq {
-        using AdditionalDataType = SignalPrototype<U>;
 
-    private:
-        using InstFreqDerivativeBasedKind = INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind;
+// мгновенная амплитуда по Тихонову
+template <typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT,
+          INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind kind_e>
+struct DerivativeBasedUsingExternalInstFreq {
+  using AdditionalDataType = SignalPrototype<U>;
 
-    public:
-        constexpr static InstFreqDerivativeBasedKind kind = kind_e;
+private:
+  using InstFreqDerivativeBasedKind =
+      INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind;
 
-        constexpr static bool is_inst_ampl_computer = true;
+public:
+  constexpr static InstFreqDerivativeBasedKind kind = kind_e;
 
-        constexpr static bool is_used_external_inst_freq = true;
+  constexpr static bool is_inst_ampl_computer = true;
 
-        using BuffT = GenericSignal<SimpleVecWrapper<U>, true>;
-        BuffT * inst_freq;
-        using BuffTDouble = GenericSignal<SimpleVecWrapper<std::pair<U,U>>, true>;
-        BuffTDouble * inst_freq_double;
+  constexpr static bool is_used_external_inst_freq = true;
 
-        IntegratorT integrator;
-        DerivatorT derivator;
+  using BuffT = GenericSignal<SimpleVecWrapper<U>, true>;
+  BuffT *inst_freq;
+  using BuffTDouble = GenericSignal<SimpleVecWrapper<std::pair<U, U>>, true>;
+  BuffTDouble *inst_freq_double;
 
+  IntegratorT integrator;
+  DerivatorT derivator;
 
-        DerivativeBasedUsingExternalInstFreq(IntegratorT integrator, DerivatorT derivator, BuffT& inst_freq) {
-            this->integrator = integrator;
-            this->derivator = derivator;
-            this->inst_freq = &inst_freq;
+  DerivativeBasedUsingExternalInstFreq(IntegratorT integrator,
+                                       DerivatorT derivator, BuffT &inst_freq) {
+    this->integrator = integrator;
+    this->derivator = derivator;
+    this->inst_freq = &inst_freq;
+  }
+
+  DerivativeBasedUsingExternalInstFreq(IntegratorT integrator,
+                                       DerivatorT derivator,
+                                       BuffTDouble &inst_freq) {
+    this->integrator = integrator;
+    this->derivator = derivator;
+    this->inst_freq_double = &inst_freq;
+  }
+
+  DerivativeBasedUsingExternalInstFreq(BuffT &inst_freq) {
+    this->inst_freq = &inst_freq;
+  }
+
+  DerivativeBasedUsingExternalInstFreq(BuffTDouble &inst_freq) {
+    this->inst_freq_double = &inst_freq;
+  }
+
+  DerivativeBasedUsingExternalInstFreq() { this->inst_freq = NULL; }
+
+  template <Signal DataType, Signal OutType, Signal ComputeBufferType>
+  void compute(const DataType &data, OutType &out,
+               ComputeBufferType *computer_buffer) {
+    for (int i = 0; i < out.size(); i++) {
+      out[i] = 0;
+    }
+    derivator.compute(data, out, nullptr);
+    for (int i = 0; i < out.size(); i++) {
+      out[i] = std::abs(out[i]) / 4;
+    }
+
+    if constexpr (kind == InstFreqDerivativeBasedKind::Momental ||
+                  kind == InstFreqDerivativeBasedKind::TimeAverage ||
+                  kind == InstFreqDerivativeBasedKind::DeriveAverage) {
+      integrator.compute(out, *computer_buffer, nullptr);
+      for (int i = 0; i < out.size(); i++) {
+        out[i] = (computer_buffer->interpolate(i + 0.5 / (*inst_freq)[i],
+                                               SignalKind::Monotone) -
+                  computer_buffer->interpolate(i - 0.5 / (*inst_freq)[i],
+                                               SignalKind::Monotone)) /
+                 4; //-
+                    // std::abs(data.interpolate(i + 0.5 / (*inst_freq)[i],
+                    // SignalKind::Monotone) -
+        //    data.interpolate(i - 0.5 / (*inst_freq)[i], SignalKind::Monotone))
+        //    / 4;
+      }
+    } else if constexpr (kind == InstFreqDerivativeBasedKind::DeriveDouble) {
+      integrator.compute(out, *computer_buffer, nullptr);
+      for (int i = 0; i < out.size(); i++) {
+        out[i] = (computer_buffer->interpolate(
+                      i + 0.5 / (*inst_freq_double)[i].second,
+                      SignalKind::Monotone) -
+                  computer_buffer->interpolate(
+                      i - 0.5 / (*inst_freq_double)[i].first,
+                      SignalKind::Monotone)) /
+                 4; //-
+        // std::abs(data.interpolate(i + 0.5 / (*inst_freq_double)[i].second,
+        // SignalKind::Monotone) -
+        //    data.interpolate(i - 0.5 / (*inst_freq_double)[i].first,
+        //    SignalKind::Monotone)) / 4;
+      }
+    }
+  }
+};
+
+// мгновенная амплитуда по Тихонову
+template <typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT,
+          InstFreqComputer<U> InstFreqComputerType,
+          INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind kind_e>
+struct DerivativeAndInstFreqBased {
+  using AdditionalDataType = SignalPrototype<U>;
+
+private:
+  using InstFreqDerivativeBasedKind =
+      INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind;
+
+public:
+  constexpr static InstFreqDerivativeBasedKind kind = kind_e;
+
+  constexpr static bool is_inst_ampl_computer = true;
+  constexpr static bool is_used_external_inst_freq = false;
+
+  using BuffT = GenericSignal<SimpleVecWrapper<U>, true>;
+  BuffT inst_freq;
+  using BuffTDouble = GenericSignal<SimpleVecWrapper<std::pair<U, U>>, true>;
+  BuffTDouble inst_freq_double;
+
+  IntegratorT integrator;
+  DerivatorT derivator;
+  InstFreqComputerType *inst_freq_computer;
+
+  DerivativeAndInstFreqBased(IntegratorT integrator, DerivatorT derivator,
+                             InstFreqComputerType &inst_freq_computer) {
+    this->integrator = integrator;
+    this->derivator = derivator;
+    this->inst_freq_computer = &inst_freq_computer;
+  }
+
+  DerivativeAndInstFreqBased(InstFreqComputerType &inst_freq_computer) {
+    this->inst_freq_computer = &inst_freq_computer;
+  }
+
+  DerivativeAndInstFreqBased() {
+    this->inst_freq_computer = NULL;
+    // todo
+  }
+
+  template <Signal DataType, Signal OutType, Signal ComputerBufferType>
+  void compute(const DataType &data, OutType &out,
+               ComputerBufferType *computer_buffer) {
+    using T = typename OutType::SampleType;
+    if constexpr (std::convertible_to<
+                      typename InstFreqComputerType::AdditionalDataType,
+                      GENERAL::Nil>) {
+      if constexpr (kind == InstFreqDerivativeBasedKind::DeriveDouble) {
+        if (inst_freq_double.size() != data.size()) {
+          inst_freq_double.base->vec->clear();
+          for (int i = 0; i < data.size(); i++) {
+            inst_freq_double.base->vec->push_back({0.0, 0.0});
+          }
         }
-
-        DerivativeBasedUsingExternalInstFreq(IntegratorT integrator, DerivatorT derivator, BuffTDouble& inst_freq) {
-            this->integrator = integrator;
-            this->derivator = derivator;
-            this->inst_freq_double = &inst_freq;
+        inst_freq_computer->compute(data, inst_freq_double, nullptr);
+      } else {
+        if (inst_freq.size() != data.size()) {
+          static_cast<SimpleVecWrapper<T> *>(inst_freq.base)->vec->clear();
+          for (int i = 0; i < data.size(); i++) {
+            static_cast<SimpleVecWrapper<T> *>(inst_freq.base)
+                ->vec->push_back(0.);
+          }
         }
-
-        DerivativeBasedUsingExternalInstFreq(BuffT& inst_freq) {
-            this->inst_freq = &inst_freq;
+        inst_freq_computer->compute(data, inst_freq, nullptr);
+      }
+    } else {
+      if constexpr (kind == InstFreqDerivativeBasedKind::DeriveDouble) {
+        if (inst_freq_double.size() != data.size()) {
+          inst_freq_double.base->vec->clear();
+          for (int i = 0; i < data.size(); i++) {
+            inst_freq_double.base->vec->push_back({0.0, 0.0});
+          }
         }
-
-        DerivativeBasedUsingExternalInstFreq(BuffTDouble& inst_freq) {
-            this->inst_freq_double = &inst_freq;
+        inst_freq_computer->compute(data, inst_freq_double, computer_buffer);
+      } else {
+        if (inst_freq.size() != data.size()) {
+          static_cast<SimpleVecWrapper<T> *>(inst_freq.base)->vec->clear();
+          for (int i = 0; i < data.size(); i++) {
+            static_cast<SimpleVecWrapper<T> *>(inst_freq.base)
+                ->vec->push_back(0.);
+          }
         }
+        inst_freq_computer->compute(data, inst_freq, computer_buffer);
+      }
+    }
 
-        DerivativeBasedUsingExternalInstFreq() {
-            this->inst_freq = NULL;
-        }
+    derivator.compute(data, out, nullptr);
+    for (int i = 0; i < out.size(); i++) {
+      out[i] = std::abs(out[i]);
+    }
 
-        template<Signal DataType, Signal OutType, Signal ComputeBufferType>
-        void compute(const DataType& data, OutType& out, ComputeBufferType * computer_buffer) {
-            for (int i = 0; i < out.size(); i++) {
-                out[i] = 0;
-            }
-            derivator.compute(data, out, nullptr);
-            for (int i = 0; i < out.size(); i++) {
-                out[i] = std::abs(out[i]) / 4;
-            }
+    if constexpr (kind == InstFreqDerivativeBasedKind::Momental ||
+                  kind == InstFreqDerivativeBasedKind::TimeAverage ||
+                  kind == InstFreqDerivativeBasedKind::DeriveAverage) {
+      integrator.compute(out, *computer_buffer, nullptr);
+      for (int i = 0; i < out.size(); i++) {
+        out[i] = (computer_buffer->interpolate(i + 0.5 / (inst_freq)[i],
+                                               SignalKind::Monotone) -
+                  computer_buffer->interpolate(i - 0.5 / (inst_freq)[i],
+                                               SignalKind::Monotone)) /
+                 4; // -
+                    // std::abs(data.interpolate(i + 0.5 / (inst_freq)[i],
+        // SignalKind::Universal) -
+        //    data.interpolate(i - 0.5 / (inst_freq)[i],
+        //    SignalKind::Universal))) / 4;
+      }
+    } else if constexpr (kind == InstFreqDerivativeBasedKind::DeriveDouble) {
+      integrator.compute(out, *computer_buffer, nullptr);
+      for (int i = 0; i < out.size(); i++) {
+        out[i] =
+            (computer_buffer->interpolate(
+                 i + 0.5 / (inst_freq_double)[i].second, SignalKind::Monotone) -
+             computer_buffer->interpolate(i - 0.5 / (inst_freq_double)[i].first,
+                                          SignalKind::Monotone)) /
+            4; //-
+        // std::abs(data.interpolate(i + 0.5 / (inst_freq_double)[i].second,
+        // SignalKind::Universal) -
+        //  data.interpolate(i - 0.5 / (inst_freq_double)[i].first,
+        //  SignalKind::Universal))) / 4;
+      }
+    }
+  }
+};
 
-            if constexpr (kind == InstFreqDerivativeBasedKind::Momental
-                          || kind == InstFreqDerivativeBasedKind::TimeAverage
-                          || kind == InstFreqDerivativeBasedKind::DeriveAverage) {
-                integrator.compute(out, *computer_buffer, nullptr);
-                for (int i = 0; i < out.size(); i++) {
-                    out[i] = (computer_buffer->interpolate(i + 0.5 / (*inst_freq)[i], SignalKind::Monotone) -
-                             computer_buffer->interpolate(i - 0.5 / (*inst_freq)[i], SignalKind::Monotone)) / 4 ;//- 
-                            // std::abs(data.interpolate(i + 0.5 / (*inst_freq)[i], SignalKind::Monotone) - 
-                            //    data.interpolate(i - 0.5 / (*inst_freq)[i], SignalKind::Monotone)) / 4;
-                }
-            } else if constexpr (kind == InstFreqDerivativeBasedKind::DeriveDouble) {
-                integrator.compute(out, *computer_buffer, nullptr);
-                for (int i = 0; i < out.size(); i++) {
-                    out[i] = (computer_buffer->interpolate(i + 0.5 / (*inst_freq_double)[i].second, SignalKind::Monotone) -
-                             computer_buffer->interpolate(i - 0.5 / (*inst_freq_double)[i].first, SignalKind::Monotone)) / 4;//- 
-                            // std::abs(data.interpolate(i + 0.5 / (*inst_freq_double)[i].second, SignalKind::Monotone) - 
-                            //    data.interpolate(i - 0.5 / (*inst_freq_double)[i].first, SignalKind::Monotone)) / 4;
-                }
-            }
-        }
-    };
+// Мгновенная амплитуда через преобразование Гильберта
+template <UTILITY_MATH::HTKind ht_kind> struct HilbertTransformBased {
+  std::vector<std::complex<double>> buffer;
+  std::vector<std::complex<double>> specter;
 
-    
-    template<typename U, Integrator<U> IntegratorT,
-        Derivator<U> DerivatorT,
-        InstFreqComputer<U> InstFreqComputerType,
-        INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind kind_e>
-    struct DerivativeAndInstFreqBased {
-        using AdditionalDataType = SignalPrototype<U>;
+  using AdditionalDataType = GENERAL::Nil;
 
-    private:
-        using InstFreqDerivativeBasedKind = INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind;
+  constexpr static bool is_inst_ampl_computer = true;
+  constexpr static bool is_used_external_inst_freq = false;
 
-    public:
-        constexpr static InstFreqDerivativeBasedKind kind = kind_e;
+  UTILITY_MATH::HTKind kind = ht_kind;
 
-        constexpr static bool is_inst_ampl_computer = true;
-        constexpr static bool is_used_external_inst_freq = false;
+  template <Signal DataT, Signal OutT>
+  void compute(const DataT &data, OutT &out, std::nullptr_t nil) {
+    if (buffer.size() != data.size()) {
+      buffer.clear();
+      for (int i = 0; i < data.size(); i++) {
+        buffer.push_back({data[i], 0.0});
+      }
+    } else {
+      for (int i = 0; i < data.size(); i++) {
+        buffer[i] = {data[i], 0.0};
+      }
+    }
+    if (specter.size() != data.size()) {
+      specter.clear();
+      for (int i = 0; i < data.size(); i++) {
+        specter.push_back({data[i], 0.0});
+      }
+    } else {
+      for (int i = 0; i < data.size(); i++) {
+        specter[i] = {data[i], 0.0};
+      }
+    }
 
-        using BuffT = GenericSignal<SimpleVecWrapper<U>, true>;
-        BuffT inst_freq;
-        using BuffTDouble = GenericSignal<SimpleVecWrapper<std::pair<U,U>>, true>;
-        BuffTDouble inst_freq_double;
+    UTILITY_MATH::hilbertTransformConst<DataT, OutT, ht_kind>(data, out,
+                                                              specter, buffer);
 
-        IntegratorT integrator;
-        DerivatorT derivator;
-        InstFreqComputerType* inst_freq_computer;
+    for (int i = 0; i < data.size(); i++) {
+      out[i] = std::sqrt(out[i] * out[i] + data[i] * data[i]); // todo
+    }
+  }
 
+  template <Signal DataT, Signal OutT, typename NilT>
+  void compute(const DataT &data, OutT &out, NilT *nil) {
+    if (buffer.size() != data.size()) {
+      buffer.clear();
+      for (int i = 0; i < data.size(); i++) {
+        buffer.push_back({data[i], 0.0});
+      }
+    } else {
+      for (int i = 0; i < data.size(); i++) {
+        buffer[i] = {data[i], 0.0};
+      }
+    }
+    if (specter.size() != data.size()) {
+      specter.clear();
+      for (int i = 0; i < data.size(); i++) {
+        specter.push_back({data[i], 0.0});
+      }
+    } else {
+      for (int i = 0; i < data.size(); i++) {
+        specter[i] = {data[i], 0.0};
+      }
+    }
 
-        DerivativeAndInstFreqBased(IntegratorT integrator, DerivatorT derivator,
-                                   InstFreqComputerType& inst_freq_computer) {
-            this->integrator = integrator;
-            this->derivator = derivator;
-            this->inst_freq_computer = &inst_freq_computer;
-        }
+    UTILITY_MATH::hilbertTransformConst<DataT, OutT, ht_kind>(data, out,
+                                                              specter, buffer);
 
-        DerivativeAndInstFreqBased(InstFreqComputerType& inst_freq_computer) {
-            this->inst_freq_computer = &inst_freq_computer;
-        }
-
-        DerivativeAndInstFreqBased() {
-            this->inst_freq_computer = NULL;
-            //todo
-        }
-
-        template<Signal DataType, Signal OutType, Signal ComputerBufferType>
-        void compute(const DataType& data, OutType& out, ComputerBufferType * computer_buffer) {
-            using T = typename OutType::SampleType;
-            if constexpr (std::convertible_to<typename InstFreqComputerType::AdditionalDataType, GENERAL::Nil>) {
-                if constexpr (kind == InstFreqDerivativeBasedKind::DeriveDouble){
-                    if (inst_freq_double.size() != data.size()) {
-                        inst_freq_double.base->vec->clear();
-                        for (int i = 0; i < data.size(); i++) {
-                            inst_freq_double.base->vec->push_back({0.0, 0.0});
-                        }
-                    }
-                    inst_freq_computer->compute(data, inst_freq_double, nullptr);
-                }
-                else{
-                    if (inst_freq.size() != data.size()) {
-                        static_cast<SimpleVecWrapper<T> *>(inst_freq.base)->vec->clear();
-                        for (int i = 0; i < data.size(); i++) {
-                            static_cast<SimpleVecWrapper<T> *>(inst_freq.base)->vec->push_back(0.);
-                        }
-                    }
-                    inst_freq_computer->compute(data, inst_freq, nullptr);
-                }
-            } else {
-                if constexpr (kind == InstFreqDerivativeBasedKind::DeriveDouble){
-                    if (inst_freq_double.size() != data.size()) {
-                        inst_freq_double.base->vec->clear();
-                        for (int i = 0; i < data.size(); i++) {
-                            inst_freq_double.base->vec->push_back({0.0, 0.0});
-                        }
-                    }
-                    inst_freq_computer->compute(data, inst_freq_double, computer_buffer);
-                }
-                else{
-                    if (inst_freq.size() != data.size()) {
-                        static_cast<SimpleVecWrapper<T> *>(inst_freq.base)->vec->clear();
-                        for (int i = 0; i < data.size(); i++) {
-                            static_cast<SimpleVecWrapper<T> *>(inst_freq.base)->vec->push_back(0.);
-                        }
-                    }
-                    inst_freq_computer->compute(data, inst_freq, computer_buffer);
-                }
-            }
-
-            derivator.compute(data, out, nullptr);
-            for (int i = 0; i < out.size(); i++) {
-                out[i] = std::abs(out[i]);
-            }
-
-            if constexpr (kind == InstFreqDerivativeBasedKind::Momental
-                          || kind == InstFreqDerivativeBasedKind::TimeAverage
-                          || kind == InstFreqDerivativeBasedKind::DeriveAverage) {
-                integrator.compute(out, *computer_buffer, nullptr);
-                for (int i = 0; i < out.size(); i++) {
-                    out[i] = (computer_buffer->interpolate(i + 0.5 / (inst_freq)[i], SignalKind::Monotone) -
-                             computer_buffer->interpolate(i - 0.5 / (inst_freq)[i], SignalKind::Monotone)) / 4;// - 
-                             //std::abs(data.interpolate(i + 0.5 / (inst_freq)[i], SignalKind::Universal) - 
-                             //   data.interpolate(i - 0.5 / (inst_freq)[i], SignalKind::Universal))) / 4;
-                }
-            } else if constexpr (kind == InstFreqDerivativeBasedKind::DeriveDouble) {
-                integrator.compute(out, *computer_buffer, nullptr);
-                for (int i = 0; i < out.size(); i++) {
-                    out[i] = (computer_buffer->interpolate(i + 0.5 / (inst_freq_double)[i].second, SignalKind::Monotone) -
-                             computer_buffer->interpolate(i - 0.5 / (inst_freq_double)[i].first, SignalKind::Monotone)) / 4;//- 
-                             //std::abs(data.interpolate(i + 0.5 / (inst_freq_double)[i].second, SignalKind::Universal) - 
-                               // data.interpolate(i - 0.5 / (inst_freq_double)[i].first, SignalKind::Universal))) / 4;
-                }
-            }
-        }
-    };
-
-    template<UTILITY_MATH::HTKind ht_kind>
-    struct HilbertTransformBased{
-        std::vector<std::complex<double>> buffer;
-        std::vector<std::complex<double>> specter;
-
-        using AdditionalDataType = GENERAL::Nil;
-
-        constexpr static bool is_inst_ampl_computer = true;
-        constexpr static bool is_used_external_inst_freq = false;
-
-        UTILITY_MATH::HTKind kind = ht_kind;
-
-        template<Signal DataT, Signal OutT>
-        void compute(const DataT & data, OutT & out, std::nullptr_t nil){
-            if (buffer.size() != data.size()){
-                buffer.clear();
-                for (int i = 0; i < data.size(); i++){
-                    buffer.push_back({data[i], 0.0});
-                }
-            }
-            else{
-                for (int i = 0; i < data.size(); i++){
-                    buffer[i] = {data[i], 0.0};
-                }
-            }
-            if (specter.size() != data.size()){
-                specter.clear();
-                for (int i = 0; i < data.size(); i++){
-                    specter.push_back({data[i], 0.0});
-                }
-            }
-            else{
-                for (int i = 0; i < data.size(); i++){
-                    specter[i] = {data[i], 0.0};
-                }
-            }
-            
-            UTILITY_MATH::hilbertTransformConst<DataT, OutT, ht_kind>
-                (data, out, specter, buffer);
-
-            for(int i = 0; i < data.size(); i++){
-                out[i] = std::sqrt(out[i] * out[i] + data[i] * data[i]); //todo
-            }
-        }
-
-        template<Signal DataT, Signal OutT, typename NilT>
-        void compute(const DataT & data, OutT & out, NilT * nil){
-            if (buffer.size() != data.size()){
-                buffer.clear();
-                for (int i = 0; i < data.size(); i++){
-                    buffer.push_back({data[i], 0.0});
-                }
-            }
-            else{
-                for (int i = 0; i < data.size(); i++){
-                    buffer[i] = {data[i], 0.0};
-                }
-            }
-            if (specter.size() != data.size()){
-                specter.clear();
-                for (int i = 0; i < data.size(); i++){
-                    specter.push_back({data[i], 0.0});
-                }
-            }
-            else{
-                for (int i = 0; i < data.size(); i++){
-                    specter[i] = {data[i], 0.0};
-                }
-            }
-            
-            UTILITY_MATH::hilbertTransformConst<DataT, OutT, ht_kind>
-                (data, out, specter, buffer);
-
-            for(int i = 0; i < data.size(); i++){
-                out[i] = std::sqrt(out[i] * out[i] + data[i] * data[i]); //todo
-            }
-        }
-    };
-}
+    for (int i = 0; i < data.size(); i++) {
+      out[i] = std::sqrt(out[i] * out[i] + data[i] * data[i]); // todo
+    }
+  }
+};
+} // namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS
