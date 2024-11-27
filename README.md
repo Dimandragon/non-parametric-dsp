@@ -8,11 +8,10 @@ non-parametric-dsp - C++ библиотека для цифровой обраб
 
 # Оглавление
 - [Функционал](#Функционал)
-- [Установка](#установка)
 - [Начало работы](#начало-работы)
+- [Credits](#credits)
 - [Лицензия](#лицензия)
 - [Контакты](#контакты)
-- [Credits](#credits)
 
 # Функционал
 non-parametric-dsp - C++ библиотека для цифровой обработки нестационарных сигналов, предоставляющая следующий функционал:
@@ -26,17 +25,25 @@ non-parametric-dsp - C++ библиотека для цифровой обраб
 - токенизация сигналов для обучения нейросетей
 non-parametric-dsp - исследовательский проект, предоставляющий большое количество экспериментальных и уникальных подходов;
 
-Для более ознакомления с функционалом non-parametric-dsp пожалуйста ознакомьтесь с примерами из директории examples
+Для более ознакомления с функционалом non-parametric-dsp пожалуйста, ознакомьтесь с примерами из директории examples
 
 > [!IMPORTANT]
 > Для использования в своих проектах, пожалуйста, используйте векту “for_linkage”; Она предоставляет headeronly библиотеку без встроенных возможностей визуализации
 
 ## Начало работы
 Для начала работы вам потребуется установить следующий набор зависимостей:
-- git
-- xmake
-- C++ комплиятор (clang, gcc или msvc)
-- gnuplot
+
+#### <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg" width="24" height="24" alt="Git Logo"/> Git
+
+#### <img src="https://xmake.io/assets/img/logo.svg" width="24" height="24" alt="XMake Logo"/> XMake
+
+#### <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg" width="24" height="24" alt="C++ Logo"/> C++ Компиляторы:
+- Clang
+- GCC
+- MSVC
+
+#### <img src="https://images.sftcdn.net/images/t_app-icon-m/p/4f6f9692-96da-11e6-9846-00163ed833e7/2948317542/gnuplot-gnuplot-logo.png" width="24" height="24" alt="Gnuplot Logo"/> Gnuplot
+
 Далее выполните следующий набор команд:
 ```bash
 git clone https://github.com/Dimandragon/non-parametric-dsp.git
@@ -50,6 +57,17 @@ xmake
 xmake r [имя_примера]
 ```
 Названия примеров вы можете посмотреть в файле xmake.lua; все примеры являются “binary” таргетами системы сборки xmake
+
+
+# Credits
+non-parametric-dsp использует следующий проекты:
+- [pocketfft](https://github.com/mreineck/pocketfft) - быстрая легковесная C++ реализации быстрого преобразования Фурье для работы с произвольными размерами входных данных
+- [icecream](https://github.com/renatoGarcia/icecream-cpp) - C++ библиотека для простого и удобного формативрования вывода
+- [matplotplusplus](https://github.com/alandefreitas/matplotplusplus) - C++ библиотека для визуализации данных
+- [gnuplot](http://www.gnuplot.info/) - консольный инструмент для визуализации данных
+- [boost](https://www.boost.org/) - большая коллекция разнообразных C++ библиотек
+- [alglib](https://www.alglib.net/) - обширная библиотека численных методов
+- [xmake](https://github.com/xmake-io/xmake) - удобная декларативная кроссплатформенная система сборки, написанная на lua
 
 # Лицензия
 [MIT license](LICENSE)
@@ -66,13 +84,3 @@ dkuznetsov071105@gmail.com
 ```
 @diman_botan
 ```
-
-# Credits
-non-parametric-dsp использует следующий проекты:
-[pocketfft](https://github.com/mreineck/pocketfft) - быстрая легковесная C++ реализации быстрого преобразования Фурье для работы с произвольными размерами входных данных
-[icecream](https://github.com/renatoGarcia/icecream-cpp) - C++ библиотека для простого и удобного формативрования вывода
-[matplotplusplus](https://github.com/alandefreitas/matplotplusplus) - C++ библиотека для визуализации данных
-[gnuplot](http://www.gnuplot.info/) - консольный инструмент для визуализации данных
-[boost](https://www.boost.org/) - большая коллекция разнообразных C++ библиотек
-[alglib](https://www.alglib.net/) - обширная библиотека численных методов
-[xmake](https://github.com/xmake-io/xmake) - удобная декларативная кроссплатформенная система сборки, написанная на lua
