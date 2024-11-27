@@ -50,6 +50,10 @@ target("pocketfft")
     --add_headerfiles("pocketfft/pocketfft_hdronly.h", {public = true})
     add_includedirs("pocketfft", {public = true})
 
+target("alglib")
+    set_kind("static")
+    add_includedirs("alglib-cpp/src", {public = true})
+    add_files("alglib-cpp/src/*.cpp")
 
 target("non-parametric_dsp")
     set_kind("headeronly")
@@ -65,6 +69,7 @@ target("non-parametric_dsp")
     add_deps("matplot++_external")
     add_deps("icecream")
     add_deps("boost_interpolate")
+    add_deps("alglib")
     add_cxxflags("--fp_mode=strict")
 
 target("signals-tokenizer")
