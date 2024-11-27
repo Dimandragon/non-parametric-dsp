@@ -482,7 +482,9 @@ namespace NP_DSP::ONE_D {
             } else if (kind == SignalKind::Smooth) {
                 //todo Teilors Series
                 /*std::unreachable();*/
+                return 0;
             }
+            return 0;
         }
 
         double findMonotone(SampleType value, std::optional<double> idx1, std::optional<double> idx2, std::optional<double> start_idx, SampleType delta) const {
@@ -861,7 +863,9 @@ namespace NP_DSP::ONE_D {
             } else if (kind == SignalKind::Smooth) {
                 //todo Teilors Series
                 /*std::unreachable();*/
+                return 0;
             }
+            return 0;
         }
 
         double findMonotone(SampleType value, std::optional<double> idx1, std::optional<double> idx2, std::optional<double> start_idx, SampleType delta) const {
@@ -1213,7 +1217,9 @@ namespace NP_DSP::ONE_D {
             } else if (kind == SignalKind::Smooth) {
                 //todo Teilors Series
                 /*std::unreachable();*/
+                return 0;
             }
+            return 0;
         }
 
         double findMonotone(SampleType value, std::optional<double> idx1, std::optional<double> idx2, std::optional<double> start_idx, SampleType delta) const {
@@ -1295,4 +1301,8 @@ namespace NP_DSP::ONE_D {
 
 
     static_assert(is_signal<GenericSignal<SimpleVecWrapper<int>, true>>);
+}
+
+namespace NP_DSP::GENERAL {
+    
 }
