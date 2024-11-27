@@ -1,13 +1,15 @@
 #include "signals.hpp"
 #include <approximators.hpp>
 #include <cstdio>
+#include <derivators.hpp>
 #include <npdsp_concepts.hpp>
 #include <utility>
 #include <utility_math.hpp>
 #include <vector>
-#include <derivators.hpp>
 
 namespace NP_DSP::ONE_D::PHASE_SHIFTERS {
+
+// вращение сигнала по фазе с использованием дробного преобразования Гильберта
 struct HTBased {
   double phase_shift = 0.5 * std::numbers::pi;
 
@@ -75,13 +77,9 @@ muller;
     }
 };*/
 
-struct NaiveExtremumsPhaseShifter {
-  double phase_shift = 0.5 * std::numbers::pi;
+// Наивный поиск экстремумов фазовращенного сигнала
 
-  template <typename DataT, typename OutT, typename PhaseT>
-  void compute(const DataT &data, OutT &out, PhaseT &phase) {}
-};
-
+// фазовращение при помощи дробного диффиринцирования
 template <typename DerivatorT> struct FracDiffsBasedSimple {
   double phase_shift = 0.5 * std::numbers::pi;
   DerivatorT *derivator;
@@ -95,6 +93,7 @@ template <typename DerivatorT> struct FracDiffsBasedSimple {
   }
 };
 
+// фазовращение с оверсемплингом
 template <typename PhaseShifterT> struct WithOversampling {
   double phase_shift = 0.5 * std::numbers::pi;
   PhaseShifterT *phase_shifter;
@@ -129,79 +128,79 @@ template <typename PhaseShifterT> struct WithOversampling {
   }
 };
 
-enum class RotateKind
-{
-    Naive,
-    HTBased, 
-    NaiveFTFracDir,
+enum class RotateKind {
+  Naive,
+  HTBased,
+  NaiveFTFracDir,
 };
 
-
+// поиск фазовращенных экстремумов
+// поддерживает типы из RotateKind enum
 struct ExtremumsRotator {
-    double oversampling_ratio_for_ft_der = 1.0;
-    std::vector<double> extremums;
-    std::vector<double> rotated_extremums;
-    double phase_shift;
-    RotateKind kind_e;
+  double oversampling_ratio_for_ft_der = 1.0;
+  std::vector<double> extremums;
+  std::vector<double> rotated_extremums;
+  double phase_shift;
+  RotateKind kind_e;
 
-    void rotateExtremums(double phase_shift) {
-        APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain<std::vector<double>> approx;
-        rotated_extremums.clear();
-        std::vector<double> phase_x;
-        std::vector<double> phase_y;
-        for (int i = 0; i < extremums.size(); i++) {
-          phase_x.push_back(extremums[i]);
-          phase_y.push_back(i * std::numbers::pi);
-        }
-        approx.loadData(phase_y, phase_x);
-
-        rotated_extremums.push_back(extremums[0]);
-
-        for (int i = 0; i < phase_y.size() - 1; i++) {
-          double temp = approx.compute(phase_y[i] + phase_shift);
-          // rotated_extremums.push_back(approx.compute(phase_y[i] + phase_shift));
-          if (rotated_extremums[rotated_extremums.size() - 1] == temp) {
-            continue;
-          }
-          rotated_extremums.push_back(temp);
-        }
-        if (rotated_extremums[rotated_extremums.size() - 1] !=
-            extremums[extremums.size() - 1]) {
-          rotated_extremums.push_back(extremums[extremums.size() - 1]);
-        }
+  void rotateExtremums(double phase_shift) {
+    APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain<std::vector<double>>
+        approx;
+    rotated_extremums.clear();
+    std::vector<double> phase_x;
+    std::vector<double> phase_y;
+    for (int i = 0; i < extremums.size(); i++) {
+      phase_x.push_back(extremums[i]);
+      phase_y.push_back(i * std::numbers::pi);
     }
+    approx.loadData(phase_y, phase_x);
 
-    template<typename DataT>
-    void rotateSignalsExtremums(const DataT & data, double phase_shift){
-        if (kind_e == RotateKind::Naive){
-            extremums.clear();
-            rotated_extremums.clear();
-            UTILITY_MATH::computeExtremums<decltype(data), double>(
-                data, extremums, UTILITY_MATH::ExtremumsKind::Simple);
-            IC(extremums.size());
-            rotateExtremums(phase_shift);
-            IC(extremums.size(), rotated_extremums.size());
-        }
-        else if (kind_e == RotateKind::NaiveFTFracDir){
-            GenericSignal<SimpleVecWrapper<double>, true> out;
-            DERIVATORS::FTBased<DERIVATORS::FTDerivativeKind::Naive> ft_based1;
-            PHASE_SHIFTERS::FracDiffsBasedSimple<decltype(ft_based1)> phase_shifter1;
-            phase_shifter1.derivator = &ft_based1;
-            PHASE_SHIFTERS::WithOversampling<decltype(phase_shifter1)> phase_shifter2;
-            phase_shifter2.phase_shifter = &phase_shifter1;
-            phase_shifter2.oversampling_ratio = oversampling_ratio_for_ft_der;
-            phase_shifter2.phase_shift = phase_shift;
+    rotated_extremums.push_back(extremums[0]);
 
-            for (int i = 0; i < data.size(); i++){
-                out.base->vec->push_back(0.0);
-            }
-
-            phase_shifter2.compute(data, out, nullptr);
-
-            UTILITY_MATH::computeExtremums<decltype(out), double>(
-                out, rotated_extremums, UTILITY_MATH::ExtremumsKind::Simple);
-        }
+    for (int i = 0; i < phase_y.size() - 1; i++) {
+      double temp = approx.compute(phase_y[i] + phase_shift);
+      // rotated_extremums.push_back(approx.compute(phase_y[i] + phase_shift));
+      if (rotated_extremums[rotated_extremums.size() - 1] == temp) {
+        continue;
+      }
+      rotated_extremums.push_back(temp);
     }
+    if (rotated_extremums[rotated_extremums.size() - 1] !=
+        extremums[extremums.size() - 1]) {
+      rotated_extremums.push_back(extremums[extremums.size() - 1]);
+    }
+  }
+
+  template <typename DataT>
+  void rotateSignalsExtremums(const DataT &data, double phase_shift) {
+    if (kind_e == RotateKind::Naive) {
+      extremums.clear();
+      rotated_extremums.clear();
+      UTILITY_MATH::computeExtremums<decltype(data), double>(
+          data, extremums, UTILITY_MATH::ExtremumsKind::Simple);
+      IC(extremums.size());
+      rotateExtremums(phase_shift);
+      IC(extremums.size(), rotated_extremums.size());
+    } else if (kind_e == RotateKind::NaiveFTFracDir) {
+      GenericSignal<SimpleVecWrapper<double>, true> out;
+      DERIVATORS::FTBased<DERIVATORS::FTDerivativeKind::Naive> ft_based1;
+      PHASE_SHIFTERS::FracDiffsBasedSimple<decltype(ft_based1)> phase_shifter1;
+      phase_shifter1.derivator = &ft_based1;
+      PHASE_SHIFTERS::WithOversampling<decltype(phase_shifter1)> phase_shifter2;
+      phase_shifter2.phase_shifter = &phase_shifter1;
+      phase_shifter2.oversampling_ratio = oversampling_ratio_for_ft_der;
+      phase_shifter2.phase_shift = phase_shift;
+
+      for (int i = 0; i < data.size(); i++) {
+        out.base->vec->push_back(0.0);
+      }
+
+      phase_shifter2.compute(data, out, nullptr);
+
+      UTILITY_MATH::computeExtremums<decltype(out), double>(
+          out, rotated_extremums, UTILITY_MATH::ExtremumsKind::Simple);
+    }
+  }
 };
 
 } // namespace NP_DSP::ONE_D::PHASE_SHIFTERS

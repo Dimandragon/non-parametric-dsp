@@ -12,17 +12,19 @@
 #include <inst_ampl_computers.hpp>
 #include <integrators.hpp>
 #include <npdsp_concepts.hpp>
+#include <phase_shifters.hpp>
 #include <signals.hpp>
 #include <string>
 #include <utility>
 #include <utility_math.hpp>
 #include <vector>
-#include <phase_shifters.hpp>
 
 namespace NP_DSP::ONE_D::FILTERS {
 enum class InstFreqKind { Average, Double };
 
 enum class MaskKind { Gaussian, Triangle, Flat };
+
+// генерация сверточного фильтра
 template <Signal MaskT>
 int generateConvMask(double inst_freq, double period_muller, MaskT &mask,
                      MaskKind kind, double pow) {
@@ -94,8 +96,8 @@ int generateConvMask(double inst_freq, double period_muller, MaskT &mask,
   return mask.size();
 }
 
-int generateConvMask(double inst_freq, double period_muller, std::vector<double> &mask,
-                     MaskKind kind, double pow) {
+int generateConvMask(double inst_freq, double period_muller,
+                     std::vector<double> &mask, MaskKind kind, double pow) {
   // todo
   double period = 1.0 / inst_freq * period_muller;
   size_t mask_size = period;
@@ -172,6 +174,8 @@ enum class FilteringType {
   ValueBasedSmart,
   DerivativeBasedSmart
 };
+// нестационарная фильтрация на основе внешнего параметра мгновенной частоты
+// поддерживаеттипы из FilteringType enum
 template <typename U, FilteringType filtering_type_k, Integrator<U> IntegratorT,
           InstFreqKind inst_freq_k>
 struct InstFreqBased {
@@ -568,6 +572,8 @@ struct InstFreqBased {
   }
 };
 
+// стационарная фильтрация
+// поддерживаеттипы из FilteringType enum
 enum class MonoInstFreqFilteringType {
   Conv,
   Sinc,
@@ -771,14 +777,25 @@ template <typename U, MonoInstFreqFilteringType kind_e> struct MonoFreqFilters {
   }
 };
 
-//enum class InterpolationFlteringKind { extremums, points };
-enum class PlotInterpKind {First, Interim, Last, Single, None};
+// enum class InterpolationFlteringKind { extremums, points };
+enum class PlotInterpKind { First, Interim, Last, Single, None };
 
-enum class InterpolationKind { Makima, IDW, RBFTPS, RBFGaussian, RBFBell, RBFMultiquadricAuto, RBFMultiquadricManual};
+enum class InterpolationKind {
+  Makima,
+  IDW,
+  RBFTPS,
+  RBFGaussian,
+  RBFBell,
+  RBFMultiquadricAuto,
+  RBFMultiquadricManual
+};
 
-template <typename U>
-struct InterpolationBasedWithExternalPoints{
-  //constexpr bool is_filter = true;
+// фильтрация гладкой аппроксимацией
+// поддерживает альтрнативно режим "фильтрации из эмперической модовой
+// декомпозиции" see http://314159.ru/hht/davydov1.htm поддерживает типы
+// аппроксимации из InterpolationKind enum
+template <typename U> struct InterpolationBasedWithExternalPoints {
+  // constexpr bool is_filter = true;
   bool debug = true;
 
   bool is_low_pass = true;
@@ -798,35 +815,33 @@ struct InterpolationBasedWithExternalPoints{
   double rbf_lambda_v = 0.0;
 
   double rbf_alpha = 10.0;
-  
-  template<typename DataT, typename OutT>
-  void compute(const DataT &data, OutT &out, const std::vector<double> & points_x)
-  {
+
+  template <typename DataT, typename OutT>
+  void compute(const DataT &data, OutT &out,
+               const std::vector<double> &points_x) {
     std::vector<double> points_y;
     APPROX::ModifiedAkimaBasedWithNoTrain<decltype(data)> data_approximator;
     data_approximator.loadData(data);
-    for (int i = 0; i < points_x.size(); i++){
+    for (int i = 0; i < points_x.size(); i++) {
       points_y.push_back(data_approximator.compute(points_x[i]));
     }
 
-    if (kind == InterpolationKind::Makima){
-      NP_DSP::ONE_D::APPROX::ModifiedAkimaBasedWithNoTrain
-        <std::vector<double>> approximator;
+    if (kind == InterpolationKind::Makima) {
+      NP_DSP::ONE_D::APPROX::ModifiedAkimaBasedWithNoTrain<std::vector<double>>
+          approximator;
       approximator.loadData(points_x, points_y);
-      for (int i = 0; i < out.size(); i++){
+      for (int i = 0; i < out.size(); i++) {
         out[i] = approximator.compute(i);
       }
-    }
-    else if (kind == InterpolationKind::IDW){
+    } else if (kind == InterpolationKind::IDW) {
       APPROX::InverseDistanceWeightingBasedWithNoTrain approximator;
       approximator.layers = idw_layers;
       approximator.search_radius = idw_search_radius;
       approximator.loadData(points_x, points_y);
-      for (int i = 0; i < out.size(); i++){
+      for (int i = 0; i < out.size(); i++) {
         out[i] = approximator.compute(i);
       }
-    }
-    else if (kind == InterpolationKind::RBFBell){
+    } else if (kind == InterpolationKind::RBFBell) {
       APPROX::RBFBasedWithNoTrain approximator;
       approximator.kind = APPROX::RBFKind::Bell;
       approximator.r_base = this->rbf_r_base;
@@ -836,11 +851,10 @@ struct InterpolationBasedWithExternalPoints{
       approximator.v3tol = this->rbf_v3tol;
 
       approximator.loadData(points_x, points_y);
-      for (int i = 0; i < out.size(); i++){
+      for (int i = 0; i < out.size(); i++) {
         out[i] = approximator.compute(i);
       }
-    }
-    else if (kind == InterpolationKind::RBFGaussian){
+    } else if (kind == InterpolationKind::RBFGaussian) {
       APPROX::RBFBasedWithNoTrain approximator;
       approximator.kind = APPROX::RBFKind::Gaussian;
       approximator.r_base = this->rbf_r_base;
@@ -850,38 +864,35 @@ struct InterpolationBasedWithExternalPoints{
       approximator.v3tol = this->rbf_v3tol;
 
       approximator.loadData(points_x, points_y);
-      for (int i = 0; i < out.size(); i++){
+      for (int i = 0; i < out.size(); i++) {
         out[i] = approximator.compute(i);
       }
-    }
-    else if (kind == InterpolationKind::RBFMultiquadricAuto){
+    } else if (kind == InterpolationKind::RBFMultiquadricAuto) {
       APPROX::RBFBasedWithNoTrain approximator;
       approximator.kind = APPROX::RBFKind::MultiquadricAuto;
       approximator.lambda_v = this->rbf_lambda_v;
 
       approximator.loadData(points_x, points_y);
-      for (int i = 0; i < out.size(); i++){
+      for (int i = 0; i < out.size(); i++) {
         out[i] = approximator.compute(i);
       }
-    } 
-    else if (kind == InterpolationKind::RBFMultiquadricManual){
+    } else if (kind == InterpolationKind::RBFMultiquadricManual) {
       APPROX::RBFBasedWithNoTrain approximator;
       approximator.kind = APPROX::RBFKind::Multiquadric;
       approximator.lambda_v = this->rbf_lambda_v;
       approximator.alpha = this->rbf_alpha;
 
       approximator.loadData(points_x, points_y);
-      for (int i = 0; i < out.size(); i++){
+      for (int i = 0; i < out.size(); i++) {
         out[i] = approximator.compute(i);
       }
-    }
-    else if (kind == InterpolationKind::RBFTPS){
+    } else if (kind == InterpolationKind::RBFTPS) {
       APPROX::RBFBasedWithNoTrain approximator;
       approximator.kind = APPROX::RBFKind::TPS;
       approximator.lambda_v = this->rbf_lambda_v;
 
       approximator.loadData(points_x, points_y);
-      for (int i = 0; i < out.size(); i++){
+      for (int i = 0; i < out.size(); i++) {
         out[i] = approximator.compute(i);
       }
     }
@@ -892,55 +903,49 @@ struct InterpolationBasedWithExternalPoints{
     }
   }
 
-  template<typename DataT, typename OutT> 
-  void compute(
-    const DataT &data, OutT &out,
-      const std::vector<double> & top_x, 
-        const std::vector<double> & bot_x)
-  {
+  template <typename DataT, typename OutT>
+  void compute(const DataT &data, OutT &out, const std::vector<double> &top_x,
+               const std::vector<double> &bot_x) {
     std::vector<double> top, bot, res, data_;
     std::vector<double> top_y;
     std::vector<double> bot_y;
-    
-    //std::vector<double> data_y;
-    //for (int i = 0; i < data)
-    //std::vector<double> data_x;
+
+    // std::vector<double> data_y;
+    // for (int i = 0; i < data)
+    // std::vector<double> data_x;
     APPROX::ModifiedAkimaBasedWithNoTrain<decltype(data)> data_approximator;
     data_approximator.loadData(data);
 
-    for (int i = 0; i < top_x.size(); i++){
+    for (int i = 0; i < top_x.size(); i++) {
       top_y.push_back(data_approximator.compute(top_x[i]));
     }
-    for (int i = 0; i < bot_x.size(); i++){
+    for (int i = 0; i < bot_x.size(); i++) {
       bot_y.push_back(data_approximator.compute(bot_x[i]));
     }
     bool is_first_top = bot_x[1] < top_x[1];
-    if (is_first_top){
+    if (is_first_top) {
       bot_y[0] = bot_y[1];
-    }
-    else{
+    } else {
       top_y[0] = top_y[1];
     }
-    bool is_last_top = 
-      bot_x[bot_x.size() - 2] > top_x[top_x.size() - 2];
-    if (is_last_top){
+    bool is_last_top = bot_x[bot_x.size() - 2] > top_x[top_x.size() - 2];
+    if (is_last_top) {
       bot_y[bot_y.size() - 1] = bot_y[bot_y.size() - 2];
-    }
-    else{
+    } else {
       top_y[top_y.size() - 1] = top_y[top_y.size() - 2];
     }
 
-    if (kind == InterpolationKind::Makima){
-      NP_DSP::ONE_D::APPROX::ModifiedAkimaBasedWithNoTrain
-        <std::vector<double>> approximator_top;
-      NP_DSP::ONE_D::APPROX::ModifiedAkimaBasedWithNoTrain
-          <std::vector<double>> approximator_bot;
+    if (kind == InterpolationKind::Makima) {
+      NP_DSP::ONE_D::APPROX::ModifiedAkimaBasedWithNoTrain<std::vector<double>>
+          approximator_top;
+      NP_DSP::ONE_D::APPROX::ModifiedAkimaBasedWithNoTrain<std::vector<double>>
+          approximator_bot;
       approximator_top.loadData(top_x, top_y);
       approximator_bot.loadData(bot_x, bot_y);
 
       for (int i = 0; i < data.size(); i++) {
-        out[i] = (approximator_top.compute(i) + 
-          approximator_bot.compute(i)) / 2.0;
+        out[i] =
+            (approximator_top.compute(i) + approximator_bot.compute(i)) / 2.0;
       }
 
       if (!is_low_pass) {
@@ -948,17 +953,16 @@ struct InterpolationBasedWithExternalPoints{
           out[i] = data[i] - out[i];
         }
       }
-      
-      if (plotting_kind != PlotInterpKind::None){
-        for (int i = 0; i < data.size(); i++){
+
+      if (plotting_kind != PlotInterpKind::None) {
+        for (int i = 0; i < data.size(); i++) {
           top.push_back(approximator_top.compute(i));
           bot.push_back(approximator_bot.compute(i));
           res.push_back(out[i]);
           data_.push_back(data[i]);
         }
       }
-    }
-    else if (kind == InterpolationKind::IDW){
+    } else if (kind == InterpolationKind::IDW) {
       APPROX::InverseDistanceWeightingBasedWithNoTrain approximator_top;
       APPROX::InverseDistanceWeightingBasedWithNoTrain approximator_bot;
       approximator_top.layers = idw_layers;
@@ -969,8 +973,8 @@ struct InterpolationBasedWithExternalPoints{
       approximator_top.loadData(top_x, top_y);
       approximator_bot.loadData(bot_x, bot_y);
       for (int i = 0; i < data.size(); i++) {
-        out[i] = (approximator_top.compute(i) + 
-          approximator_bot.compute(i)) / 2.0;
+        out[i] =
+            (approximator_top.compute(i) + approximator_bot.compute(i)) / 2.0;
       }
 
       if (!is_low_pass) {
@@ -978,17 +982,16 @@ struct InterpolationBasedWithExternalPoints{
           out[i] = data[i] - out[i];
         }
       }
-      
-      if (plotting_kind != PlotInterpKind::None){
-        for (int i = 0; i < data.size(); i++){
+
+      if (plotting_kind != PlotInterpKind::None) {
+        for (int i = 0; i < data.size(); i++) {
           top.push_back(approximator_top.compute(i));
           bot.push_back(approximator_bot.compute(i));
           res.push_back(out[i]);
           data_.push_back(data[i]);
         }
       }
-    }
-    else if (kind == InterpolationKind::RBFBell){
+    } else if (kind == InterpolationKind::RBFBell) {
       APPROX::RBFBasedWithNoTrain approximator_top;
       APPROX::RBFBasedWithNoTrain approximator_bot;
       approximator_top.kind = APPROX::RBFKind::Bell;
@@ -1007,8 +1010,8 @@ struct InterpolationBasedWithExternalPoints{
       approximator_top.loadData(top_x, top_y);
       approximator_bot.loadData(bot_x, bot_y);
       for (int i = 0; i < data.size(); i++) {
-        out[i] = (approximator_top.compute(i) + 
-          approximator_bot.compute(i)) / 2.0;
+        out[i] =
+            (approximator_top.compute(i) + approximator_bot.compute(i)) / 2.0;
       }
 
       if (!is_low_pass) {
@@ -1016,17 +1019,16 @@ struct InterpolationBasedWithExternalPoints{
           out[i] = data[i] - out[i];
         }
       }
-      
-      if (plotting_kind != PlotInterpKind::None){
-        for (int i = 0; i < data.size(); i++){
+
+      if (plotting_kind != PlotInterpKind::None) {
+        for (int i = 0; i < data.size(); i++) {
           top.push_back(approximator_top.compute(i));
           bot.push_back(approximator_bot.compute(i));
           res.push_back(out[i]);
           data_.push_back(data[i]);
         }
       }
-    }
-    else if (kind == InterpolationKind::RBFGaussian){
+    } else if (kind == InterpolationKind::RBFGaussian) {
       APPROX::RBFBasedWithNoTrain approximator_top;
       APPROX::RBFBasedWithNoTrain approximator_bot;
 
@@ -1046,8 +1048,8 @@ struct InterpolationBasedWithExternalPoints{
       approximator_top.loadData(top_x, top_y);
       approximator_bot.loadData(bot_x, bot_y);
       for (int i = 0; i < data.size(); i++) {
-        out[i] = (approximator_top.compute(i) + 
-          approximator_bot.compute(i)) / 2.0;
+        out[i] =
+            (approximator_top.compute(i) + approximator_bot.compute(i)) / 2.0;
       }
 
       if (!is_low_pass) {
@@ -1055,17 +1057,16 @@ struct InterpolationBasedWithExternalPoints{
           out[i] = data[i] - out[i];
         }
       }
-      
-      if (plotting_kind != PlotInterpKind::None){
-        for (int i = 0; i < data.size(); i++){
+
+      if (plotting_kind != PlotInterpKind::None) {
+        for (int i = 0; i < data.size(); i++) {
           top.push_back(approximator_top.compute(i));
           bot.push_back(approximator_bot.compute(i));
           res.push_back(out[i]);
           data_.push_back(data[i]);
         }
       }
-    }
-    else if (kind == InterpolationKind::RBFMultiquadricAuto){
+    } else if (kind == InterpolationKind::RBFMultiquadricAuto) {
       APPROX::RBFBasedWithNoTrain approximator_top;
       APPROX::RBFBasedWithNoTrain approximator_bot;
 
@@ -1077,8 +1078,8 @@ struct InterpolationBasedWithExternalPoints{
       approximator_top.loadData(top_x, top_y);
       approximator_bot.loadData(bot_x, bot_y);
       for (int i = 0; i < data.size(); i++) {
-        out[i] = (approximator_top.compute(i) + 
-          approximator_bot.compute(i)) / 2.0;
+        out[i] =
+            (approximator_top.compute(i) + approximator_bot.compute(i)) / 2.0;
       }
 
       if (!is_low_pass) {
@@ -1086,17 +1087,16 @@ struct InterpolationBasedWithExternalPoints{
           out[i] = data[i] - out[i];
         }
       }
-      
-      if (plotting_kind != PlotInterpKind::None){
-        for (int i = 0; i < data.size(); i++){
+
+      if (plotting_kind != PlotInterpKind::None) {
+        for (int i = 0; i < data.size(); i++) {
           top.push_back(approximator_top.compute(i));
           bot.push_back(approximator_bot.compute(i));
           res.push_back(out[i]);
           data_.push_back(data[i]);
         }
       }
-    } 
-    else if (kind == InterpolationKind::RBFMultiquadricManual){
+    } else if (kind == InterpolationKind::RBFMultiquadricManual) {
       APPROX::RBFBasedWithNoTrain approximator_top;
       APPROX::RBFBasedWithNoTrain approximator_bot;
 
@@ -1110,8 +1110,8 @@ struct InterpolationBasedWithExternalPoints{
       approximator_top.loadData(top_x, top_y);
       approximator_bot.loadData(bot_x, bot_y);
       for (int i = 0; i < data.size(); i++) {
-        out[i] = (approximator_top.compute(i) + 
-          approximator_bot.compute(i)) / 2.0;
+        out[i] =
+            (approximator_top.compute(i) + approximator_bot.compute(i)) / 2.0;
       }
 
       if (!is_low_pass) {
@@ -1119,17 +1119,16 @@ struct InterpolationBasedWithExternalPoints{
           out[i] = data[i] - out[i];
         }
       }
-      
-      if (plotting_kind != PlotInterpKind::None){
-        for (int i = 0; i < data.size(); i++){
+
+      if (plotting_kind != PlotInterpKind::None) {
+        for (int i = 0; i < data.size(); i++) {
           top.push_back(approximator_top.compute(i));
           bot.push_back(approximator_bot.compute(i));
           res.push_back(out[i]);
           data_.push_back(data[i]);
         }
       }
-    }
-    else if (kind == InterpolationKind::RBFTPS){
+    } else if (kind == InterpolationKind::RBFTPS) {
       APPROX::RBFBasedWithNoTrain approximator_top;
       APPROX::RBFBasedWithNoTrain approximator_bot;
 
@@ -1141,8 +1140,8 @@ struct InterpolationBasedWithExternalPoints{
       approximator_top.loadData(top_x, top_y);
       approximator_bot.loadData(bot_x, bot_y);
       for (int i = 0; i < data.size(); i++) {
-        out[i] = (approximator_top.compute(i) + 
-          approximator_bot.compute(i)) / 2.0;
+        out[i] =
+            (approximator_top.compute(i) + approximator_bot.compute(i)) / 2.0;
       }
 
       if (!is_low_pass) {
@@ -1151,8 +1150,8 @@ struct InterpolationBasedWithExternalPoints{
         }
       }
 
-      if (plotting_kind != PlotInterpKind::None){
-        for (int i = 0; i < data.size(); i++){
+      if (plotting_kind != PlotInterpKind::None) {
+        for (int i = 0; i < data.size(); i++) {
           top.push_back(approximator_top.compute(i));
           bot.push_back(approximator_bot.compute(i));
           res.push_back(out[i]);
@@ -1161,7 +1160,7 @@ struct InterpolationBasedWithExternalPoints{
       }
     }
 
-    if (plotting_kind == PlotInterpKind::Single){
+    if (plotting_kind == PlotInterpKind::Single) {
       matplot::hold(false);
       matplot::plot(top);
       matplot::hold(true);
@@ -1170,22 +1169,19 @@ struct InterpolationBasedWithExternalPoints{
       matplot::plot(data_);
       matplot::show();
       matplot::hold(false);
-    }
-    else if (plotting_kind == PlotInterpKind::First){
+    } else if (plotting_kind == PlotInterpKind::First) {
       matplot::hold(false);
       matplot::plot(top);
       matplot::hold(true);
       matplot::plot(bot);
       matplot::plot(res);
       matplot::plot(data_);
-    }
-    else if (plotting_kind == PlotInterpKind::Interim){
+    } else if (plotting_kind == PlotInterpKind::Interim) {
       matplot::plot(top);
       matplot::plot(bot);
       matplot::plot(res);
-      //matplot::plot(res);
-    }
-    else if (plotting_kind == PlotInterpKind::Last){
+      // matplot::plot(res);
+    } else if (plotting_kind == PlotInterpKind::Last) {
       matplot::plot(top);
       matplot::plot(bot);
       matplot::plot(res);
@@ -1195,13 +1191,15 @@ struct InterpolationBasedWithExternalPoints{
   }
 };
 
-//todo mixed and strict extremums 
-enum class LocalFilteringType { 
+// todo mixed and strict extremums
+enum class LocalFilteringType {
   Interpolation,
   InterpolationExtremums,
-  SincResampled, 
+  SincResampled,
 };
 
+// автоматический нестационарный фильтр, поддерживает подходы из
+// LocalFilteringType enum
 template <typename U, LocalFilteringType kind_e> struct LocalFilter {
   constexpr static bool is_filter = true;
   bool debug = true;
@@ -1212,7 +1210,7 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
   double locality_coeff = 5.0; // for sinc filter now
   double period_muller = 1.05; // for sinc filter now
 
-  int idw_layers = 15;              
+  int idw_layers = 15;
   double idw_search_radius = 100;
 
   double rbf_r_base = 20;
@@ -1225,12 +1223,13 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
 
   double rbf_alpha = 10.0;
 
-  /*std::vector<double> phase_shifts = 
-    {0.0, 0.2 * std::numbers::pi / 2.0, 
-    0.4 * std::numbers::pi / 2.0, 0.6 * std::numbers::pi / 2.0, 
+  /*std::vector<double> phase_shifts =
+    {0.0, 0.2 * std::numbers::pi / 2.0,
+    0.4 * std::numbers::pi / 2.0, 0.6 * std::numbers::pi / 2.0,
     0.8 * std::numbers::pi / 2.0};*/
   std::vector<double> phase_shifts = {0.0};
-  PHASE_SHIFTERS::RotateKind extremums_rotation_kind_e = PHASE_SHIFTERS::RotateKind::NaiveFTFracDir;
+  PHASE_SHIFTERS::RotateKind extremums_rotation_kind_e =
+      PHASE_SHIFTERS::RotateKind::NaiveFTFracDir;
   double oversampling_ratio_for_ft_der = 1.0;
 
   template <Signal DataT, Signal OutT>
@@ -1239,7 +1238,7 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
       InterpolationBasedWithExternalPoints<double> interpolation_filter;
 
       interpolation_filter.kind = interpolation_kind;
-      interpolation_filter.idw_layers = idw_layers;              
+      interpolation_filter.idw_layers = idw_layers;
       interpolation_filter.idw_search_radius = idw_search_radius;
       interpolation_filter.rbf_r_base = rbf_r_base;
       interpolation_filter.rbf_n_layers = rbf_n_layers;
@@ -1249,39 +1248,39 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
       interpolation_filter.rbf_lambda_v = rbf_lambda_v;
       interpolation_filter.rbf_alpha = rbf_alpha;
 
-
       GenericSignal<SimpleVecWrapper<double>, true> buffer;
       buffer.has_ovnership = true;
-      for (int i = 0; i < data.size(); i++){
+      for (int i = 0; i < data.size(); i++) {
         buffer.base->vec->push_back(0.0);
         out[i] = 0.0;
       }
 
-      for (int iter = 0; iter < phase_shifts.size(); iter++){
+      for (int iter = 0; iter < phase_shifts.size(); iter++) {
         std::vector<double> extremums_top_x;
         std::vector<double> extremums_bot_x;
 
         std::vector<double> rotated_extremums;
-        
+
         PHASE_SHIFTERS::ExtremumsRotator extremums_rotator;
         extremums_rotator.kind_e = extremums_rotation_kind_e;
-        extremums_rotator.oversampling_ratio_for_ft_der = oversampling_ratio_for_ft_der;
+        extremums_rotator.oversampling_ratio_for_ft_der =
+            oversampling_ratio_for_ft_der;
         extremums_rotator.rotateSignalsExtremums(data, phase_shifts[iter]);
-        for (int i = 0; i < extremums_rotator.rotated_extremums.size(); i++){
+        for (int i = 0; i < extremums_rotator.rotated_extremums.size(); i++) {
           rotated_extremums.push_back(extremums_rotator.rotated_extremums[i]);
         }
-        //IC(extremums_rotator.extremums.size(), extremums_rotator.rotated_extremums.size());
+        // IC(extremums_rotator.extremums.size(),
+        // extremums_rotator.rotated_extremums.size());
 
-        
-        //IC(extremums.size(), rotated_extremums.size());
+        // IC(extremums.size(), rotated_extremums.size());
 
         bool is_first_top = false;
-        if (data[rotated_extremums[0]] > data[rotated_extremums[1]]){
+        if (data[rotated_extremums[0]] > data[rotated_extremums[1]]) {
           is_first_top = true;
         }
         extremums_top_x.push_back(0);
         extremums_bot_x.push_back(0);
-        if (is_first_top){
+        if (is_first_top) {
           for (int i = 1; i < rotated_extremums.size() - 1; i++) {
             if (i % 2 == 0) {
               extremums_top_x.push_back(rotated_extremums[i]);
@@ -1289,8 +1288,7 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
               extremums_bot_x.push_back(rotated_extremums[i]);
             }
           }
-        }
-        else{
+        } else {
           for (int i = 1; i < rotated_extremums.size() - 1; i++) {
             if (i % 2 == 0) {
               extremums_bot_x.push_back(rotated_extremums[i]);
@@ -1302,41 +1300,37 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
 
         extremums_top_x.push_back(data.size() - 1);
         extremums_bot_x.push_back(data.size() - 1);
-        //IC(extremums_top_x.size(), extremums_bot_x.size());
+        // IC(extremums_top_x.size(), extremums_bot_x.size());
 
         interpolation_filter.is_low_pass = true;
-        if (debug){
-          if (phase_shifts.size() == 1){
+        if (debug) {
+          if (phase_shifts.size() == 1) {
             interpolation_filter.plotting_kind = PlotInterpKind::Single;
-          }
-          else if (iter == 0){
+          } else if (iter == 0) {
             interpolation_filter.plotting_kind = PlotInterpKind::First;
-          }
-          else if (iter == phase_shifts.size() - 1){
+          } else if (iter == phase_shifts.size() - 1) {
             interpolation_filter.plotting_kind = PlotInterpKind::Last;
-          }
-          else{
+          } else {
             interpolation_filter.plotting_kind = PlotInterpKind::Interim;
           }
-        }
-        else{
+        } else {
           interpolation_filter.plotting_kind = PlotInterpKind::None;
         }
-        
 
-        interpolation_filter.compute(data, buffer, extremums_top_x, extremums_bot_x);
-        for (int i = 0; i < data.size(); i++){
-          out[i] = out[i] + buffer[i] / static_cast<double>(phase_shifts.size());
+        interpolation_filter.compute(data, buffer, extremums_top_x,
+                                     extremums_bot_x);
+        for (int i = 0; i < data.size(); i++) {
+          out[i] =
+              out[i] + buffer[i] / static_cast<double>(phase_shifts.size());
         }
       }
-    } 
-    else if constexpr (kind_e == LocalFilteringType::Interpolation) {
+    } else if constexpr (kind_e == LocalFilteringType::Interpolation) {
       std::vector<double> extremums;
 
       InterpolationBasedWithExternalPoints<double> interpolation_filter;
 
       interpolation_filter.kind = interpolation_kind;
-      interpolation_filter.idw_layers = idw_layers;              
+      interpolation_filter.idw_layers = idw_layers;
       interpolation_filter.idw_search_radius = idw_search_radius;
       interpolation_filter.rbf_r_base = rbf_r_base;
       interpolation_filter.rbf_n_layers = rbf_n_layers;
@@ -1348,41 +1342,39 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
 
       interpolation_filter.is_low_pass = true;
 
-      if (interpolation_kind == InterpolationKind::Makima){
-        NP_DSP::ONE_D::APPROX::ModifiedAkimaBasedWithNoTrain
-          <std::vector<double>> approximator;
+      if (interpolation_kind == InterpolationKind::Makima) {
+        NP_DSP::ONE_D::APPROX::ModifiedAkimaBasedWithNoTrain<
+            std::vector<double>>
+            approximator;
         approximator.loadData(data);
-        auto val_expression = [&](double idx){
+        auto val_expression = [&](double idx) {
           return approximator.computeDerive(idx);
         };
-        auto size_expr = [&](){
-          return data.size();
-        };
-        ExpressionWrapper<double, double, decltype(val_expression), GENERAL::Nil, 
-          decltype(size_expr), false> data_derive_ (val_expression, size_expr);
+        auto size_expr = [&]() { return data.size(); };
+        ExpressionWrapper<double, double, decltype(val_expression),
+                          GENERAL::Nil, decltype(size_expr), false>
+            data_derive_(val_expression, size_expr);
         GenericSignal<decltype(data_derive_), false> data_derive(data_derive_);
 
         UTILITY_MATH::computeExtremums<decltype(data_derive), double>(
             data_derive, extremums, UTILITY_MATH::ExtremumsKind::Simple);
-      }
-      else if (interpolation_kind == InterpolationKind::IDW){
-        NP_DSP::ONE_D::APPROX::ModifiedAkimaBasedWithNoTrain
-          <std::vector<double>> approximator;
+      } else if (interpolation_kind == InterpolationKind::IDW) {
+        NP_DSP::ONE_D::APPROX::ModifiedAkimaBasedWithNoTrain<
+            std::vector<double>>
+            approximator;
         approximator.loadData(data);
-        auto val_expression = [&](double idx){
+        auto val_expression = [&](double idx) {
           return approximator.computeDerive(idx);
         };
-        auto size_expr = [&](){
-          return data.size();
-        };
-        ExpressionWrapper<double, double, decltype(val_expression), GENERAL::Nil, 
-          decltype(size_expr), false> data_derive_ (val_expression, size_expr);
+        auto size_expr = [&]() { return data.size(); };
+        ExpressionWrapper<double, double, decltype(val_expression),
+                          GENERAL::Nil, decltype(size_expr), false>
+            data_derive_(val_expression, size_expr);
         GenericSignal<decltype(data_derive_), false> data_derive(data_derive_);
 
         UTILITY_MATH::computeExtremums<decltype(data_derive), double>(
             data_derive, extremums, UTILITY_MATH::ExtremumsKind::Simple);
-      }
-      else if (interpolation_kind == InterpolationKind::RBFBell){
+      } else if (interpolation_kind == InterpolationKind::RBFBell) {
         APPROX::RBFBasedWithNoTrain approximator;
         approximator.kind = APPROX::RBFKind::Bell;
         approximator.r_base = this->rbf_r_base;
@@ -1390,22 +1382,20 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
         approximator.lambda_n_s = this->rbf_lambda_n_s;
         approximator.search_r = this->rbf_search_r;
         approximator.v3tol = this->rbf_v3tol;
-  
+
         approximator.loadData(data);
-        auto val_expression = [&](double idx){
+        auto val_expression = [&](double idx) {
           return approximator.computeDerive(idx);
         };
-        auto size_expr = [&](){
-          return data.size();
-        };
-        ExpressionWrapper<double, double, decltype(val_expression), GENERAL::Nil, 
-          decltype(size_expr), false> data_derive_ (val_expression, size_expr);
+        auto size_expr = [&]() { return data.size(); };
+        ExpressionWrapper<double, double, decltype(val_expression),
+                          GENERAL::Nil, decltype(size_expr), false>
+            data_derive_(val_expression, size_expr);
         GenericSignal<decltype(data_derive_), false> data_derive(data_derive_);
 
         UTILITY_MATH::computeExtremums<decltype(data_derive), double>(
             data_derive, extremums, UTILITY_MATH::ExtremumsKind::Simple);
-      }
-      else if (interpolation_kind == InterpolationKind::RBFGaussian){
+      } else if (interpolation_kind == InterpolationKind::RBFGaussian) {
         APPROX::RBFBasedWithNoTrain approximator;
         approximator.kind = APPROX::RBFKind::Gaussian;
         approximator.r_base = this->rbf_r_base;
@@ -1413,83 +1403,76 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
         approximator.lambda_n_s = this->rbf_lambda_n_s;
         approximator.search_r = this->rbf_search_r;
         approximator.v3tol = this->rbf_v3tol;
-  
+
         approximator.loadData(data);
-        auto val_expression = [&](double idx){
+        auto val_expression = [&](double idx) {
           return approximator.computeDerive(idx);
         };
-        auto size_expr = [&](){
-          return data.size();
-        };
-        ExpressionWrapper<double, double, decltype(val_expression), GENERAL::Nil, 
-          decltype(size_expr), false> data_derive_ (val_expression, size_expr);
+        auto size_expr = [&]() { return data.size(); };
+        ExpressionWrapper<double, double, decltype(val_expression),
+                          GENERAL::Nil, decltype(size_expr), false>
+            data_derive_(val_expression, size_expr);
         GenericSignal<decltype(data_derive_), false> data_derive(data_derive_);
 
         UTILITY_MATH::computeExtremums<decltype(data_derive), double>(
             data_derive, extremums, UTILITY_MATH::ExtremumsKind::Simple);
-      }
-      else if (interpolation_kind == InterpolationKind::RBFMultiquadricAuto){
+      } else if (interpolation_kind == InterpolationKind::RBFMultiquadricAuto) {
         APPROX::RBFBasedWithNoTrain approximator;
         approximator.kind = APPROX::RBFKind::MultiquadricAuto;
         approximator.lambda_v = this->rbf_lambda_v;
-  
+
         approximator.loadData(data);
-        auto val_expression = [&](double idx){
+        auto val_expression = [&](double idx) {
           return approximator.computeDerive(idx);
         };
-        auto size_expr = [&](){
-          return data.size();
-        };
-        ExpressionWrapper<double, double, decltype(val_expression), GENERAL::Nil, 
-          decltype(size_expr), false> data_derive_ (val_expression, size_expr);
+        auto size_expr = [&]() { return data.size(); };
+        ExpressionWrapper<double, double, decltype(val_expression),
+                          GENERAL::Nil, decltype(size_expr), false>
+            data_derive_(val_expression, size_expr);
         GenericSignal<decltype(data_derive_), false> data_derive(data_derive_);
 
         UTILITY_MATH::computeExtremums<decltype(data_derive), double>(
             data_derive, extremums, UTILITY_MATH::ExtremumsKind::Simple);
-      } 
-      else if (interpolation_kind == InterpolationKind::RBFMultiquadricManual){
+      } else if (interpolation_kind ==
+                 InterpolationKind::RBFMultiquadricManual) {
         APPROX::RBFBasedWithNoTrain approximator;
         approximator.kind = APPROX::RBFKind::Multiquadric;
         approximator.lambda_v = this->rbf_lambda_v;
         approximator.alpha = this->rbf_alpha;
-  
+
         approximator.loadData(data);
-        auto val_expression = [&](double idx){
+        auto val_expression = [&](double idx) {
           return approximator.computeDerive(idx);
         };
-        auto size_expr = [&](){
-          return data.size();
-        };
-        ExpressionWrapper<double, double, decltype(val_expression), GENERAL::Nil, 
-          decltype(size_expr), false> data_derive_ (val_expression, size_expr);
+        auto size_expr = [&]() { return data.size(); };
+        ExpressionWrapper<double, double, decltype(val_expression),
+                          GENERAL::Nil, decltype(size_expr), false>
+            data_derive_(val_expression, size_expr);
         GenericSignal<decltype(data_derive_), false> data_derive(data_derive_);
 
         UTILITY_MATH::computeExtremums<decltype(data_derive), double>(
             data_derive, extremums, UTILITY_MATH::ExtremumsKind::Simple);
-      }
-      else if (interpolation_kind == InterpolationKind::RBFTPS){
+      } else if (interpolation_kind == InterpolationKind::RBFTPS) {
         APPROX::RBFBasedWithNoTrain approximator;
         approximator.kind = APPROX::RBFKind::TPS;
         approximator.lambda_v = this->rbf_lambda_v;
-  
+
         approximator.loadData(data);
-        auto val_expression = [&](double idx){
+        auto val_expression = [&](double idx) {
           return approximator.computeDerive(idx);
         };
-        auto size_expr = [&](){
-          return data.size();
-        };
-        ExpressionWrapper<double, double, decltype(val_expression), GENERAL::Nil, 
-          decltype(size_expr), false> data_derive_ (val_expression, size_expr);
+        auto size_expr = [&]() { return data.size(); };
+        ExpressionWrapper<double, double, decltype(val_expression),
+                          GENERAL::Nil, decltype(size_expr), false>
+            data_derive_(val_expression, size_expr);
         GenericSignal<decltype(data_derive_), false> data_derive(data_derive_);
 
         UTILITY_MATH::computeExtremums<decltype(data_derive), double>(
             data_derive, extremums, UTILITY_MATH::ExtremumsKind::Simple);
       }
-     
+
       interpolation_filter.compute(data, out, extremums);
-    }
-    else if constexpr (kind_e == LocalFilteringType::SincResampled) {
+    } else if constexpr (kind_e == LocalFilteringType::SincResampled) {
       GenericSignal<SimpleVecWrapper<U>, true> buffer1;
       GenericSignal<SimpleVecWrapper<U>, true> buffer2;
       using SignalT = decltype(buffer1);
@@ -3541,7 +3524,7 @@ struct SincResLocalFilterWithResSolveNoneDeterminityLowFreq {
     double base_inst_freq = 1.0 / (period * period_muller * 2);
     // base_inst_freq = base_inst_freq * period_muller;
 
-    //IC(base_inst_freq);
+    // IC(base_inst_freq);
 
     filter.freq = base_inst_freq;
     filter.is_low_pass = is_low_pass;
@@ -3603,7 +3586,7 @@ struct SincResLocalFilterWithResSolveNoneDeterminityLowFreq {
       double base_inst_freq = 1.0 / (period * period_muller * 2);
       // base_inst_freq = base_inst_freq * period_muller;
 
-      //IC(base_inst_freq);
+      // IC(base_inst_freq);
 
       filter.freq = base_inst_freq;
       filter.is_low_pass = is_low_pass;
@@ -3629,7 +3612,7 @@ struct SincResLocalFilterWithResSolveNoneDeterminityLowFreq {
       attemts++;
     }
 
-    //IC(attemts, max_attempts);
+    // IC(attemts, max_attempts);
 
     // INST_FREQ_COMPUTERS::backInstFreqNormOnce(compute_buffer, out,
     // freq_conv);
@@ -3646,334 +3629,6 @@ struct SincResLocalFilterWithResSolveNoneDeterminityLowFreq {
 #endif
   }
 };
-} // namespace EXPERIMENTAL
-
-// todo make for n filters
-template <typename U, Filter<U> FilterFirstT, Filter<U> FilterSecondT>
-struct CascadeFilter {
-  using AdditionalDataType = SignalPrototype<double>;
-  using IdxType = size_t;
-  constexpr static bool is_filter = true;
-
-  FilterFirstT *filter_first;
-  FilterSecondT *filter_second;
-
-  CascadeFilter(FilterFirstT &filter_first, FilterSecondT &filter_second) {
-
-    this->filter_first = &filter_first;
-    this->filter_second = &filter_second;
-  }
-
-  template <Signal DataType, Signal OutType, Signal InstFreqType>
-  void compute(const DataType &data, OutType &out, InstFreqType *inst_freq) {
-    using T = typename OutType::SampleType;
-
-    filter_first->compute(data, out, inst_freq); // todo math 3th argument type?
-    auto mode_val = [&](size_t idx) { return data[idx] - out[idx]; };
-    auto mode_size = [&]() { return data.size(); };
-    ExpressionWrapper<T, size_t, decltype(mode_val), GENERAL::Nil,
-                      decltype(mode_size), false>
-        mode_expr(mode_val, mode_size);
-    GenericSignal<decltype(mode_expr), false> mode(mode_expr);
-
-    GenericSignal<SimpleVecWrapper<T>, true> buffer;
-
-    for (size_t i = 0; i < data.size(); i++) {
-      buffer.base->vec->push_back(0.);
-    }
-
-    filter_second->compute(mode, buffer, inst_freq);
-
-    for (int i = 0; i < data.size(); i++) {
-      out[i] = data[i] - (mode[i] - buffer[i]);
-    }
-  }
-};
-
-
-template<typename U, LocalFilteringType filtering_type>
-struct RecursiveFilter {
-  constexpr static bool is_filter = true;
-  GenericSignal<SimpleVecWrapper<U>, true> buffer1;
-  GenericSignal<SimpleVecWrapper<U>, true> buffer2;
-  using SignalT = decltype(buffer1);
-
-  double locality_coeff = 5.0;
-
-  double period_muller = 1.0;
-
-  LocalFilter<double, filtering_type> filter;
-
-  size_t max_iters = 3;
-
-  bool debug = true;
-
-  template <Signal DataT, Signal OutT, Signal ComputeBufferT>
-  void compute(const DataT &data, OutT &out, ComputeBufferT *compute_buffer) {
-    bool flag = true;
-    SignalT low_freq_mode;
-    SignalT low_freq_mode_phase;
-    SignalT high_freq_mode;
-    SignalT compute_buffer2;
-
-    for (auto i = 0; i < data.size(); i++) {
-      low_freq_mode.base->vec->push_back(data[i]);
-      //low_freq_mode_phase.base->vec->push_back(data[i]);
-      high_freq_mode.base->vec->push_back(data[i]);
-      compute_buffer2.base->vec->push_back(data[i]);
-    }
-
-    low_freq_mode.has_ovnership = true;
-    //low_freq_mode_phase.has_ovnership = true;
-    high_freq_mode.has_ovnership = true;
-    compute_buffer2.has_ovnership = true;
-
-    // filter.phase_computer = phase_computer;
-    filter.locality_coeff = locality_coeff;
-    filter.period_muller = period_muller;
-    filter.is_low_pass = true;
-    filter.compute(data, out, nullptr);
-    if (debug) {
-      std::cout << "filtered_data" << std::endl;
-      matplot::plot(*data.base->vec);
-      matplot::hold(true);
-      matplot::plot(*out.base->vec);
-      matplot::hold(false);
-      matplot::show();
-      // out.show(NP_DSP::ONE_D::PlottingKind::Simple);
-    }
-
-    for (auto i = 0; i < data.size(); i++) {
-      high_freq_mode[i] -= out[i];
-    }
-    if (debug) {
-      std::cout << "first iter high_freq_mode of signal" << std::endl;
-      high_freq_mode.show(NP_DSP::ONE_D::PlottingKind::Simple);
-    }
-    size_t iter_number = 1;
-    while (flag) {
-      if (iter_number >= max_iters) {
-        flag = false;
-        break;
-      }
-      iter_number++;
-      /*if constexpr (inst_freq_computer->is_phase_based()) {
-        phase_computer->compute(high_freq_mode, compute_buffer2,
-                                compute_buffer);
-        if (debug) {
-          std::cout << "phase of high_freq_mode" << std::endl;
-          compute_buffer2.show(NP_DSP::ONE_D::PlottingKind::Simple);
-        }
-        inst_freq_computer->compute(compute_buffer2, *compute_buffer,
-                                    &low_freq_mode);
-        if (debug) {
-          std::cout << "inst_freq of high_freq_mode" << std::endl;
-          compute_buffer->show(NP_DSP::ONE_D::PlottingKind::Simple);
-        }
-      } else {
-        inst_freq_computer->compute(high_freq_mode, *compute_buffer,
-                                    &low_freq_mode);
-        if (debug) {
-          std::cout << "inst_freq of high_freq_mode" << std::endl;
-          compute_buffer->show(NP_DSP::ONE_D::PlottingKind::Simple);
-        }
-      }*/
-      filter.compute(high_freq_mode, low_freq_mode, nullptr);
-      if (debug) {
-        std::cout << "low_freq_mode of high_freq_mode" << std::endl;
-        // low_freq_mode.show(NP_DSP::ONE_D::PlottingKind::Simple);
-        if (debug) {
-          std::cout << "filtered_data" << std::endl;
-          matplot::plot(*high_freq_mode.base->vec);
-          matplot::hold(true);
-          matplot::plot(*low_freq_mode.base->vec);
-          matplot::hold(false);
-          matplot::show();
-          // out.show(NP_DSP::ONE_D::PlottingKind::Simple);
-        }
-      }
-      for (int i = 0; i < data.size(); i++) {
-        high_freq_mode[i] -= low_freq_mode[i];
-      }
-      if (debug) {
-        std::cout << "high_freq_mode of high_freq_mode" << std::endl;
-        high_freq_mode.show(NP_DSP::ONE_D::PlottingKind::Simple);
-      }
-      /*phase_computer->compute(low_freq_mode, low_freq_mode_phase,
-                              compute_buffer);
-      if (debug) {
-        std::cout << "phase of low_freq_mode of high_freq_mode" << std::endl;
-        low_freq_mode_phase.show(NP_DSP::ONE_D::PlottingKind::Simple);
-      }*/
-      for (int i = 0; i < data.size(); i++) {
-        out[i] = out[i] + low_freq_mode[i];
-      }
-      if (debug) {
-        std::cout << "low_freq_mode_of Signal" << std::endl;
-        out.show(NP_DSP::ONE_D::PlottingKind::Simple);
-      }
-      //todo alternative handling
-      /*if (low_freq_mode_phase[data.size() - 1] < 6.28) {
-        flag = false;
-      }*/
-    }
-  }
-};
-
-/*
-template <typename U, PhaseComputer<U> PhaseComputerT,
-          InstFreqComputer<U> InstFreqComputerT>
-struct SincResLocalFilterWithResReq {
-  constexpr static bool is_filter = true;
-  GenericSignal<SimpleVecWrapper<U>, true> buffer1;
-  GenericSignal<SimpleVecWrapper<U>, true> buffer2;
-  using SignalT = decltype(buffer1);
-
-  double locality_coeff = 5.0;
-
-  double period_muller = 1.0;
-
-  PhaseComputerT *phase_computer;
-  InstFreqComputerT *inst_freq_computer;
-
-  LocalFilter<U, LocalFilteringType::SincResampled> filter;
-
-  size_t max_iters = 3;
-
-  bool debug = true;
-
-  template <Signal DataT, Signal OutT, Signal ComputeBufferT>
-  void compute(const DataT &data, OutT &out, ComputeBufferT *compute_buffer) {
-    bool flag = true;
-    SignalT low_freq_mode;
-    SignalT low_freq_mode_phase;
-    SignalT high_freq_mode;
-    SignalT compute_buffer2;
-
-    for (auto i = 0; i < data.size(); i++) {
-      low_freq_mode.base->vec->push_back(data[i]);
-      low_freq_mode_phase.base->vec->push_back(data[i]);
-      ;
-      high_freq_mode.base->vec->push_back(data[i]);
-      compute_buffer2.base->vec->push_back(data[i]);
-    }
-
-    low_freq_mode.has_ovnership = true;
-    low_freq_mode_phase.has_ovnership = true;
-    high_freq_mode.has_ovnership = true;
-    compute_buffer2.has_ovnership = true;
-
-    if constexpr (inst_freq_computer->is_phase_based()) {
-      phase_computer->compute(data, out, compute_buffer);
-      if (debug) {
-        // std::cout << "phase" << std::endl;
-        // out.show(NP_DSP::ONE_D::PlottingKind::Simple);
-      }
-      inst_freq_computer->compute(out, *compute_buffer, &compute_buffer2);
-      if (debug) {
-        // std::cout << "inst_freq" << std::endl;
-        // compute_buffer->show(NP_DSP::ONE_D::PlottingKind::Simple);
-      }
-    } else {
-      inst_freq_computer->compute(data, *compute_buffer, &compute_buffer2);
-      if (debug) {
-        // std::cout << "inst_freq" << std::endl;
-        // compute_buffer->show(NP_DSP::ONE_D::PlottingKind::Simple);
-      }
-    }
-
-    // filter.phase_computer = phase_computer;
-    filter.locality_coeff = locality_coeff;
-    filter.period_muller = period_muller;
-    filter.is_low_pass = true;
-    filter.compute(data, out, nullptr);
-    if (debug) {
-      std::cout << "filtered_data" << std::endl;
-      matplot::plot(*data.base->vec);
-      matplot::hold(true);
-      matplot::plot(*out.base->vec);
-      matplot::hold(false);
-      matplot::show();
-      // out.show(NP_DSP::ONE_D::PlottingKind::Simple);
-    }
-
-    for (auto i = 0; i < data.size(); i++) {
-      high_freq_mode[i] -= out[i];
-    }
-    if (debug) {
-      std::cout << "first iter high_freq_mode of signal" << std::endl;
-      high_freq_mode.show(NP_DSP::ONE_D::PlottingKind::Simple);
-    }
-    size_t iter_number = 1;
-    while (flag) {
-      if (iter_number >= max_iters) {
-        flag = false;
-        break;
-      }
-      iter_number++;
-      if constexpr (inst_freq_computer->is_phase_based()) {
-        phase_computer->compute(high_freq_mode, compute_buffer2,
-                                compute_buffer);
-        if (debug) {
-          std::cout << "phase of high_freq_mode" << std::endl;
-          compute_buffer2.show(NP_DSP::ONE_D::PlottingKind::Simple);
-        }
-        inst_freq_computer->compute(compute_buffer2, *compute_buffer,
-                                    &low_freq_mode);
-        if (debug) {
-          std::cout << "inst_freq of high_freq_mode" << std::endl;
-          compute_buffer->show(NP_DSP::ONE_D::PlottingKind::Simple);
-        }
-      } else {
-        inst_freq_computer->compute(high_freq_mode, *compute_buffer,
-                                    &low_freq_mode);
-        if (debug) {
-          std::cout << "inst_freq of high_freq_mode" << std::endl;
-          compute_buffer->show(NP_DSP::ONE_D::PlottingKind::Simple);
-        }
-      }
-      filter.compute(high_freq_mode, low_freq_mode, nullptr);
-      if (debug) {
-        std::cout << "low_freq_mode of high_freq_mode" << std::endl;
-        // low_freq_mode.show(NP_DSP::ONE_D::PlottingKind::Simple);
-        if (debug) {
-          std::cout << "filtered_data" << std::endl;
-          matplot::plot(*high_freq_mode.base->vec);
-          matplot::hold(true);
-          matplot::plot(*low_freq_mode.base->vec);
-          matplot::hold(false);
-          matplot::show();
-          // out.show(NP_DSP::ONE_D::PlottingKind::Simple);
-        }
-      }
-      for (int i = 0; i < data.size(); i++) {
-        high_freq_mode[i] -= low_freq_mode[i];
-      }
-      if (debug) {
-        std::cout << "high_freq_mode of high_freq_mode" << std::endl;
-        high_freq_mode.show(NP_DSP::ONE_D::PlottingKind::Simple);
-      }
-      phase_computer->compute(low_freq_mode, low_freq_mode_phase,
-                              compute_buffer);
-      if (debug) {
-        std::cout << "phase of low_freq_mode of high_freq_mode" << std::endl;
-        low_freq_mode_phase.show(NP_DSP::ONE_D::PlottingKind::Simple);
-      }
-      for (int i = 0; i < data.size(); i++) {
-        out[i] = out[i] + low_freq_mode[i];
-      }
-      if (debug) {
-        std::cout << "low_freq_mode_of Signal" << std::endl;
-        out.show(NP_DSP::ONE_D::PlottingKind::Simple);
-      }
-      if (low_freq_mode_phase[data.size() - 1] < 6.28) {
-        flag = false;
-      }
-    }
-  }
-};
-*/
-
 template <typename U, PhaseComputer<U> PhaseComputerT>
 struct SincResLocalFilterWithResReqV2 {
   constexpr static bool is_filter = true;
@@ -4129,7 +3784,8 @@ struct SincResLocalFilterWithResSolveNoneDeterminityLowFreqReq {
   PhaseComputerT *phase_computer;
   InstFreqComputerT *inst_freq_computer;
 
-  EXPERIMENTAL::SincResLocalFilterWithResSolveNoneDeterminityLowFreq<U, PhaseComputerT>
+  EXPERIMENTAL::SincResLocalFilterWithResSolveNoneDeterminityLowFreq<
+      U, PhaseComputerT>
       filter;
 
   size_t max_iters = 3;
@@ -4263,6 +3919,180 @@ struct SincResLocalFilterWithResSolveNoneDeterminityLowFreqReq {
       if (low_freq_mode_phase[data.size() - 1] < 6.28) {
         flag = false;
       }
+    }
+  }
+};
+} // namespace EXPERIMENTAL
+
+// каскад фильтров
+//  todo make for n filters
+template <typename U, Filter<U> FilterFirstT, Filter<U> FilterSecondT>
+struct CascadeFilter {
+  using AdditionalDataType = SignalPrototype<double>;
+  using IdxType = size_t;
+  constexpr static bool is_filter = true;
+
+  FilterFirstT *filter_first;
+  FilterSecondT *filter_second;
+
+  CascadeFilter(FilterFirstT &filter_first, FilterSecondT &filter_second) {
+
+    this->filter_first = &filter_first;
+    this->filter_second = &filter_second;
+  }
+
+  template <Signal DataType, Signal OutType, Signal InstFreqType>
+  void compute(const DataType &data, OutType &out, InstFreqType *inst_freq) {
+    using T = typename OutType::SampleType;
+
+    filter_first->compute(data, out, inst_freq); // todo math 3th argument type?
+    auto mode_val = [&](size_t idx) { return data[idx] - out[idx]; };
+    auto mode_size = [&]() { return data.size(); };
+    ExpressionWrapper<T, size_t, decltype(mode_val), GENERAL::Nil,
+                      decltype(mode_size), false>
+        mode_expr(mode_val, mode_size);
+    GenericSignal<decltype(mode_expr), false> mode(mode_expr);
+
+    GenericSignal<SimpleVecWrapper<T>, true> buffer;
+
+    for (size_t i = 0; i < data.size(); i++) {
+      buffer.base->vec->push_back(0.);
+    }
+
+    filter_second->compute(mode, buffer, inst_freq);
+
+    for (int i = 0; i < data.size(); i++) {
+      out[i] = data[i] - (mode[i] - buffer[i]);
+    }
+  }
+};
+
+// фильтра с рекурсивной очисткой мод, использует внешний класс фильтра
+template <typename U, LocalFilteringType filtering_type>
+struct RecursiveFilter {
+  constexpr static bool is_filter = true;
+  GenericSignal<SimpleVecWrapper<U>, true> buffer1;
+  GenericSignal<SimpleVecWrapper<U>, true> buffer2;
+  using SignalT = decltype(buffer1);
+
+  double locality_coeff = 5.0;
+
+  double period_muller = 1.0;
+
+  LocalFilter<double, filtering_type> filter;
+
+  size_t max_iters = 3;
+
+  bool debug = true;
+
+  template <Signal DataT, Signal OutT, Signal ComputeBufferT>
+  void compute(const DataT &data, OutT &out, ComputeBufferT *compute_buffer) {
+    bool flag = true;
+    SignalT low_freq_mode;
+    SignalT low_freq_mode_phase;
+    SignalT high_freq_mode;
+    SignalT compute_buffer2;
+
+    for (auto i = 0; i < data.size(); i++) {
+      low_freq_mode.base->vec->push_back(data[i]);
+      // low_freq_mode_phase.base->vec->push_back(data[i]);
+      high_freq_mode.base->vec->push_back(data[i]);
+      compute_buffer2.base->vec->push_back(data[i]);
+    }
+
+    low_freq_mode.has_ovnership = true;
+    // low_freq_mode_phase.has_ovnership = true;
+    high_freq_mode.has_ovnership = true;
+    compute_buffer2.has_ovnership = true;
+
+    // filter.phase_computer = phase_computer;
+    filter.locality_coeff = locality_coeff;
+    filter.period_muller = period_muller;
+    filter.is_low_pass = true;
+    filter.compute(data, out, nullptr);
+    if (debug) {
+      std::cout << "filtered_data" << std::endl;
+      matplot::plot(*data.base->vec);
+      matplot::hold(true);
+      matplot::plot(*out.base->vec);
+      matplot::hold(false);
+      matplot::show();
+      // out.show(NP_DSP::ONE_D::PlottingKind::Simple);
+    }
+
+    for (auto i = 0; i < data.size(); i++) {
+      high_freq_mode[i] -= out[i];
+    }
+    if (debug) {
+      std::cout << "first iter high_freq_mode of signal" << std::endl;
+      high_freq_mode.show(NP_DSP::ONE_D::PlottingKind::Simple);
+    }
+    size_t iter_number = 1;
+    while (flag) {
+      if (iter_number >= max_iters) {
+        flag = false;
+        break;
+      }
+      iter_number++;
+      /*if constexpr (inst_freq_computer->is_phase_based()) {
+        phase_computer->compute(high_freq_mode, compute_buffer2,
+                                compute_buffer);
+        if (debug) {
+          std::cout << "phase of high_freq_mode" << std::endl;
+          compute_buffer2.show(NP_DSP::ONE_D::PlottingKind::Simple);
+        }
+        inst_freq_computer->compute(compute_buffer2, *compute_buffer,
+                                    &low_freq_mode);
+        if (debug) {
+          std::cout << "inst_freq of high_freq_mode" << std::endl;
+          compute_buffer->show(NP_DSP::ONE_D::PlottingKind::Simple);
+        }
+      } else {
+        inst_freq_computer->compute(high_freq_mode, *compute_buffer,
+                                    &low_freq_mode);
+        if (debug) {
+          std::cout << "inst_freq of high_freq_mode" << std::endl;
+          compute_buffer->show(NP_DSP::ONE_D::PlottingKind::Simple);
+        }
+      }*/
+      filter.compute(high_freq_mode, low_freq_mode, nullptr);
+      if (debug) {
+        std::cout << "low_freq_mode of high_freq_mode" << std::endl;
+        // low_freq_mode.show(NP_DSP::ONE_D::PlottingKind::Simple);
+        if (debug) {
+          std::cout << "filtered_data" << std::endl;
+          matplot::plot(*high_freq_mode.base->vec);
+          matplot::hold(true);
+          matplot::plot(*low_freq_mode.base->vec);
+          matplot::hold(false);
+          matplot::show();
+          // out.show(NP_DSP::ONE_D::PlottingKind::Simple);
+        }
+      }
+      for (int i = 0; i < data.size(); i++) {
+        high_freq_mode[i] -= low_freq_mode[i];
+      }
+      if (debug) {
+        std::cout << "high_freq_mode of high_freq_mode" << std::endl;
+        high_freq_mode.show(NP_DSP::ONE_D::PlottingKind::Simple);
+      }
+      /*phase_computer->compute(low_freq_mode, low_freq_mode_phase,
+                              compute_buffer);
+      if (debug) {
+        std::cout << "phase of low_freq_mode of high_freq_mode" << std::endl;
+        low_freq_mode_phase.show(NP_DSP::ONE_D::PlottingKind::Simple);
+      }*/
+      for (int i = 0; i < data.size(); i++) {
+        out[i] = out[i] + low_freq_mode[i];
+      }
+      if (debug) {
+        std::cout << "low_freq_mode_of Signal" << std::endl;
+        out.show(NP_DSP::ONE_D::PlottingKind::Simple);
+      }
+      // todo alternative handling
+      /*if (low_freq_mode_phase[data.size() - 1] < 6.28) {
+        flag = false;
+      }*/
     }
   }
 };

@@ -16,7 +16,7 @@ int main(){
     IC(*data.base->vec);
     data.show(NP_DSP::ONE_D::PlottingKind::Simple);
 
-    NP_DSP::ONE_D::MODES_EXTRACTORS::instFreqNormSincExtractorReq extractor;
+    NP_DSP::ONE_D::MODES_EXTRACTORS::EXPERIMENTAL::instFreqNormSincExtractorReq extractor;
     extractor.locality_coeff = 5;
     extractor.period_muller = 1.15;
     extractor.max_iter_number_for_filter = 3;
