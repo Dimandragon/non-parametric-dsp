@@ -20,7 +20,7 @@ int main(){
 
     auto res_coeff = 2.0;
 
-    for(int i = 0; i < 1000; i++) {
+    for(int i = 0; i < 500; i++) {
         double idx = i;
         data.base->vec->push_back(50 + std::sin(idx / res_coeff) * 50 + std::sin(idx * 3.14 / res_coeff) * 50 + std::cos(idx / 1000.0 * 3.14 / res_coeff) * 20
             + std::cos(idx * idx / 100000.0 / res_coeff) + std::cos(idx * idx / 100000.0 / res_coeff) * 200);
@@ -36,11 +36,18 @@ int main(){
     }
     
 
-    NP_DSP::ONE_D::MODES_EXTRACTORS::MakimaBasedModeDecomposition extractor;
-    //extractor.locality_coeff = 3;
-    //extractor.period_muller = 1.5;
-    extractor.max_iter_number_for_filter = 5;
-    extractor.debug = true;
+    NP_DSP::ONE_D::MODES_EXTRACTORS::SOTAEMD extractor;
+    //extractor.locality_coeff = 5;
+    //extractor.period_muller = 1.2;
+    extractor.max_iter_number_for_filter = 1;
+    extractor.debug = false;
+    extractor.oversampling_ratio_for_ft_der = 10.0;
+    extractor.extremums_rotation_kind_e = NP_DSP::ONE_D::PHASE_SHIFTERS::RotateKind::Naive;
+    extractor.phase_shifts = {0};
+    for (int i = 0; i < 10; i++){
+        extractor.phase_shifts.push_back(0.1 * i * std::numbers::pi);
+    }
+    extractor.interpolation_kind = NP_DSP::ONE_D::FILTERS::InterpolationKind::RBFMultiquadricAuto;
 
     extractor.compute(data);
 
@@ -56,18 +63,32 @@ int main(){
         }
     }
 
-    matplot::plot(*extractor.inst_freqs[0]->base->vec);
+    /*matplot::plot(*extractor.inst_freqs[0]->base->vec);
     matplot::hold(true);
     
     for (int i = 1; i < extractor.getModesCount(); i++){
         matplot::plot(*extractor.inst_freqs[i]->base->vec);
     }
     matplot::hold(false);
-    matplot::show();
+    matplot::show();*/
 
     IC(extractor.modes.size());
 
-    spectrogramm(extractor, 1000, 200);
+    spectrogramm(extractor, 500, 200);
+
+    Spectrogramm spectrogramm;
+    spectrogramm.setAxis(500, 500);
+
+    
+    //spectrogramm.setBounds();
+
+    spectrogramm.loadFromExtractor(extractor);
+    spectrogramm.computeMatrix();
+    auto matrix1 = spectrogramm.matrix;
+    spectrogramm.plot();
+    spectrogramm.smoothMatrix(20, 1);
+    spectrogramm.plot();
+    IC(spectrogramm.computeRMSDistance(matrix1), spectrogramm.computeL2Distance(matrix1));
 
     return 0;
 }
