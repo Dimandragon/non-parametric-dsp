@@ -803,8 +803,8 @@ template <typename U> struct InterpolationBasedWithExternalPoints {
   PlotInterpKind plotting_kind;
   InterpolationKind kind;
 
-  int idw_layers = 15;
-  double idw_search_radius = 100;
+  int idw_layers = 255;
+  double idw_search_radius = 1000;
 
   double rbf_r_base = 20;
   double rbf_n_layers = 20;
@@ -1234,6 +1234,7 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
 
   template <Signal DataT, Signal OutT>
   void compute(const DataT &data, OutT &out, std::nullptr_t nil) {
+    auto phase_shifts_local_copy = phase_shifts;
     if constexpr (kind_e == LocalFilteringType::InterpolationExtremums) {
       InterpolationBasedWithExternalPoints<double> interpolation_filter;
 
@@ -1259,7 +1260,7 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
         std::vector<double> extremums_top_x;
         std::vector<double> extremums_bot_x;
 
-        std::vector<double> rotated_extremums;
+        std::vector<double> rotated_extremums = {};
 
         PHASE_SHIFTERS::ExtremumsRotator extremums_rotator;
         extremums_rotator.kind_e = extremums_rotation_kind_e;
@@ -1275,6 +1276,8 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
         // IC(extremums.size(), rotated_extremums.size());
 
         bool is_first_top = false;
+        //IC(data.size(), rotated_extremums.size(), phase_shifts[iter], extremums_rotator.rotated_extremums.size());
+        //IC(rotated_extremums[0]);
         if (data[rotated_extremums[0]] > data[rotated_extremums[1]]) {
           is_first_top = true;
         }
@@ -3971,9 +3974,9 @@ struct CascadeFilter {
 template <typename U, LocalFilteringType filtering_type>
 struct RecursiveFilter {
   constexpr static bool is_filter = true;
-  GenericSignal<SimpleVecWrapper<U>, true> buffer1;
-  GenericSignal<SimpleVecWrapper<U>, true> buffer2;
-  using SignalT = decltype(buffer1);
+  //GenericSignal<SimpleVecWrapper<U>, true> buffer1;
+  //GenericSignal<SimpleVecWrapper<U>, true> buffer2;
+  using SignalT = GenericSignal<SimpleVecWrapper<U>, true>;
 
   double locality_coeff = 5.0;
 
