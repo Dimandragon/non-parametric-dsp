@@ -888,6 +888,89 @@ struct ExtremumsBased {
         out[i] =
             UTILITY_MATH::linearInterpolate(left, right, static_cast<T>(i));
       }
+    } else if (kind == ExtremumsBasedComputeInstFreqKind::Makima) {
+      std::vector<std::pair<T, T>> points;
+      points.push_back({static_cast<T>(0),
+                        static_cast<T>(0.5 / (extremums[1] - extremums[0]))});
+      for (auto i = 0; i < extremums.size() - 1; i++) {
+        points.push_back(
+            {static_cast<T>((extremums[i + 1] + extremums[i]) / 2.0),
+             static_cast<T>(0.5 / (extremums[i + 1] - extremums[i]))});
+      }
+      points.push_back(
+          {static_cast<T>(data.size() - 1),
+           static_cast<T>(0.5 / (extremums[extremums.size() - 1] -
+                                 extremums[extremums.size() - 2]))});
+
+      std::vector<double> x_data{};
+      std::vector<double> y_data{};
+      for (int i = 0; i < points.size(); i++) {
+        x_data.push_back(points[i].first);
+        y_data.push_back(points[i].second);
+      }
+
+      APPROX::ModifiedAkimaBasedWithNoTrain<std::vector<double>> approximator;
+      approximator.loadData(x_data, y_data);
+
+      for (int i = 0; i < data.size(); i++) {
+        out[i] = approximator.compute(i);
+      }
+    } else if (kind == ExtremumsBasedComputeInstFreqKind::TPS) {
+      std::vector<std::pair<T, T>> points;
+      points.push_back({static_cast<T>(0),
+                        static_cast<T>(0.5 / (extremums[1] - extremums[0]))});
+      for (auto i = 0; i < extremums.size() - 1; i++) {
+        points.push_back(
+            {static_cast<T>((extremums[i + 1] + extremums[i]) / 2.0),
+             static_cast<T>(0.5 / (extremums[i + 1] - extremums[i]))});
+      }
+      points.push_back(
+          {static_cast<T>(data.size() - 1),
+           static_cast<T>(0.5 / (extremums[extremums.size() - 1] -
+                                 extremums[extremums.size() - 2]))});
+
+      std::vector<double> x_data{};
+      std::vector<double> y_data{};
+      for (int i = 0; i < points.size(); i++) {
+        x_data.push_back(points[i].first);
+        y_data.push_back(points[i].second);
+      }
+
+      APPROX::RBFBasedWithNoTrain approximator;
+      approximator.kind = APPROX::RBFKind::TPS;
+      approximator.loadData(x_data, y_data);
+
+      for (int i = 0; i < data.size(); i++) {
+        out[i] = approximator.compute(i);
+      }
+    } else if (kind == ExtremumsBasedComputeInstFreqKind::Multiquadric) {
+      std::vector<std::pair<T, T>> points;
+      points.push_back({static_cast<T>(0),
+                        static_cast<T>(0.5 / (extremums[1] - extremums[0]))});
+      for (auto i = 0; i < extremums.size() - 1; i++) {
+        points.push_back(
+            {static_cast<T>((extremums[i + 1] + extremums[i]) / 2.0),
+             static_cast<T>(0.5 / (extremums[i + 1] - extremums[i]))});
+      }
+      points.push_back(
+          {static_cast<T>(data.size() - 1),
+           static_cast<T>(0.5 / (extremums[extremums.size() - 1] -
+                                 extremums[extremums.size() - 2]))});
+
+      std::vector<double> x_data{};
+      std::vector<double> y_data{};
+      for (int i = 0; i < points.size(); i++) {
+        x_data.push_back(points[i].first);
+        y_data.push_back(points[i].second);
+      }
+
+      APPROX::RBFBasedWithNoTrain approximator;
+      approximator.kind = APPROX::RBFKind::MultiquadricAuto;
+      approximator.loadData(x_data, y_data);
+
+      for (int i = 0; i < data.size(); i++) {
+        out[i] = approximator.compute(i);
+      }
     } else {
       /*std::unreachable();*/
     }
@@ -940,11 +1023,11 @@ template <UTILITY_MATH::HTKind ht_kind> struct HilbertTransformBased {
     double const_term = 0.0;
     for (int i = 1; i < data.size(); i++) {
       if (out[i] + const_term < out[i - 1]) {
-        IC(const_term);
+        //IC(const_term);
         const_term += std::numbers::pi + const_term - out[i - 1];
         const_term += std::numbers::pi * 2.0;
-        IC(out[i - 1], out[i], std::numbers::pi + const_term - out[i - 1],
-           const_term);
+        //IC(out[i - 1], out[i], std::numbers::pi + const_term - out[i - 1],
+        //   const_term);
       }
       out[i] += const_term;
     }
@@ -993,11 +1076,11 @@ template <UTILITY_MATH::HTKind ht_kind> struct HilbertTransformBased {
     double const_term = 0.0;
     for (int i = 1; i < data.size(); i++) {
       if (out[i] + const_term < out[i - 1]) {
-        IC(const_term);
+        //IC(const_term);
         const_term += std::numbers::pi + const_term - out[i - 1];
         const_term += std::numbers::pi * 2.0;
-        IC(out[i - 1], out[i], std::numbers::pi + const_term - out[i - 1],
-           const_term);
+        //IC(out[i - 1], out[i], std::numbers::pi + const_term - out[i - 1],
+        //   const_term);
       }
       out[i] += const_term;
     }
@@ -1338,6 +1421,69 @@ struct PeriodAndExtremumsBasedExternal {
   }
 };
 
+enum class InstFreqComputingKind {ExtremumsBasedMakima, ExtremumsBasedTPS, 
+  ExtremumsBasedMultiquadric, HTBased};
+struct SOTAInstFreqComputer{
+  NP_DSP::ONE_D::INST_FREQ_COMPUTERS::HilbertTransformBased
+    <NP_DSP::ONE_D::UTILITY_MATH::HTKind::Mull> inst_freq_computer_ht;
+        
+  NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBased
+    <NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBasedComputeInstFreqKind::Makima>
+      inst_freq_computer1;
+
+  NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBased
+    <NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBasedComputeInstFreqKind::TPS>
+      inst_freq_computer2;
+
+  NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBased
+    <NP_DSP::ONE_D::INST_FREQ_COMPUTERS::ExtremumsBasedComputeInstFreqKind::Multiquadric>
+      inst_freq_computer3;
+
+  using AdditionalDataType = GENERAL::Nil;
+
+  constexpr static bool is_inst_freq_computer = true;
+
+  constexpr static bool is_phase_based() { return false; }
+
+  InstFreqComputingKind kind;
+
+  template <Signal DataType, Signal OutType>
+  void compute(const DataType &data, OutType &out, auto *nil){
+    switch (kind) {
+      case InstFreqComputingKind::ExtremumsBasedMakima:
+        inst_freq_computer1.compute(data, out, nil);
+        break;
+      case InstFreqComputingKind::ExtremumsBasedTPS:
+        inst_freq_computer2.compute(data, out, nil);
+        break;
+      case InstFreqComputingKind::ExtremumsBasedMultiquadric:
+        inst_freq_computer3.compute(data, out, nil);
+        break;
+      case InstFreqComputingKind::HTBased:
+        inst_freq_computer_ht.compute(data, out, nil);
+    }
+  }
+
+  template <Signal DataType, Signal OutType>
+  void compute(const DataType &data, OutType &out, std::nullptr_t nil){
+    switch (kind) {
+      case InstFreqComputingKind::ExtremumsBasedMakima:
+        inst_freq_computer1.compute(data, out, nil);
+        break;
+      case InstFreqComputingKind::ExtremumsBasedTPS:
+        inst_freq_computer2.compute(data, out, nil);
+        break;
+      case InstFreqComputingKind::ExtremumsBasedMultiquadric:
+        //data.show(NP_DSP::ONE_D::PlottingKind::Simple);
+        inst_freq_computer3.compute(data, out, nil);
+        //out.show(NP_DSP::ONE_D::PlottingKind::Simple);
+        break;
+      case InstFreqComputingKind::HTBased:
+        inst_freq_computer_ht.compute(data, out, nil);
+    }
+  }
+};
+
 // вычисление отображения, выравнивающего мгновенную частоту сигнала
 template <Signal DataT, Signal OutT, Signal InstFreqT>
 double instFreqNorm(const DataT &data, OutT &out, const InstFreqT &inst_freq,
@@ -1405,7 +1551,6 @@ double instFreqNorm(const DataT &data, OutT &out, const InstFreqT &inst_freq,
     } else if (min && !max) {
       freq_avg = freq_avg * (lim + lim) / min->second;
       if (freq_avg == 0.0) {
-        int i = *reinterpret_cast<int *>(0);
       }
     } else {
       if (max->first == min->first) {
@@ -1893,6 +2038,6 @@ void backInstFreqNormNew(DataT const &data, OutT &out,
     counter++;
   }
 
-  IC(counter, temp);
+  //IC(counter, temp);
 }
 } // namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS
