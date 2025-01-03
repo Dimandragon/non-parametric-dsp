@@ -12,7 +12,9 @@
 #include <numbers>
 #include <optional>
 #include <pchip.hpp>
+#include <random>
 #include <string>
+#include <utility>
 #include <utility_math.hpp>
 #include <vector>
 
@@ -1421,6 +1423,8 @@ template <typename T> struct PiecewiseCubicHermitePolynomialBasedWithNoTrain {
   std::optional<UTILITY_MATH::Linear> linear = {};
 
   void loadData(const T &x, const T &y) {
+    square_polynom = {};
+    linear = {};
     std::vector<double> x_(x.size());
     std::vector<double> y_(x.size());
     for (auto i = 0; i < x.size(); i++) {
@@ -1488,7 +1492,16 @@ template <typename T> struct PiecewiseCubicHermitePolynomialBasedWithNoTrain {
 
   template <typename IdxT> double compute(IdxT idx) {
     if (idx >= min_bound && idx <= max_bound) {
-      return (*spline)(idx);
+      if (spline) {
+        return (*spline)(idx);
+      } else if (square_polynom) {
+        return square_polynom->compute(idx);
+      } else if (linear) {
+        return linear->compute(idx);
+      } else {
+        return 0.0;
+        // todo error
+      }
     } else if (idx < min_bound) {
       int64_t _idx = static_cast<int64_t>(idx);
       double idx_ = idx - _idx;
@@ -1579,9 +1592,9 @@ template <typename T> struct PiecewiseCubicHermitePolynomialBasedWithNoTrain {
 // Аппроксимация методом взвешенных обратных расстояний
 // see https://www.alglib.net/inverse-distance-weighting/
 struct InverseDistanceWeightingBasedWithNoTrain {
-  alglib::idwbuilder builder;
-  alglib::idwmodel model;
-  alglib::idwreport report;
+  alglib::idwbuilder builder = alglib::idwbuilder();
+  alglib::idwmodel model = alglib::idwmodel();
+  alglib::idwreport report = alglib::idwreport();
 
   int layers = 15;
   double search_radius = 100;
@@ -1590,6 +1603,10 @@ struct InverseDistanceWeightingBasedWithNoTrain {
   int n_dims_y = 1;
 
   template <typename T> void loadData(const T &x, const T &y) {
+    model = alglib::idwmodel();
+    report = alglib::idwreport();
+    builder = alglib::idwbuilder();
+
     alglib::idwbuildercreate(1, 1, builder);
     alglib::idwbuildersetnlayers(builder, layers);
     alglib::idwbuildersetalgomstab(builder, search_radius);
@@ -1602,8 +1619,14 @@ struct InverseDistanceWeightingBasedWithNoTrain {
       data(i, 0) = x[i];
       data(i, 1) = y[i];
     }
-
-    alglib::idwbuildersetpoints(builder, data, N);
+    try{
+      alglib::idwbuildersetpoints(builder, data, N);
+    }
+    catch (const alglib::ap_error ap_error){
+      std::cout << ap_error.msg << std::endl;
+      std::unreachable();
+    }
+    
     alglib::idwfit(builder, model, report);
 
     n_dims_x = 1;
@@ -1611,6 +1634,10 @@ struct InverseDistanceWeightingBasedWithNoTrain {
   }
 
   template <typename T> void loadData(const T &y) {
+    model = alglib::idwmodel();
+    report = alglib::idwreport();
+    builder = alglib::idwbuilder();
+
     alglib::idwbuildercreate(1, 1, builder);
     alglib::idwbuildersetnlayers(builder, layers);
     alglib::idwbuildersetalgomstab(builder, search_radius);
@@ -1636,6 +1663,10 @@ struct InverseDistanceWeightingBasedWithNoTrain {
   template <typename U>
   void loadNDData(const U &x, const U &y, int n_dims_x, int n_dims_y,
                   int n_elems) {
+    model = alglib::idwmodel();
+    report = alglib::idwreport();
+    builder = alglib::idwbuilder();
+
     alglib::real_2d_array data;
     int n_dims = n_dims_x + n_dims_y;
     data.setlength(n_elems, n_dims);
@@ -1691,8 +1722,8 @@ struct InverseDistanceWeightingBasedWithNoTrain {
 enum class RBFKind { TPS, Gaussian, Bell, Multiquadric, MultiquadricAuto };
 enum class LinTermKind { None, Const, Linear };
 struct RBFBasedWithNoTrain {
-  alglib::rbfmodel model;
-  alglib::rbfreport report;
+  alglib::rbfmodel model = alglib::rbfmodel(); 
+  alglib::rbfreport report = alglib::rbfreport();
 
   LinTermKind linterm_kind = LinTermKind::Linear;
 
@@ -1732,7 +1763,7 @@ struct RBFBasedWithNoTrain {
   and two nodes are just 1 millimeter apart, you  may  remove  one  of  them
   without reducing model quality.
 
-  Support radius parameter is used to justify which points need removal, and
+  Support radius parameter is used to justify which points need removal, and = alglib::rbfreport()
   which do not. If two points are less than  SUPPORT_R*CUR_RADIUS  units  of
   distance apart, one of them is removed from the model. The larger  support
   radius  is, the faster model  construction  AND  evaluation are.  However,
@@ -1835,7 +1866,11 @@ struct RBFBasedWithNoTrain {
 
   RBFKind kind = RBFKind::TPS;
 
+  ~RBFBasedWithNoTrain(){}
+
   template <typename T> void loadData(const T &x, const T &y) {
+    model = alglib::rbfmodel();
+    report = alglib::rbfreport();
     alglib::rbfcreate(1, 1, model);
 
     if (linterm_kind == LinTermKind::Linear) {
@@ -1882,6 +1917,8 @@ struct RBFBasedWithNoTrain {
   }
 
   template <typename T> void loadData(const T &y) {
+    model = alglib::rbfmodel();
+    report = alglib::rbfreport();
     alglib::rbfcreate(1, 1, model);
 
     if (linterm_kind == LinTermKind::Linear) {
@@ -1932,6 +1969,8 @@ struct RBFBasedWithNoTrain {
   template <typename U>
   void loadNDData(const U &x, const U &y, int n_dims_x, int n_dims_y,
                   int n_elems) {
+    model = alglib::rbfmodel();
+    report = alglib::rbfreport();
     alglib::real_2d_array data;
     int n_dims = n_dims_x + n_dims_y;
     data.setlength(n_elems, n_dims);
