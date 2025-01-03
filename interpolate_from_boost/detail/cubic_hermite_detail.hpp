@@ -75,12 +75,26 @@ public:
     {
         if  (x < x_[0] || x > x_.back())
         {
-            std::ostringstream oss;
+            /*std::ostringstream oss;
             oss.precision(std::numeric_limits<Real>::digits10+3);
             oss << "Requested abscissa x = " << x << ", which is outside of allowed range ["
                 << x_[0] << ", " << x_.back() << "]";
-            throw std::domain_error(oss.str());
+            throw std::domain_error(oss.str());*/
         }
+        if (x < x_[0]){
+            Real result_mirror = (*this)(x_[0] + (x_[0] - x));
+            Real zero = (*this)(x_[0]);
+            Real d_mirror = result_mirror - zero;
+            return zero + d_mirror;
+        }
+        else if (x > x_.back()){
+            Real result_mirror =  (*this)(x_.back() - (x - x_.back()));
+            Real end = (*this)(x_.back());
+            Real d_mirror = end - result_mirror;
+            return end + d_mirror;
+        }
+
+
         // We need t := (x-x_k)/(x_{k+1}-x_k) \in [0,1) for this to work.
         // Sadly this neccessitates this loathesome check, otherwise we get t = 1 at x = xf.
         if (x == x_.back())
