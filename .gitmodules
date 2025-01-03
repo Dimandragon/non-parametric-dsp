@@ -11,3 +11,6 @@
 [submodule "json"]
 	path = json
 	url = git@github.com:nlohmann/json.git
+[submodule "FastGaussianBlur"]
+	path = FastGaussianBlur
+	url = git@github.com:bfraboni/FastGaussianBlur.git
