@@ -108,7 +108,7 @@ template <FTDerivativeKind kind_e> struct FTBased {
         // Rieze
       }
       if constexpr (kind_e == FTDerivativeKind::Weyl) {
-        std::complex<double> muller = {0.0, i};
+        std::complex<double> muller = {0.0, static_cast<double>(i)};
         muller = std::pow(muller, -power);
         // IC(spectre[i], muller, muller*spectre[i]);
         spectre[i] = spectre[i] * muller;
