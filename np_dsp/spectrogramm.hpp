@@ -8,6 +8,8 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+#include <gaussian.hpp>
+
 
 void SpectrePlot(std::function<double(double, double)> data, size_t x_size,
                  size_t y_size, double x_step, double y_step) {
@@ -114,8 +116,10 @@ enum class AmplModifier { sqrt, log2, loge, log10, linear };
 
 // класс спектрограммы, получаеморй из экстрактора
 struct Spectrogramm {
-  std::vector<std::tuple<double, double, double>> points;
-  std::vector<std::vector<double>> matrix;
+private:
+  std::vector<std::tuple<double, double, double>> points = {};
+  std::vector<std::vector<double>> matrix = {};
+public:
 
   int x_size = 500;
   int y_size = 500;
@@ -126,7 +130,11 @@ struct Spectrogramm {
   double max_time;
   double max_freq;
 
-  AmplModifier modifier = AmplModifier::sqrt;
+  AmplModifier modifier = AmplModifier::linear;
+
+  const std::vector<std::vector<double>> & getMatrix(){
+    return matrix;
+  }
 
   void loadPoints(const std::vector<double> &time,
                   const std::vector<double> &freqency,
@@ -153,7 +161,10 @@ struct Spectrogramm {
   }
 
   void computeMatrix() {
-    matrix.clear();
+    if (matrix.size() != 0){
+      matrix.clear();
+    }
+    
     for (int i = 0; i < x_size; i++) {
       matrix.push_back({});
       for (int j = 0; j < y_size; j++) {
@@ -172,10 +183,16 @@ struct Spectrogramm {
       int freq_idx = freq / freq_size_ratio;
 
       if (time_idx >= x_size) {
-        time_idx -= 1;
+        time_idx = x_size - 1;
       }
       if (freq_idx >= y_size) {
-        freq_idx -= 1;
+        freq_idx = y_size - 1;
+      }
+      if (time_idx < 0) {
+        time_idx = 0;
+      }
+      if (freq_idx < 0) {
+        freq_idx = 0;
       }
 
       switch (modifier) {
@@ -199,7 +216,7 @@ struct Spectrogramm {
     }
   }
 
-  void computeRBFGaussianMatrix(double radius = 10.0, double n_layers = 20,
+  void computeRBFBluredMatrix(double radius = 10.0, double n_layers = 20,
                                 double lambda_n_s = 0.0,
                                 double search_r = 1.0) {
     std::vector<std::vector<double>> x_for_load;
@@ -213,7 +230,7 @@ struct Spectrogramm {
     for (int i = 0; i < matrix.size(); i++) {
       for (int j = 0; j < matrix[i].size(); j++) {
         if (matrix[i][j] != 0.0) {
-          x_for_load.push_back({i, j});
+          x_for_load.push_back({static_cast<double>(i), static_cast<double>(j)});
           y_for_load.push_back({matrix[i][j]});
         }
       }
@@ -232,7 +249,7 @@ struct Spectrogramm {
 
     for (int i = 0; i < matrix.size(); i++) {
       for (int j = 0; j < matrix[i].size(); j++) {
-        std::vector<double> idx = {i, j};
+        std::vector<double> idx = {static_cast<double>(i), static_cast<double>(j)};
         std::vector<double> value = {0.0};
         approximator.compute<decltype(idx), decltype(value)>(idx, value);
         matrix[i][j] = value[0];
@@ -243,7 +260,7 @@ struct Spectrogramm {
   void loadFromExtractor(auto const &extractor) {
     points.clear();
     auto max_time = extractor.getDataSize();
-    auto max_freq = 0.5 * max_time;
+    auto max_freq = 0.6 * max_time;
     setAxis(extractor.getDataSize(), extractor.getDataSize());
     setBounds(max_time, max_freq);
     for (int i = 0; i < extractor.getModesCount(); i++) {
@@ -337,7 +354,31 @@ struct Spectrogramm {
         }
       }
     }
-    std::swap(matrix, matrix_new);
+    for(int i = 0; i < matrix.size(); i++){
+      for(int j = 0; j < matrix[i].size(); j++){
+        matrix[i][j] = matrix_new[i][j];
+      }
+    }
+    //std::swap(matrix, matrix_new);
+  }
+
+  void smoothMatrixFast(double smoothing_sigma, int passes){
+    std::vector<std::vector<double>> matrix_new;
+
+    for (int i = 0; i < matrix.size(); i++) {
+      matrix_new.push_back({});
+      for (int j = 0; j < matrix[i].size(); j++) {
+        matrix_new[i].push_back(0.0);
+      }
+    }
+
+    gaussianBlur<decltype(matrix)>(matrix, matrix_new, smoothing_sigma, passes);
+
+    for(int i = 0; i < matrix.size(); i++){
+      for(int j = 0; j < matrix[i].size(); j++){
+        matrix[i][j] = matrix_new[i][j];
+      }
+    }
   }
 
   // x_size == y_size

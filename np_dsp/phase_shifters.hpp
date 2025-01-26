@@ -86,7 +86,7 @@ template <typename DerivatorT> struct FracDiffsBasedSimple {
 
   template <typename DataT, typename OutT>
   void compute(const DataT &data, OutT &out, std::nullptr_t nil) {
-    IC(phase_shift);
+    //IC(phase_shift);
     derivator->power = phase_shift / std::numbers::pi * 2.0;
     derivator->compute(data, out, nullptr);
     UTILITY_MATH::normalizeSTD(data, out);
@@ -130,7 +130,6 @@ template <typename PhaseShifterT> struct WithOversampling {
 
 enum class RotateKind {
   Naive,
-  HTBased,
   NaiveFTFracDir,
 };
 
@@ -138,8 +137,8 @@ enum class RotateKind {
 // поддерживает типы из RotateKind enum
 struct ExtremumsRotator {
   double oversampling_ratio_for_ft_der = 1.0;
-  std::vector<double> extremums;
-  std::vector<double> rotated_extremums;
+  std::vector<double> extremums = {};
+  std::vector<double> rotated_extremums = {};
   double phase_shift;
   RotateKind kind_e;
 
@@ -178,9 +177,9 @@ struct ExtremumsRotator {
       rotated_extremums.clear();
       UTILITY_MATH::computeExtremums<decltype(data), double>(
           data, extremums, UTILITY_MATH::ExtremumsKind::Simple);
-      IC(extremums.size());
+      //IC(extremums.size());
       rotateExtremums(phase_shift);
-      IC(extremums.size(), rotated_extremums.size());
+      //IC(extremums.size(), rotated_extremums.size());
     } else if (kind_e == RotateKind::NaiveFTFracDir) {
       GenericSignal<SimpleVecWrapper<double>, true> out;
       DERIVATORS::FTBased<DERIVATORS::FTDerivativeKind::Naive> ft_based1;
@@ -199,6 +198,7 @@ struct ExtremumsRotator {
 
       UTILITY_MATH::computeExtremums<decltype(out), double>(
           out, rotated_extremums, UTILITY_MATH::ExtremumsKind::Simple);
+      //IC(rotated_extremums.size());
     }
   }
 };

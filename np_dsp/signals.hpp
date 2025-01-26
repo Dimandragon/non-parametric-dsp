@@ -154,7 +154,7 @@ template <SignalBase BaseT, bool is_writable_b> struct GenericSignal {
   GenericSignal(Base &base_o) { base = &base_o; }
 
   GenericSignal() {
-    base = new Base;
+    base = new Base();
     has_ovnership = true;
   }
 
