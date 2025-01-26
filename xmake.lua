@@ -46,10 +46,10 @@ target("matplot++_external")
     add_includedirs("matplotplusplus/build/local/source/matplot", {public = true})
     add_includedirs("matplotplusplus/source", {public = true})
     add_includedirs("matplotplusplus/source/3rd_party/nodesoup", {public = true})
-    
+
     --add_headerfiles("$(projectdir)/matplotplusplus/build/local/_deps/glad-build/include/glad/glad.h", {public = true})
     --add_headerfiles("$(projectdir)/matplotplusplus/build/local/_deps/glad-build/include/KHR/khrplatform.h", {public = true})
-    
+
 
     add_links("$(projectdir)/matplotplusplus/build/local/source/matplot/libmatplot.a", {public = true})
     --add_links("$(projectdir)/matplotplusplus/build/local/source/matplot/libmatplot_opengl.a", {public = true})
@@ -71,17 +71,18 @@ target("non-parametric_dsp")
     set_kind("headeronly")
     --add_headerfiles("src/npdsp_concepts.hpp", "src/signals.hpp", "src/derivators.hpp",
     --        "src/integrators.hpp", "src/filters.hpp", "src/inst_freq_computers.hpp",
-    --        "src/utility_math.hpp", "src/approximators.hpp", "src/config.hpp", 
+    --        "src/utility_math.hpp", "src/approximators.hpp", "src/config.hpp",
     --        "src/phase_computers.hpp", "src/inst_ampl_computers.hpp"
     --        ,"src/modes_extractors.hpp", {public = true}
     --        )
     add_includedirs("np_dsp", {public = true})
-
+    add_deps("magic_enum")
     add_deps("pocketfft")
     add_deps("matplot++_external")
     add_deps("icecream")
     add_deps("boost_interpolate")
     add_deps("alglib")
+    add_deps("gaussian_blur")
     add_cxxflags("--fp_mode=strict")
 
 target("signals-tokenizer")
@@ -426,21 +427,21 @@ target("test_plotting_for_spectrogramm")
     add_deps("matplot++_external")
     add_deps("non-parametric_dsp")
     add_deps("icecream")
-    
+
 target("spectrogramm_example")
     set_kind("binary")
     add_files("examples/spectrogramms/spectrogramm.cpp")
     add_deps("matplot++_external")
     add_deps("non-parametric_dsp")
     add_deps("icecream")
-    
+
 target("inst_freq_norm_once_example")
     set_kind("binary")
     add_files("examples/inst_freq_computers/inst_freq_norm_once.cpp")
     add_deps("matplot++_external")
     add_deps("non-parametric_dsp")
     add_deps("icecream")
-    
+
 target("inst_freq_norm_extremums_based")
     set_kind("binary")
     add_files("examples/inst_freq_computers/inst_freq_norm_extremums_based.cpp")
@@ -488,4 +489,12 @@ target("idw_approx")
     add_files("examples/approximators/idw.cpp")
     add_deps("matplot++_external")
     add_deps("non-parametric_dsp")
+    add_deps("icecream")
+
+target("linearty_test")
+    set_kind("binary")
+    add_files("examples/spectrogramms/linearty_test.cpp")
+    add_deps("matplot++_external")
+    add_deps("non-parametric_dsp")
+    add_deps("json")
     add_deps("icecream")

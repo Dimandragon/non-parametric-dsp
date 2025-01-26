@@ -49,18 +49,21 @@ int main(){
     }
     extractor.interpolation_kind = NP_DSP::ONE_D::FILTERS::InterpolationKind::RBFMultiquadricAuto;
 
+    //extractor.debug = true;
     extractor.compute(data);
 
     for(int i = 0; i < extractor.modes.size(); i++) {
         std::stringstream path;
         path << "/home/dmitry/projects/non-parametric-dsp/examples/spectrogramms/mode" << i << ".png";
 
-        if (save){
-            extractor.modes[i]->show(NP_DSP::ONE_D::PlottingKind::Simple, path.str());
-        }
-        else{
+        //if (save){
+        //    extractor.modes[i]->show(NP_DSP::ONE_D::PlottingKind::Simple, path.str());
+        //}
+        //else{
             extractor.modes[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
-        }
+            extractor.inst_freqs[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
+            extractor.inst_ampls[i]->show(NP_DSP::ONE_D::PlottingKind::Simple);
+        // /}
     }
 
     /*matplot::plot(*extractor.inst_freqs[0]->base->vec);
@@ -74,21 +77,24 @@ int main(){
 
     IC(extractor.modes.size());
 
-    spectrogramm(extractor, 500, 200);
+    //spectrogramm(extractor, 500, 200);
+    
 
     Spectrogramm spectrogramm;
     spectrogramm.setAxis(500, 500);
+    spectrogramm.modifier = AmplModifier::log2;
 
     
     //spectrogramm.setBounds();
 
     spectrogramm.loadFromExtractor(extractor);
     spectrogramm.computeMatrix();
-    auto matrix1 = spectrogramm.matrix;
+    // auto matrix1 = spectrogramm.matrix;
     spectrogramm.plot();
-    spectrogramm.smoothMatrix(20, 1);
+    //spectrogramm.smoothMatrix(20, 1);
+    spectrogramm.smoothMatrixFast(20, 10);
     spectrogramm.plot();
-    IC(spectrogramm.computeRMSDistance(matrix1), spectrogramm.computeL2Distance(matrix1));
+    //IC(spectrogramm.computeRMSDistance(*matrix1), spectrogramm.computeL2Distance(*matrix1));
 
     return 0;
 }
