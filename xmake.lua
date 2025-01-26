@@ -13,6 +13,10 @@ target("icecream")
     --add_includedirs("$(projectdir)/icecream-cpp", {public = true})
     add_includedirs("$(projectdir)/my_icecream", {public = true})
 
+target("magic_enum")
+    set_kind("headeronly")
+    add_includedirs("$(projectdir)/magic_enum/include/magic_enum", {public = true})
+    add_includedirs("$(projectdir)/magic_enum/include", {public = true})
 
 task("build matplot++")
     on_run(function()
