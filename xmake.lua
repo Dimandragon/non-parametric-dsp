@@ -21,6 +21,11 @@ target("magic_enum")
 target("json")
     set_kind("headeronly")
     add_includedirs("$(projectdir)/json/single_include", {public = true})
+
+target("gaussian_blur")
+    set_kind("headeronly")
+    add_includedirs("$(projectdir)/FastGaussianBlur", {public = true})
+
 task("build matplot++")
     on_run(function()
         fl = os.exec("sh matplot_build.sh")
