@@ -1,7 +1,76 @@
 #pragma once
-
-#include <concepts>
 #include <cstddef>
+
+namespace NP_DSP::GENERAL {
+  struct Nil {};
+  template <typename T> struct Tag {
+    using type = T;
+  };
+}
+
+namespace NP_DSP::ONE_D{
+  enum class SignalKind { Monotone, Stohastic, Harmonic, Smooth, Universal };
+  enum class PlottingKind { Simple, Interpolate, Spectre };
+
+  template <typename T> class SignalBasePrototype {
+  public:
+    using SampleType = T;
+    using IdxType = size_t;
+    constexpr static bool is_signal_base = true;
+
+    virtual T &operator[](size_t idx) = 0;
+    virtual T operator[](size_t idx) const = 0;
+    virtual size_t size() const = 0;
+    SignalBasePrototype() {}
+    virtual ~SignalBasePrototype() {}
+    void operator=(const SignalBasePrototype &) = delete;
+    // SignalBasePrototype(const SignalBasePrototype &
+    // other){
+      //std::unreachable();
+  };
+
+  template <typename T> class SignalPrototype {
+  public:
+    constexpr static bool is_signal = true;
+    using IdxType = size_t;
+    using SampleType = T;
+    using Base = SignalBasePrototype<T>;
+
+    SignalBasePrototype<T> *base = nullptr;
+    bool has_ovnership = false;
+
+    T &operator[](size_t idx) { return (*base)[idx]; }
+
+    T operator[](size_t idx) const {
+      return (*static_cast<const SignalBasePrototype<T> *>(base))[idx];
+    }
+
+    size_t size() const { return base->size(); }
+
+    // template<std::convertible_to<SignalBase<T>> BaseT>
+    SignalPrototype() {}
+
+    template <typename BaseT> SignalPrototype(GENERAL::Tag<BaseT>) {
+      base = new BaseT;
+      base = new BaseT;
+      has_ovnership = true;
+    }
+
+    SignalPrototype(SignalBasePrototype<T> *base) { this->base = base; }
+
+    virtual ~SignalPrototype() {
+      if (has_ovnership)
+        delete base;
+    }
+    void operator=(const SignalPrototype &) = delete;
+
+    virtual T interpolate(double idx, SignalKind kind) const = 0;
+  };
+
+}
+/*
+#include <concepts>
+
 //#include <matplot/matplot.h>
 #include <optional>
 #include <string>
@@ -11,12 +80,6 @@
 
 namespace NP_DSP {
 namespace GENERAL {
-
-struct Nil {};
-
-template <typename T> struct Tag {
-  using type = T;
-};
 
 template <typename T> constexpr bool is_any_type = true;
 
@@ -59,9 +122,6 @@ constexpr bool is_signal_base_second = requires(T signal, T::IdxType idx) {
 
 template <typename T>
 concept SignalBase = is_signal_base_second<T> || is_signal_base_first<T>;
-
-enum class SignalKind { Monotone, Stohastic, Harmonic, Smooth, Universal };
-enum class PlottingKind { Simple, Interpolate, Spectre };
 
 template <typename T>
 constexpr bool is_signal = requires(
@@ -114,7 +174,9 @@ public:
   virtual ~SignalBasePrototype() {}
   void operator=(const SignalBasePrototype &) = delete;
   // SignalBasePrototype(const SignalBasePrototype &
-  // other){/*std::unreachable();*/}
+  // other){
+    //std::unreachable();
+  }
 };
 
 template <typename T> class SignalPrototype {
@@ -127,15 +189,12 @@ public:
   SignalBasePrototype<T> *base = nullptr;
   bool has_ovnership = false;
 
-  /*inline*/
   T &operator[](size_t idx) { return (*base)[idx]; }
 
-  /*inline*/
   T operator[](size_t idx) const {
     return (*static_cast<const SignalBasePrototype<T> *>(base))[idx];
   }
 
-  /*inline*/
   size_t size() const { return base->size(); }
 
   // template<std::convertible_to<SignalBase<T>> BaseT>
@@ -311,4 +370,4 @@ constexpr bool is_signal_approximator =
 } // namespace ONE_D
 } // namespace NP_DSP
 
-// static_assert(is_signal<vec_wrapper<int>, int, int>);
+// static_assert(is_signal<vec_wrapper<int>, int, int>);*/

@@ -2,19 +2,15 @@
 
 #include "approximators.hpp"
 #include "inst_freq_computers.hpp"
-//#include "matplot/freestanding/plot.h"
 #include <cstddef>
-//#include <icecream.hpp>
 
 #include <algorithm>
 #include <complex>
-#include <concepts>
 #include <inst_ampl_computers.hpp>
 #include <integrators.hpp>
 #include <npdsp_concepts.hpp>
 #include <phase_shifters.hpp>
 #include <signals.hpp>
-#include <string>
 #include <utility>
 #include <utility_math.hpp>
 #include <vector>
@@ -25,7 +21,7 @@ enum class InstFreqKind { Average, Double };
 enum class MaskKind { Gaussian, Triangle, Flat };
 
 // генерация сверточного фильтра
-template <Signal MaskT>
+template <typename MaskT>
 int generateConvMask(double inst_freq, double period_muller, MaskT &mask,
                      MaskKind kind, double pow) {
   // todo
@@ -176,7 +172,7 @@ enum class FilteringType {
 };
 // нестационарная фильтрация на основе внешнего параметра мгновенной частоты
 // поддерживаеттипы из FilteringType enum
-template <typename U, FilteringType filtering_type_k, Integrator<U> IntegratorT,
+template <typename U, FilteringType filtering_type_k, typename IntegratorT,
           InstFreqKind inst_freq_k>
 struct InstFreqBased {
   using MaskT = GenericSignal<SimpleVecWrapper<std::complex<double>>, true>;
@@ -195,7 +191,7 @@ struct InstFreqBased {
   InstFreqBased() {}
 
   // data and inst freq must be not monotone
-  template <Signal DataType, Signal OutType, typename InstFreqType>
+  template <typename DataType, typename OutType, typename InstFreqType>
   void compute(const DataType &data, OutType &out,
                const InstFreqType *inst_freq) {
     using T = typename OutType::SampleType;
@@ -589,7 +585,7 @@ template <typename U, MonoInstFreqFilteringType kind_e> struct MonoFreqFilters {
 
   double freq; // only for sinc padded now
 
-  template <Signal DataType, Signal OutType, Signal BufferType>
+  template <typename DataType, typename OutType, typename BufferType>
   void compute(const DataType &data, OutType &out, const BufferType &buffer) {
     if constexpr (kind_e == MonoInstFreqFilteringType::Conv) {
       // buffer is conv mask
@@ -647,7 +643,7 @@ template <typename U, MonoInstFreqFilteringType kind_e> struct MonoFreqFilters {
     }
   }
 
-  template <Signal DataType, Signal OutType>
+  template <typename DataType, typename OutType>
   void computeSincWithMonoFreq(const DataType &data, OutType &out, int freq_idx,
                                bool low_pass) {
     if constexpr (kind_e == MonoInstFreqFilteringType::Sinc ||
@@ -1200,7 +1196,7 @@ template <typename U, LocalFilteringType kind_e> struct LocalFilter {
       PHASE_SHIFTERS::RotateKind::NaiveFTFracDir;
   double oversampling_ratio_for_ft_der = 1.0;
 
-  template <Signal DataT, Signal OutT>
+  template <typename DataT, typename OutT>
   void compute(const DataT &data, OutT &out, std::nullptr_t nil) {
     auto phase_shifts_local_copy = phase_shifts;
     if constexpr (kind_e == LocalFilteringType::InterpolationExtremums) {
@@ -1484,8 +1480,8 @@ struct Normalizator {
   // todo
 };
 
-template <typename U, InstAmplComputer<U> InstAmplComputerT, Signal InstFreqT,
-          Filter<U> FilterT, Integrator<U> IntegratorT, Derivator<U> DerivatorT>
+template <typename U, typename InstAmplComputerT, typename InstFreqT,
+          typename FilterT, typename IntegratorT, typename DerivatorT>
 struct InstAmplNormalizatorNaiveDer {
   InstAmplComputerT *inst_ampl_computer;
 
@@ -1504,7 +1500,7 @@ struct InstAmplNormalizatorNaiveDer {
     this->filter = &filter;
   }
 
-  template <Signal DataT, Signal OutT, Signal ComputerBufferT>
+  template <typename DataT, typename OutT, typename ComputerBufferT>
   void compute(const DataT &data, OutT &out, ComputerBufferT &compute_buffer) {
     if constexpr (InstAmplComputerT::is_used_external_inst_freq) {
       inst_ampl_computer->inst_freq = inst_freq;
@@ -1544,7 +1540,7 @@ struct InstAmplNormalizatorNaiveDer {
     }
   }
 
-  template <Signal DataT, Signal OutT, Signal ComputerBufferT>
+  template <typename DataT, typename OutT, typename ComputerBufferT>
   double computeGetAvg(const DataT &data, OutT &out,
                        ComputerBufferT &compute_buffer) {
     auto size = data.size();
@@ -1582,7 +1578,7 @@ struct InstAmplNormalizatorNaiveDer {
     return avg;
   }
 
-  template <Signal DataT, Signal OutT, Signal ComputerBufferT>
+  template <typename DataT, typename OutT, typename ComputerBufferT>
   void computeWithExternalAvg(const DataT &data, OutT &out,
                               ComputerBufferT &compute_buffer, double avg) {
     auto size = data.size();
@@ -1612,8 +1608,8 @@ struct InstAmplNormalizatorNaiveDer {
   }
 };
 
-template <typename U, InstAmplComputer<U> InstAmplComputerT, typename InstFreqT,
-          Filter<U> FilterT>
+template <typename U, typename InstAmplComputerT, typename InstFreqT,
+          typename FilterT>
 struct InstAmplNormalizatorNaive {
   InstAmplComputerT *inst_ampl_computer;
 
@@ -1630,7 +1626,7 @@ struct InstAmplNormalizatorNaive {
     this->filter = &filter;
   }
 
-  template <Signal DataT, Signal OutT, Signal ComputerBufferT>
+  template <typename DataT, typename OutT, typename ComputerBufferT>
   void compute(const DataT &data, OutT &out, ComputerBufferT &compute_buffer) {
     if constexpr (InstAmplComputerT::is_used_external_inst_freq) {
       inst_ampl_computer->inst_freq = inst_freq;
@@ -1666,7 +1662,7 @@ struct InstAmplNormalizatorNaive {
     }
   }
 
-  template <Signal DataT, Signal OutT, Signal ComputerBufferT>
+  template <typename DataT, typename OutT, typename ComputerBufferT>
   double computeGetAvg(const DataT &data, OutT &out,
                        ComputerBufferT &compute_buffer) {
     auto size = data.size();
@@ -1701,7 +1697,7 @@ struct InstAmplNormalizatorNaive {
     return avg;
   }
 
-  template <Signal DataT, Signal OutT, Signal ComputerBufferT>
+  template <typename DataT, typename OutT, typename ComputerBufferT>
   void computeWithExternalAvg(const DataT &data, OutT &out,
                               ComputerBufferT &compute_buffer, double avg) {
     auto size = data.size();
@@ -1729,7 +1725,7 @@ struct InstAmplNormalizatorNaive {
 };
 
 template <typename U, typename InstAmplNormalizer, typename InstFreqT,
-          Filter<U> FilterT>
+          typename FilterT>
 struct InstAmplNormalizatorNaiveReqursive {
   InstAmplNormalizer *single_normalizer;
   InstFreqT *inst_freq;
@@ -1746,7 +1742,7 @@ struct InstAmplNormalizatorNaiveReqursive {
     this->filter = &filter;
   }
 
-  template <Signal DataT, Signal OutT, Signal ComputeBufferT>
+  template <typename DataT, typename OutT, typename ComputeBufferT>
   void compute(const DataT &data, OutT &out, ComputeBufferT *compute_buffer) {
     if (mode.size() != data.size()) {
       mode.base->vec->clear();
@@ -1771,8 +1767,8 @@ struct InstAmplNormalizatorNaiveReqursive {
 };
 
 // InstAmplDer
-template <typename U, Integrator<U> Integrator, Derivator<U> Derivator,
-          InstAmplComputer<U> InstAmplComputerT>
+template <typename U, typename Integrator, typename Derivator,
+          typename InstAmplComputerT>
 struct InstAmplNormalizator {
   InstAmplComputerT *inst_ampl_computer;
   Derivator *derivator;
@@ -1789,7 +1785,7 @@ struct InstAmplNormalizator {
     this->integrator = &integrator;
   }
 
-  template <Signal DataT, Signal OutT, Signal ComputerBufferT>
+  template <typename DataT, typename OutT, typename ComputerBufferT>
   void compute(const DataT &data, OutT &out, ComputerBufferT &compute_buffer) {
     auto size = data.size();
     if (buffer2.size() != size) {
@@ -1821,9 +1817,9 @@ struct InstAmplNormalizator {
   }
 };
 
-template <typename U, Integrator<U> Integrator, Derivator<U> Derivator,
-          InstAmplComputer<U> InstAmplComputerT, bool is_double,
-          bool remove_big_der_before_derivating, Signal InstFreqT>
+template <typename U, typename Integrator, typename Derivator,
+          typename InstAmplComputerT, bool is_double,
+          bool remove_big_der_before_derivating, typename InstFreqT>
 struct InstAmplNormalizatorUsingInstFreq {
   InstAmplComputerT *inst_ampl_computer;
   Derivator *derivator;
@@ -1842,7 +1838,7 @@ struct InstAmplNormalizatorUsingInstFreq {
     this->integrator = &integrator;
   }
 
-  template <Signal DataT, Signal OutT, Signal ComputerBufferT>
+  template <typename DataT, typename OutT, typename ComputerBufferT>
   void compute(const DataT &data, OutT &out, ComputerBufferT &compute_buffer) {
     auto size = data.size();
     if (buffer2.size() != size) {
@@ -1907,10 +1903,10 @@ struct InstAmplNormalizatorUsingInstFreq {
 };
 
 // оптимизация мгновенной частоты для фильтрации
-template <typename U, Filter<U> FilterT, InstFreqComputer<U> InstFreqComputerT,
-          PhaseComputer<U> PhaseComputerT,
-          InstFreqComputer<U> InstFreqComputerForModeT,
-          PhaseComputer<U> PhaseComputerForModeT>
+template <typename U, typename FilterT, typename InstFreqComputerT,
+          typename PhaseComputerT,
+          typename InstFreqComputerForModeT,
+          typename PhaseComputerForModeT>
 struct OptPeriodBasedFilter {
   using AdditionalDataType = SignalPrototype<U>;
 
@@ -1952,7 +1948,7 @@ struct OptPeriodBasedFilter {
     // delete inst_freq_buffer2;
   }
 
-  template <Signal DataType, Signal OutType, Signal InstFreqType>
+  template <typename DataType, typename OutType, typename InstFreqType>
   bool computeIter(const DataType &data, OutType &out,
                    InstFreqType &inst_freq_buffer) {
     using T = typename OutType::SampleType;
@@ -2078,7 +2074,7 @@ struct OptPeriodBasedFilter {
     return true;
   }
 
-  template <Signal DataType, Signal OutType, Signal InstFreqType>
+  template <typename DataType, typename OutType, typename InstFreqType>
   void compute(const DataType &data, OutType &out,
                InstFreqType *inst_freq_buffer) {
     iter_number = 0;
@@ -2153,10 +2149,10 @@ struct OptPeriodBasedFilter {
 };
 
 // оптимизация мгновенной частоты для фильтрации
-template <typename U, Filter<U> FilterT, InstFreqComputer<U> InstFreqComputerT,
-          PhaseComputer<U> PhaseComputerT,
-          InstFreqComputer<U> InstFreqComputerForModeT,
-          PhaseComputer<U> PhaseComputerForModeT>
+template <typename U, typename FilterT, typename InstFreqComputerT,
+          typename PhaseComputerT,
+          typename InstFreqComputerForModeT,
+          typename PhaseComputerForModeT>
 struct OptPeriodBasedFilterInstFreqDouble {
   using AdditionalDataType = SignalPrototype<U>;
 
@@ -2196,7 +2192,7 @@ struct OptPeriodBasedFilterInstFreqDouble {
 
   ~OptPeriodBasedFilterInstFreqDouble() {}
 
-  template <Signal DataType, Signal OutType, Signal InstFreqType>
+  template <typename DataType, typename OutType, typename InstFreqType>
   bool computeIter(const DataType &data, OutType &out,
                    InstFreqType &inst_freq_buffer) {
     using T = typename OutType::SampleType;
@@ -2321,7 +2317,7 @@ struct OptPeriodBasedFilterInstFreqDouble {
     return true;
   }
 
-  template <Signal DataType, Signal OutType, Signal InstFreqType>
+  template <typename DataType, typename OutType, typename InstFreqType>
   void compute(const DataType &data, OutType &out,
                InstFreqType *inst_freq_buffer) {
     iter_number = 0;
@@ -2406,12 +2402,12 @@ struct OptPeriodBasedFilterInstFreqDouble {
 };
 
 // фильтр с рекуривной нормализацией мгновенной амплитуды
-template <typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT,
-          Filter<U> FilterT, InstFreqComputer<U> InstFreqComputerT,
-          PhaseComputer<U> PhaseComputerT,
-          InstAmplComputer<U> InstAmplComputerT,
-          InstFreqComputer<U> InstFreqComputerForModeT,
-          PhaseComputer<U> PhaseComputerForModeT>
+template <typename U, typename IntegratorT, typename DerivatorT,
+          typename FilterT, typename InstFreqComputerT,
+          typename PhaseComputerT,
+          typename InstAmplComputerT,
+          typename InstFreqComputerForModeT,
+          typename PhaseComputerForModeT>
 struct RecursiveFilterInstAmplChanges {
   using AdditionalDataType = SignalPrototype<U>;
 
@@ -2472,7 +2468,7 @@ struct RecursiveFilterInstAmplChanges {
 
   ~RecursiveFilterInstAmplChanges() { delete inst_ampl_normalizer; }
 
-  template <Signal DataType, Signal OutType, Signal OldResultType>
+  template <typename DataType, typename OutType, typename OldResultType>
   bool computeIter(const DataType &data, OutType &result_buffer,
                    OldResultType *computer_buffer) {
     iter_number++;
@@ -2600,7 +2596,7 @@ struct RecursiveFilterInstAmplChanges {
     return true;
   }
 
-  template <Signal DataType, Signal OutType, Signal InstFreqT>
+  template <typename DataType, typename OutType, typename InstFreqT>
   void compute(const DataType &data, OutType &result_buffer,
                InstFreqT *inst_freq) {
     iter_number = 0;
@@ -2632,8 +2628,8 @@ struct RecursiveFilterInstAmplChanges {
 };
 
 // todo description
-template <typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT,
-          Filter<U> FilterT, InstAmplComputer<U> InstAmplComputerT>
+template <typename U, typename IntegratorT, typename DerivatorT,
+          typename FilterT, typename InstAmplComputerT>
 struct RecursiveFilterInstAmplChangesWithConstInstFreq {
   using AdditionalDataType = SignalPrototype<U>;
 
@@ -2684,7 +2680,7 @@ struct RecursiveFilterInstAmplChangesWithConstInstFreq {
     delete inst_ampl_normalizer;
   }
 
-  template <Signal DataType, Signal OutType, Signal OldResultType>
+  template <typename DataType, typename OutType, typename OldResultType>
   bool computeIter(const DataType &data, OutType &result_buffer,
                    OldResultType *computer_buffer) {
     iter_number++;
@@ -2808,7 +2804,7 @@ struct RecursiveFilterInstAmplChangesWithConstInstFreq {
     return true;
   }
 
-  template <Signal DataType, Signal OutType, Signal InstFreqT>
+  template <typename DataType, typename OutType, typename InstFreqT>
   void compute(const DataType &data, OutType &result_buffer,
                InstFreqT *inst_freq) {
     iter_number = 0;
@@ -2839,8 +2835,8 @@ struct RecursiveFilterInstAmplChangesWithConstInstFreq {
   }
 };
 
-template <typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT,
-          Filter<U> FilterT, InstAmplComputer<U> InstAmplComputerT>
+template <typename U, typename IntegratorT, typename DerivatorT,
+          typename FilterT, typename InstAmplComputerT>
 struct RecursiveFilterInstAmplChangesWithConstInstFreqDouble {
   // todo
   using AdditionalDataType = SignalPrototype<U>;
@@ -2895,7 +2891,7 @@ struct RecursiveFilterInstAmplChangesWithConstInstFreqDouble {
     delete inst_ampl_normalizer;
   }
 
-  template <Signal DataType, Signal OutType, Signal OldResultType>
+  template <typename DataType, typename OutType, typename OldResultType>
   bool computeIter(const DataType &data, OutType &result_buffer,
                    OldResultType *computer_buffer) {
     iter_number++;
@@ -2994,7 +2990,7 @@ struct RecursiveFilterInstAmplChangesWithConstInstFreqDouble {
     return true;
   }
 
-  template <Signal DataType, Signal OutType, Signal InstFreqT>
+  template <typename DataType, typename OutType, typename InstFreqT>
   void compute(const DataType &data, OutType &result_buffer,
                InstFreqT *inst_freq) {
     iter_number = 0;
@@ -3034,10 +3030,10 @@ struct RecursiveFilterInstAmplChangesWithConstInstFreqDouble {
   }
 };
 
-template <typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT,
-          Filter<U> FilterT, PhaseComputer<U> PhaseComputerT,
-          InstAmplComputer<U> InstAmplComputerT,
-          InstFreqComputer<U> InstFreqComputerForModeT>
+template <typename U, typename IntegratorT, typename DerivatorT,
+          typename FilterT, typename PhaseComputerT,
+          typename InstAmplComputerT,
+          typename InstFreqComputerForModeT>
 struct RecursiveFilterInstAmplChangesDouble {
   using AdditionalDataType = SignalPrototype<U>;
 
@@ -3091,7 +3087,7 @@ struct RecursiveFilterInstAmplChangesDouble {
 
   ~RecursiveFilterInstAmplChangesDouble() { delete inst_ampl_normalizer; }
 
-  template <Signal DataType, Signal OutType, Signal OldResultType>
+  template <typename DataType, typename OutType, typename OldResultType>
   bool computeIter(const DataType &data, OutType &result_buffer,
                    OldResultType *computer_buffer) {
     iter_number++;
@@ -3217,7 +3213,7 @@ struct RecursiveFilterInstAmplChangesDouble {
     return true;
   }
 
-  template <Signal DataType, Signal OutType, Signal InstFreqT>
+  template <typename DataType, typename OutType, typename InstFreqT>
   void compute(const DataType &data, OutType &result_buffer,
                InstFreqT *inst_freq) {
     iter_number = 0;
@@ -3257,7 +3253,7 @@ struct RecursiveFilterInstAmplChangesDouble {
   }
 };
 
-template <typename U, PhaseComputer<U> PhaseComputerT>
+template <typename U, typename PhaseComputerT>
 struct SincResLocalFilterWithResSolveNoneDeterminityLowFreq {
   constexpr static bool is_filter = true;
   GenericSignal<SimpleVecWrapper<U>, true> buffer1;
@@ -3274,7 +3270,7 @@ struct SincResLocalFilterWithResSolveNoneDeterminityLowFreq {
   PhaseComputerT *phase_computer;
   MonoFreqFilters<U, MonoInstFreqFilteringType::SincPaddedFIR> filter;
 
-  template <Signal DataT, Signal OutT, Signal InstFreqT>
+  template <typename DataT, typename OutT, typename InstFreqT>
   void compute(const DataT &data, OutT &out, InstFreqT *inst_freq) {
     period_muller = 1.0;
 
@@ -3346,7 +3342,7 @@ struct SincResLocalFilterWithResSolveNoneDeterminityLowFreq {
 
   }
 };
-template <typename U, PhaseComputer<U> PhaseComputerT>
+template <typename U, typename PhaseComputerT>
 struct SincResLocalFilterWithResReqV2 {
   constexpr static bool is_filter = true;
   GenericSignal<SimpleVecWrapper<U>, true> buffer1;
@@ -3365,7 +3361,7 @@ struct SincResLocalFilterWithResReqV2 {
 
   bool debug = true;
 
-  template <Signal DataT, Signal OutT, Signal ComputeBufferT>
+  template <typename DataT, typename OutT, typename ComputeBufferT>
   void compute(const DataT &data, OutT &out, ComputeBufferT *compute_buffer) {
     bool flag = true;
     SignalT low_freq_mode;
@@ -3428,8 +3424,8 @@ struct SincResLocalFilterWithResReqV2 {
   }
 };
 
-template <typename U, PhaseComputer<U> PhaseComputerT,
-          InstFreqComputer<U> InstFreqComputerT>
+template <typename U, typename PhaseComputerT,
+          typename InstFreqComputerT>
 struct SincResLocalFilterWithResSolveNoneDeterminityLowFreqReq {
   constexpr static bool is_filter = true;
   GenericSignal<SimpleVecWrapper<U>, true> buffer1;
@@ -3451,7 +3447,7 @@ struct SincResLocalFilterWithResSolveNoneDeterminityLowFreqReq {
 
   bool debug = true;
 
-  template <Signal DataT, Signal OutT, Signal ComputeBufferT>
+  template <typename DataT, typename OutT, typename ComputeBufferT>
   void compute(const DataT &data, OutT &out, ComputeBufferT *compute_buffer) {
     bool flag = true;
     SignalT low_freq_mode;
@@ -3523,7 +3519,7 @@ struct SincResLocalFilterWithResSolveNoneDeterminityLowFreqReq {
 
 // каскад фильтров
 //  todo make for n filters
-template <typename U, Filter<U> FilterFirstT, Filter<U> FilterSecondT>
+template <typename U, typename FilterFirstT, typename FilterSecondT>
 struct CascadeFilter {
   using AdditionalDataType = SignalPrototype<double>;
   using IdxType = size_t;
@@ -3538,7 +3534,7 @@ struct CascadeFilter {
     this->filter_second = &filter_second;
   }
 
-  template <Signal DataType, Signal OutType, Signal InstFreqType>
+  template <typename DataType, typename OutType, typename InstFreqType>
   void compute(const DataType &data, OutType &out, InstFreqType *inst_freq) {
     using T = typename OutType::SampleType;
 
@@ -3582,7 +3578,7 @@ struct RecursiveFilter {
 
   bool debug = true;
 
-  template <Signal DataT, Signal OutT, Signal ComputeBufferT>
+  template <typename DataT, typename OutT, typename ComputeBufferT>
   void compute(const DataT &data, OutT &out, ComputeBufferT *compute_buffer) {
     bool flag = true;
     SignalT low_freq_mode;

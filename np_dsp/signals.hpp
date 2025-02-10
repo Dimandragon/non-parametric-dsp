@@ -51,7 +51,6 @@ template <typename T> struct SimpleVecWrapper {
   inline std::size_t size() const { return vec->size(); }
 };
 
-static_assert(is_signal_base_first<SimpleVecWrapper<int>>);
 
 // враппер-интерфейс для сигнала над лямбдой/функцией
 template <typename T, typename IdxT, typename DataValExpr, typename DataRefExpr,
@@ -142,7 +141,7 @@ struct ExpressionWrapper<T, IdxT, DataValExpr, GENERAL::Nil, SizeExpr, false> {
 // enum class SignalKind {Monotone, Stohastic, Harmonic, Smooth};
 
 // класс сигнала с использованием внешнего враппера-интерфейса
-template <SignalBase BaseT, bool is_writable_b> struct GenericSignal {
+template <typename BaseT, bool is_writable_b> struct GenericSignal {
   bool has_ovnership = false;
   constexpr static bool is_writable = is_writable_b;
   constexpr static bool is_signal = true;
@@ -425,7 +424,7 @@ template <SignalBase BaseT, bool is_writable_b> struct GenericSignal {
 };
 
 // класс readonly сигнала с использованием внешнего враппера-интерфейса
-template <SignalBase BaseT> struct GenericSignal<BaseT, false> {
+template <typename BaseT> struct GenericSignal<BaseT, false> {
   bool has_ovnership = false;
   constexpr static bool is_writable = false;
   constexpr static bool is_signal = true;
@@ -703,7 +702,7 @@ template <SignalBase BaseT> struct GenericSignal<BaseT, false> {
   }
 };
 
-template <SignalBase BaseT> struct GenericSignalRExpr {
+template <typename BaseT> struct GenericSignalRExpr {
   bool has_ovnership = false;
   constexpr static bool is_writable = false;
   constexpr static bool is_signal = true;
@@ -954,7 +953,6 @@ template <SignalBase BaseT> struct GenericSignalRExpr {
   }
 };
 
-static_assert(is_signal<GenericSignal<SimpleVecWrapper<int>, true>>);
 } // namespace NP_DSP::ONE_D
 
 namespace NP_DSP::GENERAL {}

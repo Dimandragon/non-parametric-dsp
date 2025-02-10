@@ -18,7 +18,7 @@ namespace NP_DSP::ONE_D::INST_FREQ_COMPUTERS {
 using InstFreqDerivativeBasedKind =
     PHASE_COMPUTERS::InstFreqDerivativeBasedKind;
 
-template <typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT,
+template <typename U, typename IntegratorT, typename DerivatorT,
           InstFreqDerivativeBasedKind kind>
 struct DerivativeBased {
   using AdditionalDataType = SignalPrototype<U>;
@@ -41,7 +41,7 @@ struct DerivativeBased {
 
   constexpr static bool is_phase_based() { return false; }
 
-  template <Signal DataType, Signal OutType, Signal ComputerNufferType>
+  template <typename DataType, typename OutType, typename ComputerNufferType>
   void compute(const DataType &data, OutType &out,
                ComputerNufferType *computer_buffer) {
     using T = typename OutType::SampleType;
@@ -155,7 +155,7 @@ double findPeriodDistanceAverage(const PhaseT &phase, double idx, double pad) {
 }
 
 // мгновенная частота, вычисляемая на основе внешней функции фазы
-template <typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT,
+template <typename U, typename IntegratorT, typename DerivatorT,
           InstFreqDerivativeBasedKind kind>
 struct ComputedOnPhase {
   using AdditionalDataType = GENERAL::Nil;
@@ -183,12 +183,12 @@ struct ComputedOnPhase {
     derivator = derivator_o;
   }
 
-  template <Signal DataType, Signal OutType>
+  template <typename DataType, typename OutType>
   void compute(const DataType &phase, OutType &out, auto *nil) {
     compute(phase, out, nullptr);
   }
 
-  template <Signal DataType, Signal OutType>
+  template <typename DataType, typename OutType>
   void compute(const DataType &phase, OutType &out, std::nullptr_t nil) {
     using T = typename OutType::SampleType;
     // nil may bee nullptr
@@ -306,8 +306,8 @@ struct ComputedOnPhase {
 
 // использования PhaseComputer для вычисления фазы для дальнейшего вычисления
 // мгновенной частоты
-template <typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT,
-          InstFreqDerivativeBasedKind kind, PhaseComputer<U> PhaseComputerT>
+template <typename U, typename IntegratorT, typename DerivatorT,
+          InstFreqDerivativeBasedKind kind, typename PhaseComputerT>
 struct PhaseBased {
   using AdditionalDataType = SignalPrototype<U>;
 
@@ -338,7 +338,7 @@ struct PhaseBased {
     phase_computer = &phase_computer_o;
   }
 
-  template <Signal DataType, Signal OutType, Signal ComputerBufferType>
+  template <typename DataType, typename OutType, typename ComputerBufferType>
   void compute(const DataType &data, OutType &out,
                ComputerBufferType *computer_buffer) {
     using T = typename OutType::SampleType;
@@ -467,7 +467,7 @@ struct PhaseBased {
   }
 };
 
-template <typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT,
+template <typename U, typename IntegratorT, typename DerivatorT,
           InstFreqDerivativeBasedKind kind>
 struct DerivativeBasedWithExternalOptParametr {
   using AdditionalDataType = SignalPrototype<U>;
@@ -491,7 +491,7 @@ struct DerivativeBasedWithExternalOptParametr {
 
   constexpr static bool is_phase_based() { return false; }
 
-  template <Signal DataType, Signal OutType, Signal ComputerBufferType>
+  template <typename DataType, typename OutType, typename ComputerBufferType>
   void compute(const DataType &data, OutType &out,
                ComputerBufferType *computer_buffer) {
     using T = typename OutType::SampleType;
@@ -607,7 +607,7 @@ struct ExtremumsBased {
 
   constexpr static bool is_phase_based() { return false; }
 
-  template <Signal DataType, Signal OutType>
+  template <typename DataType, typename OutType>
   void compute(const DataType &data, OutType &out, auto *nil) {
     using T = typename OutType::SampleType;
     std::vector<int> extremums;
@@ -767,7 +767,7 @@ struct ExtremumsBased {
     }
   }
 
-  template <Signal DataType, Signal OutType>
+  template <typename DataType, typename OutType>
   void compute(const DataType &data, OutType &out, std::nullptr_t nil) {
     using T = typename OutType::SampleType;
     std::vector<int> extremums;
@@ -940,7 +940,7 @@ template <UTILITY_MATH::HTKind ht_kind> struct HilbertTransformBased {
 
   UTILITY_MATH::HTKind kind = ht_kind;
 
-  template <Signal DataT, Signal OutT>
+  template <typename DataT, typename OutT>
   void compute(const DataT &data, OutT &out, std::nullptr_t nil) {
     if (buffer.size() != data.size()) {
       buffer.clear();
@@ -986,7 +986,7 @@ template <UTILITY_MATH::HTKind ht_kind> struct HilbertTransformBased {
     out[data.size() - 1] = out[data.size() - 2];
   }
 
-  template <Signal DataT, Signal OutT, typename NilT>
+  template <typename DataT, typename OutT, typename NilT>
   void compute(const DataT &data, OutT &out, NilT *nil) {
     if (buffer.size() != data.size()) {
       buffer.clear();
@@ -1033,7 +1033,7 @@ template <UTILITY_MATH::HTKind ht_kind> struct HilbertTransformBased {
   }
 };
 
-template <typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT,
+template <typename U, typename IntegratorT, typename DerivatorT,
           InstFreqDerivativeBasedKind kind>
 struct PeriodAndExtremumsBased {
   using AdditionalDataType = GENERAL::Nil;
@@ -1062,7 +1062,7 @@ struct PeriodAndExtremumsBased {
 
   constexpr static bool is_phase_based() { return false; }
 
-  template <Signal DataType, Signal OutType>
+  template <typename DataType, typename OutType>
   void compute(const DataType &data, OutType &out, auto *nil) {
     // compute extremums inst freq ->
     // compute period based with external opt parameter equal const 1
@@ -1153,7 +1153,7 @@ struct PeriodAndExtremumsBased {
     approximator.train();
   }
 
-  template <Signal DataType, Signal OutType>
+  template <typename DataType, typename OutType>
   void compute(const DataType &data, OutType &out, std::nullptr_t *nil) {
     // compute extremums inst freq ->
     // compute period based with external opt parameter equal const 1
@@ -1245,7 +1245,7 @@ struct PeriodAndExtremumsBased {
   }
 };
 
-template <typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT,
+template <typename U, typename IntegratorT, typename DerivatorT,
           InstFreqDerivativeBasedKind kind>
 struct PeriodAndExtremumsBasedExternal {
   using AdditionalDataType = SignalPrototype<U>;
@@ -1273,7 +1273,7 @@ struct PeriodAndExtremumsBasedExternal {
 
   constexpr static bool is_phase_based() { return false; }
 
-  template <Signal DataType, Signal OutType, Signal ComputerBufferType>
+  template <typename DataType, typename OutType, typename ComputerBufferType>
   void compute(const DataType &data, OutType &out,
                ComputerBufferType *computer_buffer) {
     // compute extremums inst freq ->
@@ -1383,7 +1383,7 @@ struct SOTAInstFreqComputer{
 
   InstFreqComputingKind kind;
 
-  template <Signal DataType, Signal OutType>
+  template <typename DataType, typename OutType>
   void compute(const DataType &data, OutType &out, auto *nil){
     switch (kind) {
       case InstFreqComputingKind::ExtremumsBasedMakima:
@@ -1400,7 +1400,7 @@ struct SOTAInstFreqComputer{
     }
   }
 
-  template <Signal DataType, Signal OutType>
+  template <typename DataType, typename OutType>
   void compute(const DataType &data, OutType &out, std::nullptr_t nil){
     switch (kind) {
       case InstFreqComputingKind::ExtremumsBasedMakima:
@@ -1419,7 +1419,7 @@ struct SOTAInstFreqComputer{
 };
 
 // вычисление отображения, выравнивающего мгновенную частоту сигнала
-template <Signal DataT, Signal OutT, Signal InstFreqT>
+template <typename DataT, typename OutT, typename InstFreqT>
 double instFreqNorm(const DataT &data, OutT &out, const InstFreqT &inst_freq,
                     std::vector<double> &freq_conv,
                     std::vector<double> &freq_conv_image) {
@@ -1551,7 +1551,7 @@ double instFreqNorm(const DataT &data, OutT &out, const InstFreqT &inst_freq,
 
 // вычисление однократного отображения, выравнивающего мгновенную частоту
 // сигнала
-template <Signal DataT, Signal OutT, Signal InstFreqT>
+template <typename DataT, typename OutT, typename InstFreqT>
 double instFreqNormOnce(const DataT &data, OutT &out,
                         const InstFreqT &inst_freq,
                         std::vector<double> &freq_conv) {
@@ -1587,7 +1587,7 @@ double instFreqNormOnce(const DataT &data, OutT &out,
 }
 
 // обращение однократного отображения, выравнивающего мгновенную частоту сигнала
-template <Signal DataT, Signal OutT>
+template <typename DataT, typename OutT>
 void backInstFreqNormOnce(DataT const &data, OutT &out,
                           std::vector<double> &freq_conv) {
   size_t counter = 0;
@@ -1616,7 +1616,7 @@ void backInstFreqNormOnce(DataT const &data, OutT &out,
 
 // вычисление упрощенного устойчивого отображения, выравнивающего мгновенную
 // частоту сигнала рекоммендуется к использованию
-template <Signal DataT, Signal OutT>
+template <typename DataT, typename OutT>
 double instFreqNormExtrBased(
     DataT const &data, OutT &out,
     APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain<std::vector<double>>
@@ -1658,7 +1658,7 @@ double instFreqNormExtrBased(
 
 // обращение упрощенного устойчивого отображения, выравнивающего мгновенную
 // частоту сигнала рекоммендуется к использованию
-template <Signal DataT, Signal OutT>
+template <typename DataT, typename OutT>
 double instFreqNormComputedOnExtremums(
     DataT const &data, OutT &out,
     APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain<std::vector<double>>
@@ -1696,7 +1696,7 @@ double instFreqNormComputedOnExtremums(
   return period;
 }
 
-template <Signal DataT, Signal OutT>
+template <typename DataT, typename OutT>
 void backInstFreqNormExtrBased(
     DataT const &data, OutT &out,
     APPROX::PiecewiseCubicHermitePolynomialBasedWithNoTrain<std::vector<double>>
@@ -1722,7 +1722,7 @@ void backInstFreqNormExtrBased(
   }
 }
 
-template <Signal DataT, Signal OutT, Signal InstFreqT>
+template <typename DataT, typename OutT, typename InstFreqT>
 double instFreqNormDouble(const DataT &data, const OutT &out,
                           const InstFreqT &inst_freq,
                           std::vector<double> &freq_conv,
@@ -1787,7 +1787,7 @@ double instFreqNormDouble(const DataT &data, const OutT &out,
   return freq_avg;
 }
 
-template <Signal DataT, Signal OutT>
+template <typename DataT, typename OutT>
 void backInstFreqNorm(DataT const &data, OutT &out,
                       std::vector<double> &freq_conv) {
   double temp = 0.0;
@@ -1849,7 +1849,7 @@ void backInstFreqNorm(DataT const &data, OutT &out,
   }
 }
 
-template <Signal DataT, Signal OutT>
+template <typename DataT, typename OutT>
 void backInstFreqNormNew(DataT const &data, OutT &out,
                          std::vector<double> &freq_conv) {
   // todo

@@ -10,7 +10,7 @@
 namespace NP_DSP::ONE_D::INST_AMPL_COMPUTERS {
 
 // мгновенная амплитуда по Тихонову
-template <typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT,
+template <typename U, typename IntegratorT, typename DerivatorT,
           INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind kind_e>
 struct DerivativeBasedUsingExternalInstFreq {
   using AdditionalDataType = SignalPrototype<U>;
@@ -59,7 +59,7 @@ public:
 
   DerivativeBasedUsingExternalInstFreq() { this->inst_freq = NULL; }
 
-  template <Signal DataType, Signal OutType, Signal ComputeBufferType>
+  template <typename DataType, typename OutType, typename ComputeBufferType>
   void compute(const DataType &data, OutType &out,
                ComputeBufferType *computer_buffer) {
     for (int i = 0; i < out.size(); i++) {
@@ -105,8 +105,8 @@ public:
 };
 
 // мгновенная амплитуда по Тихонову
-template <typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT,
-          InstFreqComputer<U> InstFreqComputerType,
+template <typename U, typename IntegratorT, typename DerivatorT,
+          typename InstFreqComputerType,
           INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind kind_e>
 struct DerivativeAndInstFreqBased {
   using AdditionalDataType = SignalPrototype<U>;
@@ -146,7 +146,7 @@ public:
     // todo
   }
 
-  template <Signal DataType, Signal OutType, Signal ComputerBufferType>
+  template <typename DataType, typename OutType, typename ComputerBufferType>
   void compute(const DataType &data, OutType &out,
                ComputerBufferType *computer_buffer) {
     using T = typename OutType::SampleType;
@@ -242,7 +242,7 @@ template <UTILITY_MATH::HTKind ht_kind> struct HilbertTransformBased {
 
   UTILITY_MATH::HTKind kind = ht_kind;
 
-  template <Signal DataT, Signal OutT>
+  template <typename DataT, typename OutT>
   void compute(const DataT &data, OutT &out, std::nullptr_t nil) {
     if (buffer.size() != data.size()) {
       buffer.clear();
@@ -273,7 +273,7 @@ template <UTILITY_MATH::HTKind ht_kind> struct HilbertTransformBased {
     }
   }
 
-  template <Signal DataT, Signal OutT, typename NilT>
+  template <typename DataT, typename OutT, typename NilT>
   void compute(const DataT &data, OutT &out, NilT *nil) {
     if (buffer.size() != data.size()) {
       buffer.clear();

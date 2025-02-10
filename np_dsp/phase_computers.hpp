@@ -23,7 +23,7 @@ enum class InstFreqDerivativeBasedKind {
 using namespace UTILITY_MATH;
 
 // вычисление фазы сигнала по Тихонову
-template <typename U, ExtremumsKind kind_e, Derivator<U> DerivatorT>
+template <typename U, ExtremumsKind kind_e, typename DerivatorT>
 struct ExtremumsBasedNonOpt {
   using AdditionalDataType = GENERAL::Nil;
 
@@ -31,7 +31,7 @@ struct ExtremumsBasedNonOpt {
 
   constexpr static bool is_phase_computer = true;
 
-  template <Signal DataType, Signal OutType>
+  template <typename DataType, typename OutType>
   void compute(const DataType &data, OutType &out, auto *nil) {
     if constexpr (kind_e == ExtremumsKind::DerArctg) {
       derivator.compute(data, out, nullptr);
@@ -101,7 +101,7 @@ struct ExtremumsBasedNonOpt {
                                                           support[i + 1], j);
   }
 
-  template <Signal DataType, Signal OutType>
+  template <typename DataType, typename OutType>
   void compute(const DataType &data, OutType &out, std::nullptr_t *nil) {
     auto size_data = data.size();
     auto out_size = out.size();
@@ -176,7 +176,7 @@ struct ExtremumsBasedNonOpt {
 };
 
 // аппрокисмация фазы сигнала по Тихонову PCHIP сплайном
-template <typename U, ExtremumsKind kind_e, Derivator<U> DerivatorT>
+template <typename U, ExtremumsKind kind_e, typename DerivatorT>
 struct ExtremumsBasedUsingPCHIP {
   using AdditionalDataType = GENERAL::Nil;
 
@@ -188,7 +188,7 @@ struct ExtremumsBasedUsingPCHIP {
       std::vector<double>>>
       approximator;
 
-  template <Signal DataType, Signal OutType>
+  template <typename DataType, typename OutType>
   void compute(const DataType &data, OutType &out, auto *nil) {
     if constexpr (kind_e == ExtremumsKind::DerArctg) {
       derivator.compute(data, out, nullptr);
@@ -233,7 +233,7 @@ struct ExtremumsBasedUsingPCHIP {
     }
   }
 
-  template <Signal DataType, Signal OutType>
+  template <typename DataType, typename OutType>
   void compute(const DataType &data, OutType &out, std::nullptr_t *nil) {
     if constexpr (kind_e == ExtremumsKind::DerArctg) {
       derivator.compute(data, out, nullptr);
@@ -282,8 +282,8 @@ struct ExtremumsBasedUsingPCHIP {
   double derive(double idx) { return approximator->computeDerive(idx); }
 };
 
-template <typename U, ExtremumsKind kind_e, Integrator<U> IntegratorT,
-          Derivator<U> DerivatorT>
+template <typename U, ExtremumsKind kind_e, typename IntegratorT,
+          typename DerivatorT>
 struct ExtremumsBasedUsingFS {
   using AdditionalDataType = SignalPrototype<U>;
   using IntegratorType = IntegratorT;
@@ -302,7 +302,7 @@ struct ExtremumsBasedUsingFS {
     derivator = derivator_in;
   }
 
-  template <Signal DataType, Signal OutType, Signal ComputerBufferType>
+  template <typename DataType, typename OutType, typename ComputerBufferType>
   void compute(const DataType &data, OutType &out,
                ComputerBufferType *computer_buffer) {
     if constexpr (kind_e == ExtremumsKind::DerArctg) {
@@ -452,8 +452,8 @@ struct ExtremumsBasedUsingFS {
   }
 };
 
-template <typename U, ExtremumsKind kind_e, Integrator<U> IntegratorT,
-          Derivator<U> DerivatorT>
+template <typename U, ExtremumsKind kind_e, typename IntegratorT,
+          typename DerivatorT>
 struct ArctgScaledToExtremums {
   using AdditionalDataType = SignalPrototype<U>;
   using IntegratorType = IntegratorT;
@@ -472,7 +472,7 @@ struct ArctgScaledToExtremums {
     derivator = derivator_in;
   }
 
-  template <Signal DataType, Signal OutType, Signal ComputerBufferType>
+  template <typename DataType, typename OutType, typename ComputerBufferType>
   void compute(const DataType &data, OutType &out,
                ComputerBufferType *computer_buffer) {
     if constexpr (kind_e == ExtremumsKind::DerArctg) {
@@ -575,7 +575,7 @@ struct ArctgScaledToExtremums {
   }
 };
 
-template <typename U, Integrator<U> IntegratorT, Derivator<U> DerivatorT,
+template <typename U, typename IntegratorT, typename DerivatorT,
           InstFreqDerivativeBasedKind kind>
 struct ArctgScaledToExtremumsSquare {
   using AdditionalDataType = SignalPrototype<U>;
@@ -593,7 +593,7 @@ struct ArctgScaledToExtremumsSquare {
     derivator = derivator_in;
   }
 
-  template <Signal DataType, Signal OutType, Signal ComputerBufferType>
+  template <typename DataType, typename OutType, typename ComputerBufferType>
   void compute(const DataType &data, OutType &out,
                ComputerBufferType *computer_buffer) {
     // compute extremums

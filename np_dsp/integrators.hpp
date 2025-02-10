@@ -15,7 +15,7 @@ template <PolygonType polygon_t> struct Riman {
 
   using AdditionalDataType = GENERAL::Nil;
 
-  template <Signal DataType, Signal IntegralType>
+  template <typename DataType, typename IntegralType>
   void compute(const DataType &data, IntegralType &out, auto *nil) {
     using T = typename IntegralType::SampleType;
     T integral = static_cast<T>(0.0);
@@ -40,7 +40,7 @@ template <PolygonType polygon_t> struct Riman {
     }
   }
 
-  template <Signal DataType, Signal IntegralType>
+  template <typename DataType, typename IntegralType>
   void compute(const DataType &data, IntegralType &out, std::nullptr_t nil) {
     using T = typename IntegralType::SampleType;
     T integral = static_cast<T>(0.0);

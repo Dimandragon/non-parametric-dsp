@@ -168,7 +168,7 @@ void ifftc2c(std::vector<std::complex<T>> const &data_in,
                  data_in.data(), data_out.data(), static_cast<T>(1));
 }
 
-template <Signal DataT, Signal OutT, typename T>
+template <typename DataT, typename OutT, typename T>
 void fftc2c(const DataT &in, OutT &out) {
   // using T = typename OutT::SampleType;
   auto len = in.size();
@@ -197,7 +197,7 @@ void fftc2c(const DataT &in, OutT &out) {
   }
 }
 
-template <Signal DataT, Signal OutT, typename T>
+template <typename DataT, typename OutT, typename T>
 void ifftc2c(const DataT &in, OutT &out) {
   auto len = in.size();
   pocketfft::shape_t shape{len};
@@ -269,7 +269,7 @@ void fastConvolution(const DataT1 &in1, const DataT2 &in2, OutT &out) {
   }
 }
 
-template <Signal DataT1, Signal DataT2, Signal OutT>
+template <typename DataT1, typename DataT2, typename OutT>
 void fastConvolution(const DataT1 &in1, const DataT2 &in2, OutT &out) {
   using T = typename OutT::SampleType;
   std::vector<std::complex<T>> data_in1;
@@ -353,7 +353,7 @@ void ifftc2c(std::vector<std::complex<T>> const &data_in,
                  static_cast<T>(1));
 }
 
-template <typename TIndex, SignalBase Base, typename TValue>
+template <typename TIndex, typename Base, typename TValue>
 std::pair<TIndex, TIndex> interpolationSearch(Base data, TIndex idx1,
                                               TIndex idx2, TValue value) {
   // todo interpolate or values limits
@@ -505,7 +505,7 @@ ftResamplingData getResamplingSize(int len, double freq) {
   return result;
 }
 
-template <Signal DataT, Signal OutT, HTKind kind>
+template <typename DataT, typename OutT, HTKind kind>
 void hilbertTransform(DataT &data, OutT &out,
                       std::vector<std::complex<double>> &specter,
                       std::vector<std::complex<double>> &buffer) {
@@ -536,7 +536,7 @@ void hilbertTransform(DataT &data, OutT &out,
   }
 }
 
-template <Signal DataT, Signal OutT, HTKind kind>
+template <typename DataT, typename OutT, HTKind kind>
 void hilbertTransformConst(const DataT &data, OutT &out,
                            std::vector<std::complex<double>> &specter,
                            std::vector<std::complex<double>> &buffer) {
@@ -564,7 +564,7 @@ void hilbertTransformConst(const DataT &data, OutT &out,
   }
 }
 
-template <Signal DataT, Signal OutT, Signal Weights, HTKind kind>
+template <typename DataT, typename OutT, typename Weights, HTKind kind>
 void WeightedHilbertTransform(DataT &data, OutT &out,
                               std::vector<std::complex<double>> &specter,
                               std::vector<std::complex<double>> &buffer,
@@ -598,7 +598,7 @@ void WeightedHilbertTransform(DataT &data, OutT &out,
   // todo test
 }
 
-template <Signal DataT, Signal OutT, HTKind kind>
+template <typename DataT, typename OutT, HTKind kind>
 void WeightedHilbertTransformConst(const DataT &data, OutT &out,
                                    std::vector<std::complex<double>> &specter,
                                    std::vector<std::complex<double>> &buffer,
@@ -628,7 +628,7 @@ void WeightedHilbertTransformConst(const DataT &data, OutT &out,
 
   // todo test
 }
-template <typename T, Signal SignalT>
+template <typename T, typename SignalT>
 void resampling(SignalT &data, std::vector<T> &out, size_t target_size) {
   auto size = data.size();
   out.clear();
@@ -645,7 +645,7 @@ struct circleExtendResult {
   int pad;
 };
 
-template <typename T, Signal SignalT>
+template <typename T, typename SignalT>
 circleExtendResult circleExtend(SignalT &data, std::vector<T> &out,
                                 double target_freq) {
   out.clear();

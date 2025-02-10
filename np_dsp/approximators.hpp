@@ -46,7 +46,7 @@ struct FourierSeriesBased {
 
   double max_value = 10000000000000000000000000.;
 
-  template <Signal SignalType>
+  template <typename SignalType>
   FourierSeriesBased(Loss &lossFn, SignalType &signal_in,
                      StopPointFunc &stop_point) {
     loss = &lossFn;
@@ -59,7 +59,7 @@ struct FourierSeriesBased {
     tile_size = signal_in.size();
   }
 
-  template <Signal SignalType> void computeFSFromData(SignalType &signal_in) {
+  template <typename SignalType> void computeFSFromData(SignalType &signal_in) {
     for (size_t i = 0; i < signal_in.size(); i++) {
       approximated_data[i] = {signal_in[i], 0.0};
     }
@@ -777,7 +777,7 @@ struct FourierSeriesBasedWithNoTrain {
   std::vector<std::complex<double>> fourier_series;
   std::vector<std::complex<double>> approximated_data;
 
-  template <Signal SignalType>
+  template <typename SignalType>
   FourierSeriesBasedWithNoTrain(const SignalType &signal_in) {
     signal_size = signal_in.size();
     fourier_series = std::vector<std::complex<double>>(signal_in.size());
@@ -787,7 +787,7 @@ struct FourierSeriesBasedWithNoTrain {
     tile_size = signal_in.size();
   }
 
-  template <Signal SignalType> void computeFSFromData(SignalType &signal_in) {
+  template <typename SignalType> void computeFSFromData(SignalType &signal_in) {
     for (size_t i = 0; i < signal_in.size(); i++) {
       approximated_data[i] = {signal_in[i], 0.0};
     }
