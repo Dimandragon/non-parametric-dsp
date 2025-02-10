@@ -780,7 +780,7 @@ enum class InterpolationKind {
   RBFGaussian,
   RBFBell,
   RBFMultiquadricAuto,
-  RBFMultiquadricManual
+  RBFMultiquadricManual,
 };
 
 // фильтрация гладкой аппроксимацией

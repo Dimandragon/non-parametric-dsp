@@ -24,7 +24,7 @@ void tokenizerTest(){
     for (int i = 0; i < 100; i++){
         tokenizer.phase_shifts.push_back(0.01 * i * std::numbers::pi);
     }
-    tokenizer.interpolation_kind = NP_DSP::ONE_D::FILTERS::InterpolationKind::RBFTPS;
+    tokenizer.interpolation_kind_e = NP_DSP::ONE_D::FILTERS::InterpolationKind::RBFTPS;
 
 
 
@@ -55,7 +55,7 @@ void extractorTest(){
     for (int i = 0; i < 100; i++){
         extractor.phase_shifts.push_back(0.01 * i * std::numbers::pi);
     }
-    extractor.interpolation_kind = NP_DSP::ONE_D::FILTERS::InterpolationKind::RBFTPS;
+    extractor.interpolation_kind_e = NP_DSP::ONE_D::FILTERS::InterpolationKind::RBFTPS;
 
     extractor.compute(data);
 

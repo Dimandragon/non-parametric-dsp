@@ -699,7 +699,7 @@ struct SOTAEMDBasedTokenizer {
   double rbf_lambda_v = 0.0;
 
   double rbf_alpha = 10.0;
-  FILTERS::InterpolationKind interpolation_kind = FILTERS::InterpolationKind::Makima;
+  NP_DSP::ONE_D::FILTERS::InterpolationKind interpolation_kind_e = NP_DSP::ONE_D::FILTERS::InterpolationKind::Makima;
 
   using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
   DataType data;
@@ -760,7 +760,7 @@ struct SOTAEMDBasedTokenizer {
     filter.filter.rbf_v3tol = rbf_v3tol;
     filter.filter.rbf_lambda_v = rbf_lambda_v;
     filter.filter.rbf_alpha = rbf_alpha;
-    filter.filter.interpolation_kind = interpolation_kind;
+    filter.filter.interpolation_kind = interpolation_kind_e;
 
     filter.filter.phase_shifts = phase_shifts;
 

@@ -19,17 +19,17 @@ target("pocketfft")
     add_includedirs("pocketfft", {public = true})
 
 target("alglib")
-    set_kind("static")
+    set_kind("shared")
     add_includedirs("alglib-cpp/src", {public = true})
     add_files("alglib-cpp/src/*.cpp")
 
 target("gaussian_blur")
     set_kind("headeronly")
-    add_includedirs("$(projectdir)/FastGaussianBlur", {public = true})
+    add_includedirs("FastGaussianBlur", {public = true})
 
 
 target("non-parametric_dsp")
-    set_kind("headeronly")
+    set_kind("shared")
     --add_headerfiles("src/npdsp_concepts.hpp", "src/signals.hpp", "src/derivators.hpp",
     --        "src/integrators.hpp", "src/filters.hpp", "src/inst_freq_computers.hpp",
     --        "src/utility_math.hpp", "src/approximators.hpp", "src/config.hpp", 
@@ -37,7 +37,8 @@ target("non-parametric_dsp")
     --        ,"src/modes_extractors.hpp", {public = true}
     --        )
     add_includedirs("np_dsp", {public = true})
-
+    add_includedirs("alglib-cpp/src", {public = true})
+    add_files("alglib-cpp/src/*.cpp")
     add_deps("pocketfft")
     add_deps("boost_interpolate")
     add_deps("alglib")
