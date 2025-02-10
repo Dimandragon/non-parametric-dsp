@@ -1,679 +1,926 @@
 #pragma once
 
 #include <cstddef>
+#include <derivators.hpp>
+#include <filters.hpp>
+#include <inst_ampl_computers.hpp>
+#include <inst_freq_computers.hpp>
+#include <integrators.hpp>
 #include <npdsp_concepts.hpp>
+#include <phase_computers.hpp>
 #include <signals.hpp>
 #include <vector>
-#include <inst_ampl_computers.hpp>
-#include <phase_computers.hpp>
-#include <inst_freq_computers.hpp>
-#include <filters.hpp>
-#include <integrators.hpp>
-#include <derivators.hpp>
 
-struct Token{
-    size_t t;
-    size_t mode_num;
-    double val;
-    double inst_freq;
-    double inst_ampl;
-    double phase;
+struct Token {
+  size_t t;
+  size_t mode_num;
+  double val;
+  double inst_freq;
+  double inst_ampl;
+  double phase;
 
-    Token(){}
+  Token() {}
 };
 
 namespace NP_DSP::ONE_D::Tokenizers {
-    struct InstFreqNormSincTokenizer
-    {
-        using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
-        DataType data;
-        DataType data_buffer;
-        DataType compute_buffer;
-        DataType compute_buffer2;
-        DataType mode;
-        DataType inst_freq;
-        DataType inst_ampl;
-        DataType phase;
+struct InstFreqNormSincTokenizer {
+  using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
+  DataType data;
+  DataType data_buffer;
+  DataType compute_buffer;
+  DataType compute_buffer2;
+  DataType mode;
+  DataType inst_freq;
+  DataType inst_ampl;
+  DataType phase;
 
-        size_t modes_count;
+  size_t modes_count;
 
-        std::vector<double> freq_conv;
-        std::vector<double> freq_conv_image;
+  std::vector<double> freq_conv;
+  std::vector<double> freq_conv_image;
 
-        std::vector<Token> tokens;
+  std::vector<Token> tokens;
 
-        double period_muller = 1.0;
-        double locality_coeff = 5.0;
+  double period_muller = 1.0;
+  double locality_coeff = 5.0;
 
-        INTEGRATORS::Riman<INTEGRATORS::PolygonType::ByPoint> integrator;
-        DERIVATORS::FinniteDifference<DERIVATORS::FinniteDifferenceType::Backward> derivator;
+  INTEGRATORS::Riman<INTEGRATORS::PolygonType::ByPoint> integrator;
+  DERIVATORS::FinniteDifference<DERIVATORS::FinniteDifferenceType::Backward>
+      derivator;
 
-        PHASE_COMPUTERS::ExtremumsBasedNonOpt
-                <double, PHASE_COMPUTERS::ExtremumsKind::Simple, decltype(derivator)>
-                phase_computer_simple;
+  PHASE_COMPUTERS::ExtremumsBasedNonOpt<
+      double, PHASE_COMPUTERS::ExtremumsKind::Simple, decltype(derivator)>
+      phase_computer_simple;
 
-        INST_FREQ_COMPUTERS::ComputedOnPhase<double, decltype(integrator),
-                decltype(derivator), INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage>
-                inst_freq_computer =
-                INST_FREQ_COMPUTERS::ComputedOnPhase<double, decltype(integrator),
-                        decltype(derivator), INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage>
-                        (integrator, derivator);
+  INST_FREQ_COMPUTERS::ComputedOnPhase<
+      double, decltype(integrator), decltype(derivator),
+      INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage>
+      inst_freq_computer = INST_FREQ_COMPUTERS::ComputedOnPhase<
+          double, decltype(integrator), decltype(derivator),
+          INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::TimeAverage>(
+          integrator, derivator);
 
-        INST_AMPL_COMPUTERS::HilbertTransformBased
-                <UTILITY_MATH::HTKind::Mull> inst_ampl_computer;
+  INST_AMPL_COMPUTERS::HilbertTransformBased<UTILITY_MATH::HTKind::Mull>
+      inst_ampl_computer;
 
-        FILTERS::MonoFreqFilters<double, FILTERS::MonoInstFreqFilteringType::SincPaddedFIR> filter;
+  FILTERS::MonoFreqFilters<double,
+                           FILTERS::MonoInstFreqFilteringType::SincPaddedFIR>
+      filter;
 
+  template <typename DataT> void compute(const DataT &data_in) {
+    filter.gaussian_width_muller = locality_coeff;
+    size_t iter_number = 0;
 
-        template<typename DataT>
-        void compute(const DataT & data_in){
-            filter.gaussian_width_muller = locality_coeff;
-            size_t iter_number = 0;
+    if (data.size() != data_in.size()) {
+      data.base->vec->clear();
+      for (int i = 0; i < data_in.size(); i++) {
+        data.base->vec->push_back(data_in[i]);
+      }
+    }
+    if (data_buffer.size() != data_in.size()) {
+      data_buffer.base->vec->clear();
+      for (int i = 0; i < data_in.size(); i++) {
+        data_buffer.base->vec->push_back(data_in[i]);
+      }
+    }
+    if (compute_buffer.size() != data_in.size()) {
+      compute_buffer.base->vec->clear();
+      for (int i = 0; i < data_in.size(); i++) {
+        compute_buffer.base->vec->push_back(0.0);
+      }
+    }
+    if (compute_buffer2.size() != data_in.size()) {
+      compute_buffer2.base->vec->clear();
+      for (int i = 0; i < data_in.size(); i++) {
+        compute_buffer2.base->vec->push_back(0.0);
+      }
+    }
+    if (freq_conv.size() != data.size()) {
+      freq_conv.clear();
+      for (int i = 0; i < data.size(); i++) {
+        freq_conv.push_back(1.0);
+      }
+    }
+    if (freq_conv_image.size() != data.size()) {
+      freq_conv_image.clear();
+      for (int i = 0; i < data.size(); i++) {
+        freq_conv_image.push_back(1.0);
+      }
+    }
 
-            if(data.size() != data_in.size()){
-                data.base->vec->clear();
-                for (int i = 0; i < data_in.size(); i++){
-                    data.base->vec->push_back(data_in[i]);
-                }
-            }
-            if(data_buffer.size() != data_in.size()){
-                data_buffer.base->vec->clear();
-                for (int i = 0; i < data_in.size(); i++){
-                    data_buffer.base->vec->push_back(data_in[i]);
-                }
-            }
-            if(compute_buffer.size() != data_in.size()){
-                compute_buffer.base->vec->clear();
-                for (int i = 0; i < data_in.size(); i++){
-                    compute_buffer.base->vec->push_back(0.0);
-                }
-            }
-            if(compute_buffer2.size() != data_in.size()){
-                compute_buffer2.base->vec->clear();
-                for (int i = 0; i < data_in.size(); i++){
-                    compute_buffer2.base->vec->push_back(0.0);
-                }
-            }
-            if(freq_conv.size() != data.size()){
-                freq_conv.clear();
-                for (int i = 0; i < data.size(); i++) {
-                    freq_conv.push_back(1.0);
-                }
-            }
-            if(freq_conv_image.size() != data.size()){
-                freq_conv_image.clear();
-                for (int i = 0; i < data.size(); i++) {
-                    freq_conv_image.push_back(1.0);
-                }
-            }
+    if (mode.size() != data.size()) {
+      mode.base->vec->clear();
+      for (int i = 0; i < data.size(); i++) {
+        mode.base->vec->push_back(0.0);
+      }
+    }
 
-            if(mode.size() != data.size()){
-                mode.base->vec->clear();
-                for (int i = 0; i < data.size(); i++) {
-                    mode.base->vec->push_back(0.0);
-                }
-            }
+    if (inst_freq.size() != data.size()) {
+      inst_freq.base->vec->clear();
+      for (int i = 0; i < data.size(); i++) {
+        inst_freq.base->vec->push_back(0.0);
+      }
+    }
 
-            if(inst_freq.size() != data.size()){
-                inst_freq.base->vec->clear();
-                for (int i = 0; i < data.size(); i++) {
-                    inst_freq.base->vec->push_back(0.0);
-                }
-            }
+    if (inst_ampl.size() != data.size()) {
+      inst_ampl.base->vec->clear();
+      for (int i = 0; i < data.size(); i++) {
+        inst_ampl.base->vec->push_back(0.0);
+      }
+    }
 
-            if(inst_ampl.size() != data.size()){
-                inst_ampl.base->vec->clear();
-                for (int i = 0; i < data.size(); i++) {
-                    inst_ampl.base->vec->push_back(0.0);
-                }
-            }
+    if (phase.size() != data.size()) {
+      phase.base->vec->clear();
+      for (int i = 0; i < data.size(); i++) {
+        phase.base->vec->push_back(0.0);
+      }
+    }
 
-            if(phase.size() != data.size()){
-                phase.base->vec->clear();
-                for (int i = 0; i < data.size(); i++) {
-                    phase.base->vec->push_back(0.0);
-                }
-            }
+    tokens.clear();
 
-            tokens.clear();
+    while (true) {
+      phase_computer_simple.compute(data, phase, nullptr);
 
-            while(true){
-                phase_computer_simple.compute(data, phase, nullptr);
+      if (phase[data.size() - 1] > 6.28) {
+        inst_freq_computer.compute(phase, inst_freq, nullptr);
+        double base_inst_freq = INST_FREQ_COMPUTERS::instFreqNorm(
+            data, data_buffer, inst_freq, freq_conv, freq_conv_image);
 
-                if(phase[data.size() - 1] > 6.28){
-                    inst_freq_computer.compute(phase, inst_freq, nullptr);
-                    double base_inst_freq = INST_FREQ_COMPUTERS::instFreqNorm(data, data_buffer, inst_freq, freq_conv, freq_conv_image);
+        phase_computer_simple.compute(data_buffer, phase, nullptr);
 
-                    phase_computer_simple.compute(data_buffer, phase, nullptr);
+        base_inst_freq = 1.0 /
+                         (static_cast<double>(data.size()) /
+                          (phase[data.size() - 1] / 2.0 / std::numbers::pi)) /
+                         period_muller;
 
-                    base_inst_freq = 1.0 /
-                                     (static_cast<double>(data.size()) /
-                                      (phase[data.size() - 1] / 2.0 / std::numbers::pi)) / period_muller;
-
-                    for(int i = 0; i < data.size(); i++){
-                        data[i] = data_buffer[i];
-                    }
-
-                    filter.freq = base_inst_freq;
-                    filter.is_low_pass = true;
-                    filter.compute(data, data_buffer, data_buffer);
-
-                    for(int i = 0; i < data.size(); i++){
-                        auto swap = data_buffer[i];
-                        data_buffer[i] = data[i] - data_buffer[i];
-                        data[i] = swap;
-                    }
-
-                    INST_FREQ_COMPUTERS::backInstFreqNorm(data_buffer, mode, freq_conv);
-
-                    phase_computer_simple.compute(mode, phase, nullptr);
-
-                    inst_freq_computer.compute(phase, inst_freq, nullptr);
-
-                    inst_ampl_computer.compute(mode,  inst_ampl, nullptr);
-
-                    auto i_temp = 0;
-                    Token token_temp;
-                    token_temp.mode_num = iter_number;
-                    token_temp.inst_ampl = inst_ampl[i_temp];
-                    token_temp.inst_freq = inst_freq[i_temp];
-                    token_temp.phase = phase[i_temp];
-                    token_temp.val = mode[i_temp];
-                    token_temp.t = i_temp;
-                    tokens.push_back(token_temp);
-
-                    double current_mode = 0.0;
-                    for (size_t i = 0; i < data.size(); i++){
-                        if (phase[i] > current_mode + std::numbers::pi){
-                            Token token;
-                            token.mode_num = iter_number;
-                            token.inst_ampl = inst_ampl[i];
-                            token.inst_freq = inst_freq[i];
-                            token.phase = phase[i];
-                            token.val = mode[i];
-                            token.t = i;
-                            current_mode += std::numbers::pi;
-                            tokens.push_back(token);
-                        }
-                    }
-
-                    iter_number++;
-                }
-                else{
-                    INST_FREQ_COMPUTERS::backInstFreqNorm(data, mode, freq_conv);
-
-                    phase_computer_simple.compute(mode, phase, nullptr);
-                    inst_freq_computer.compute(phase, inst_freq, nullptr);
-                    inst_ampl_computer.compute(mode,  inst_ampl, nullptr);
-
-                    auto i_temp = 0;
-                    Token token_temp;
-                    token_temp.mode_num = iter_number;
-                    token_temp.inst_ampl = inst_ampl[i_temp];
-                    token_temp.inst_freq = inst_freq[i_temp];
-                    token_temp.phase = phase[i_temp];
-                    token_temp.val = mode[i_temp];
-                    token_temp.t = i_temp;
-                    tokens.push_back(token_temp);
-
-                    double current_phase = 0.0;
-                    for (size_t i = 0; i < data.size(); i++){
-                        if (phase[i] >= current_phase + std::numbers::pi){
-                            Token token;
-                            token.mode_num = iter_number;
-                            token.inst_ampl = inst_ampl[i];
-                            token.inst_freq = inst_freq[i];
-                            token.phase = phase[i];
-                            token.val = mode[i];
-                            token.t = i;
-                            current_phase += std::numbers::pi;
-                            tokens.push_back(token);
-                        }
-                    }
-
-                    iter_number++;
-                    return;
-                }
-            }
+        for (int i = 0; i < data.size(); i++) {
+          data[i] = data_buffer[i];
         }
 
-        std::vector<Token> getTokens(){
-            return tokens;
+        filter.freq = base_inst_freq;
+        filter.is_low_pass = true;
+        filter.compute(data, data_buffer, data_buffer);
+
+        for (int i = 0; i < data.size(); i++) {
+          auto swap = data_buffer[i];
+          data_buffer[i] = data[i] - data_buffer[i];
+          data[i] = swap;
         }
+
+        INST_FREQ_COMPUTERS::backInstFreqNorm(data_buffer, mode, freq_conv);
+
+        phase_computer_simple.compute(mode, phase, nullptr);
+
+        inst_freq_computer.compute(phase, inst_freq, nullptr);
+
+        inst_ampl_computer.compute(mode, inst_ampl, nullptr);
+
+        auto i_temp = 0;
+        Token token_temp;
+        token_temp.mode_num = iter_number;
+        token_temp.inst_ampl = inst_ampl[i_temp];
+        token_temp.inst_freq = inst_freq[i_temp];
+        token_temp.phase = phase[i_temp];
+        token_temp.val = mode[i_temp];
+        token_temp.t = i_temp;
+        tokens.push_back(token_temp);
+
+        double current_mode = 0.0;
+        for (size_t i = 0; i < data.size(); i++) {
+          if (phase[i] > current_mode + std::numbers::pi) {
+            Token token;
+            token.mode_num = iter_number;
+            token.inst_ampl = inst_ampl[i];
+            token.inst_freq = inst_freq[i];
+            token.phase = phase[i];
+            token.val = mode[i];
+            token.t = i;
+            current_mode += std::numbers::pi;
+            tokens.push_back(token);
+          }
+        }
+
+        iter_number++;
+      } else {
+        INST_FREQ_COMPUTERS::backInstFreqNorm(data, mode, freq_conv);
+
+        phase_computer_simple.compute(mode, phase, nullptr);
+        inst_freq_computer.compute(phase, inst_freq, nullptr);
+        inst_ampl_computer.compute(mode, inst_ampl, nullptr);
+
+        auto i_temp = 0;
+        Token token_temp;
+        token_temp.mode_num = iter_number;
+        token_temp.inst_ampl = inst_ampl[i_temp];
+        token_temp.inst_freq = inst_freq[i_temp];
+        token_temp.phase = phase[i_temp];
+        token_temp.val = mode[i_temp];
+        token_temp.t = i_temp;
+        tokens.push_back(token_temp);
+
+        double current_phase = 0.0;
+        for (size_t i = 0; i < data.size(); i++) {
+          if (phase[i] >= current_phase + std::numbers::pi) {
+            Token token;
+            token.mode_num = iter_number;
+            token.inst_ampl = inst_ampl[i];
+            token.inst_freq = inst_freq[i];
+            token.phase = phase[i];
+            token.val = mode[i];
+            token.t = i;
+            current_phase += std::numbers::pi;
+            tokens.push_back(token);
+          }
+        }
+
+        iter_number++;
+        return;
+      }
+    }
+  }
+
+  std::vector<Token> getTokens() { return tokens; }
+};
+
+struct InstFreqNormSincReqTokenizer {
+  using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
+  DataType data;
+  DataType data_buffer;
+  DataType compute_buffer;
+  DataType compute_buffer2;
+  DataType mode;
+  DataType inst_freq;
+  DataType inst_ampl;
+  DataType phase;
+  std::vector<double> freq_conv;
+  std::vector<double> freq_conv_image;
+
+  double period_muller = 1.0;
+  double locality_coeff = 5.0;
+  double max_iter_number_for_filter = 10;
+
+  bool debug = false;
+
+  std::vector<Token> tokens;
+
+  INTEGRATORS::Riman<INTEGRATORS::PolygonType::ByPoint> integrator;
+  DERIVATORS::FinniteDifference<DERIVATORS::FinniteDifferenceType::Backward>
+      derivator;
+
+  PHASE_COMPUTERS::ExtremumsBasedNonOpt<
+      double, PHASE_COMPUTERS::ExtremumsKind::DerArctg, decltype(derivator)>
+      phase_computer_der_atan;
+
+  PHASE_COMPUTERS::ExtremumsBasedNonOpt<
+      double, PHASE_COMPUTERS::ExtremumsKind::Simple, decltype(derivator)>
+      phase_computer_simple;
+
+  INST_FREQ_COMPUTERS::ComputedOnPhase<
+      double, decltype(integrator), decltype(derivator),
+      INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveAverage>
+      inst_freq_computer = INST_FREQ_COMPUTERS::ComputedOnPhase<
+          double, decltype(integrator), decltype(derivator),
+          INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveAverage>(
+          integrator, derivator);
+
+  INST_AMPL_COMPUTERS::HilbertTransformBased<UTILITY_MATH::HTKind::Mull>
+      inst_ampl_computer;
+
+  FILTERS::RecursiveFilter<double, FILTERS::LocalFilteringType::SincResampled>
+      filter;
+
+  template <typename DataT> void compute(const DataT &data_in) {
+    filter.locality_coeff = locality_coeff;
+    filter.period_muller = period_muller;
+    // filter.inst_freq_computer = &inst_freq_computer;
+    // filter.phase_computer = &phase_computer_simple;
+    filter.debug = false;
+    filter.max_iters = max_iter_number_for_filter;
+
+    size_t iter_number = 0;
+
+    DataType non_resampled_data;
+
+    if (data.size() != data_in.size()) {
+      data.base->vec->clear();
+      for (int i = 0; i < data_in.size(); i++) {
+        data.base->vec->push_back(data_in[i]);
+      }
+    }
+    if (data_buffer.size() != data_in.size()) {
+      data_buffer.base->vec->clear();
+      for (int i = 0; i < data_in.size(); i++) {
+        data_buffer.base->vec->push_back(data_in[i]);
+      }
+    }
+    if (compute_buffer.size() != data_in.size()) {
+      compute_buffer.base->vec->clear();
+      for (int i = 0; i < data_in.size(); i++) {
+        compute_buffer.base->vec->push_back(0.0);
+      }
+    }
+    if (compute_buffer2.size() != data_in.size()) {
+      compute_buffer2.base->vec->clear();
+      for (int i = 0; i < data_in.size(); i++) {
+        compute_buffer2.base->vec->push_back(0.0);
+      }
+    }
+    if (freq_conv.size() != data.size()) {
+      freq_conv.clear();
+      for (int i = 0; i < data.size(); i++) {
+        freq_conv.push_back(1.0);
+      }
+    }
+    if (freq_conv_image.size() != data.size()) {
+      freq_conv_image.clear();
+      for (int i = 0; i < data.size(); i++) {
+        freq_conv_image.push_back(1.0);
+      }
+    }
+
+    if (mode.size() != data.size()) {
+      mode.base->vec->clear();
+      for (int i = 0; i < data.size(); i++) {
+        mode.base->vec->push_back(0.0);
+      }
+    }
+
+    if (inst_freq.size() != data.size()) {
+      inst_freq.base->vec->clear();
+      for (int i = 0; i < data.size(); i++) {
+        inst_freq.base->vec->push_back(0.0);
+      }
+    }
+
+    if (inst_ampl.size() != data.size()) {
+      inst_ampl.base->vec->clear();
+      for (int i = 0; i < data.size(); i++) {
+        inst_ampl.base->vec->push_back(0.0);
+      }
+    }
+
+    if (phase.size() != data.size()) {
+      phase.base->vec->clear();
+      for (int i = 0; i < data.size(); i++) {
+        phase.base->vec->push_back(0.0);
+      }
+    }
+
+    tokens.clear();
+
+    while (true) {
+      phase_computer_simple.compute(data, phase, nullptr);
+
+      if (phase[data.size() - 1] > 6.28) {
+        filter.compute(data, data_buffer, &compute_buffer);
+
+        for (int i = 0; i < data.size(); i++) {
+          mode[i] = data[i] - data_buffer[i];
+          data[i] = data_buffer[i]; // data is filtered signal
+                                    // data_buffer is mode
+        }
+
+        phase_computer_simple.compute(mode, phase, nullptr);
+
+        inst_freq_computer.compute(phase, inst_freq, nullptr);
+
+        inst_ampl_computer.compute(mode, inst_ampl, nullptr);
+
+        auto i_temp = 0;
+        Token token_temp;
+        token_temp.mode_num = iter_number;
+        token_temp.inst_ampl = inst_ampl[i_temp];
+        token_temp.inst_freq = inst_freq[i_temp];
+        token_temp.phase = phase[i_temp];
+        token_temp.val = mode[i_temp];
+        token_temp.t = i_temp;
+        tokens.push_back(token_temp);
+
+        double current_mode = 0.0;
+        for (size_t i = 0; i < data.size(); i++) {
+          if (phase[i] > current_mode + std::numbers::pi) {
+            Token token;
+            token.mode_num = iter_number;
+            token.inst_ampl = inst_ampl[i];
+            token.inst_freq = inst_freq[i];
+            token.phase = phase[i];
+            token.val = mode[i];
+            token.t = i;
+            current_mode += std::numbers::pi;
+            tokens.push_back(token);
+          }
+        }
+
+        iter_number++;
+      } else {
+        for (auto i = 0; i < data.size(); i++) {
+          mode[i] = data[i];
+        }
+
+        phase_computer_simple.compute(mode, phase, nullptr);
+        inst_freq_computer.compute(phase, inst_freq, nullptr);
+        inst_ampl_computer.compute(mode, inst_ampl, nullptr);
+
+        auto i_temp = 0;
+        Token token_temp;
+        token_temp.mode_num = iter_number;
+        token_temp.inst_ampl = inst_ampl[i_temp];
+        token_temp.inst_freq = inst_freq[i_temp];
+        token_temp.phase = phase[i_temp];
+        token_temp.val = mode[i_temp];
+        token_temp.t = i_temp;
+        tokens.push_back(token_temp);
+
+        double current_phase = 0.0;
+        for (size_t i = 0; i < data.size(); i++) {
+          if (phase[i] >= current_phase + std::numbers::pi) {
+            Token token;
+            token.mode_num = iter_number;
+            token.inst_ampl = inst_ampl[i];
+            token.inst_freq = inst_freq[i];
+            token.phase = phase[i];
+            token.val = mode[i];
+            token.t = i;
+            current_phase += std::numbers::pi;
+            tokens.push_back(token);
+          }
+        }
+
+        iter_number++;
+        return;
+      }
+    }
+  }
+
+  std::vector<Token> getTokens() { return tokens; }
+};
+
+struct MakimaModeDecompositionBasedTokenizer {
+  using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
+  DataType data;
+  DataType data_buffer;
+  DataType compute_buffer;
+  DataType compute_buffer2;
+  DataType mode;
+  DataType inst_freq;
+  DataType inst_ampl;
+  DataType phase;
+  std::vector<double> freq_conv;
+  std::vector<double> freq_conv_image;
+
+  double max_iter_number_for_filter = 10;
+
+  std::vector<double> phase_shifts{
+      0.0 * std::numbers::pi, 0.1 * std::numbers::pi, 0.2 * std::numbers::pi,
+      0.3 * std::numbers::pi, 0.4 * std::numbers::pi, 0.5 * std::numbers::pi,
+      0.6 * std::numbers::pi, 0.7 * std::numbers::pi, 0.8 * std::numbers::pi,
+      0.9 * std::numbers::pi};
+
+  bool debug = false;
+
+  std::vector<Token> tokens;
+
+  INTEGRATORS::Riman<INTEGRATORS::PolygonType::ByPoint> integrator;
+  DERIVATORS::FinniteDifference<DERIVATORS::FinniteDifferenceType::Backward>
+      derivator;
+
+  PHASE_COMPUTERS::ExtremumsBasedNonOpt<
+      double, PHASE_COMPUTERS::ExtremumsKind::DerArctg, decltype(derivator)>
+      phase_computer_der_atan;
+
+  PHASE_COMPUTERS::ExtremumsBasedNonOpt<
+      double, PHASE_COMPUTERS::ExtremumsKind::Simple, decltype(derivator)>
+      phase_computer_simple;
+
+  INST_FREQ_COMPUTERS::ComputedOnPhase<
+      double, decltype(integrator), decltype(derivator),
+      INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveAverage>
+      inst_freq_computer = INST_FREQ_COMPUTERS::ComputedOnPhase<
+          double, decltype(integrator), decltype(derivator),
+          INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveAverage>(
+          integrator, derivator);
+
+  INST_AMPL_COMPUTERS::HilbertTransformBased<UTILITY_MATH::HTKind::Mull>
+      inst_ampl_computer;
+
+  FILTERS::RecursiveFilter<double,
+                           FILTERS::LocalFilteringType::InterpolationExtremums>
+      filter;
+
+  template <typename DataT> void compute(const DataT &data_in) {
+    filter.filter.phase_shifts = phase_shifts;
+    filter.debug = false;
+    filter.max_iters = max_iter_number_for_filter;
+
+    size_t iter_number = 0;
+
+    DataType non_resampled_data;
+
+    if (data.size() != data_in.size()) {
+      data.base->vec->clear();
+      for (int i = 0; i < data_in.size(); i++) {
+        data.base->vec->push_back(data_in[i]);
+      }
+    }
+    if (data_buffer.size() != data_in.size()) {
+      data_buffer.base->vec->clear();
+      for (int i = 0; i < data_in.size(); i++) {
+        data_buffer.base->vec->push_back(data_in[i]);
+      }
+    }
+    if (compute_buffer.size() != data_in.size()) {
+      compute_buffer.base->vec->clear();
+      for (int i = 0; i < data_in.size(); i++) {
+        compute_buffer.base->vec->push_back(0.0);
+      }
+    }
+    if (compute_buffer2.size() != data_in.size()) {
+      compute_buffer2.base->vec->clear();
+      for (int i = 0; i < data_in.size(); i++) {
+        compute_buffer2.base->vec->push_back(0.0);
+      }
+    }
+    if (freq_conv.size() != data.size()) {
+      freq_conv.clear();
+      for (int i = 0; i < data.size(); i++) {
+        freq_conv.push_back(1.0);
+      }
+    }
+    if (freq_conv_image.size() != data.size()) {
+      freq_conv_image.clear();
+      for (int i = 0; i < data.size(); i++) {
+        freq_conv_image.push_back(1.0);
+      }
+    }
+
+    if (mode.size() != data.size()) {
+      mode.base->vec->clear();
+      for (int i = 0; i < data.size(); i++) {
+        mode.base->vec->push_back(0.0);
+      }
+    }
+
+    if (inst_freq.size() != data.size()) {
+      inst_freq.base->vec->clear();
+      for (int i = 0; i < data.size(); i++) {
+        inst_freq.base->vec->push_back(0.0);
+      }
+    }
+
+    if (inst_ampl.size() != data.size()) {
+      inst_ampl.base->vec->clear();
+      for (int i = 0; i < data.size(); i++) {
+        inst_ampl.base->vec->push_back(0.0);
+      }
+    }
+
+    if (phase.size() != data.size()) {
+      phase.base->vec->clear();
+      for (int i = 0; i < data.size(); i++) {
+        phase.base->vec->push_back(0.0);
+      }
+    }
+
+    tokens.clear();
+
+    while (true) {
+      phase_computer_simple.compute(data, phase, nullptr);
+
+      if (phase[data.size() - 1] > 6.28) {
+        filter.compute(data, data_buffer, &compute_buffer);
+
+        for (int i = 0; i < data.size(); i++) {
+          mode[i] = data[i] - data_buffer[i];
+          data[i] = data_buffer[i]; // data is filtered signal
+                                    // data_buffer is mode
+        }
+
+        phase_computer_simple.compute(mode, phase, nullptr);
+
+        inst_freq_computer.compute(phase, inst_freq, nullptr);
+
+        inst_ampl_computer.compute(mode, inst_ampl, nullptr);
+
+        auto i_temp = 0;
+        Token token_temp;
+        token_temp.mode_num = iter_number;
+        token_temp.inst_ampl = inst_ampl[i_temp];
+        token_temp.inst_freq = inst_freq[i_temp];
+        token_temp.phase = phase[i_temp];
+        token_temp.val = mode[i_temp];
+        token_temp.t = i_temp;
+        tokens.push_back(token_temp);
+
+        double current_mode = 0.0;
+        for (size_t i = 0; i < data.size(); i++) {
+          if (phase[i] > current_mode + std::numbers::pi) {
+            Token token;
+            token.mode_num = iter_number;
+            token.inst_ampl = inst_ampl[i];
+            token.inst_freq = inst_freq[i];
+            token.phase = phase[i];
+            token.val = mode[i];
+            token.t = i;
+            current_mode += std::numbers::pi;
+            tokens.push_back(token);
+          }
+        }
+
+        iter_number++;
+      } else {
+        for (auto i = 0; i < data.size(); i++) {
+          mode[i] = data[i];
+        }
+
+        phase_computer_simple.compute(mode, phase, nullptr);
+        inst_freq_computer.compute(phase, inst_freq, nullptr);
+        inst_ampl_computer.compute(mode, inst_ampl, nullptr);
+
+        auto i_temp = 0;
+        Token token_temp;
+        token_temp.mode_num = iter_number;
+        token_temp.inst_ampl = inst_ampl[i_temp];
+        token_temp.inst_freq = inst_freq[i_temp];
+        token_temp.phase = phase[i_temp];
+        token_temp.val = mode[i_temp];
+        token_temp.t = i_temp;
+        tokens.push_back(token_temp);
+
+        double current_phase = 0.0;
+        for (size_t i = 0; i < data.size(); i++) {
+          if (phase[i] >= current_phase + std::numbers::pi) {
+            Token token;
+            token.mode_num = iter_number;
+            token.inst_ampl = inst_ampl[i];
+            token.inst_freq = inst_freq[i];
+            token.phase = phase[i];
+            token.val = mode[i];
+            token.t = i;
+            current_phase += std::numbers::pi;
+            tokens.push_back(token);
+          }
+        }
+
+        iter_number++;
+        return;
+      }
+    }
+  }
+
+  std::vector<Token> getTokens() { return tokens; }
+};
+
+struct SOTAEMDBasedTokenizer {
+  std::vector<Token> tokens;
+
+  NP_DSP::ONE_D::INST_FREQ_COMPUTERS::InstFreqComputingKind inst_freq_computing_kind = 
+    INST_FREQ_COMPUTERS::InstFreqComputingKind::ExtremumsBasedTPS;
+
+  double max_iter_number_for_filter = 10;
+  NP_DSP::ONE_D::PHASE_SHIFTERS::RotateKind extremums_rotation_kind_e =
+      NP_DSP::ONE_D::PHASE_SHIFTERS::RotateKind::Naive;
+  double oversampling_ratio_for_ft_der = 1.0;
+
+  std::vector<double> phase_shifts{
+      0.0 * std::numbers::pi, 0.1 * std::numbers::pi, 0.2 * std::numbers::pi,
+      0.3 * std::numbers::pi, 0.4 * std::numbers::pi, 0.5 * std::numbers::pi,
+      0.6 * std::numbers::pi, 0.7 * std::numbers::pi, 0.8 * std::numbers::pi,
+      0.9 * std::numbers::pi};
+
+  int idw_layers = 15;
+  double idw_search_radius = 100;
+
+  double rbf_r_base = 20;
+  double rbf_n_layers = 20;
+  double rbf_lambda_n_s = 0.0;
+  double rbf_search_r = 0.4;
+  bool rbf_v3tol = true;
+
+  double rbf_lambda_v = 0.0;
+
+  double rbf_alpha = 10.0;
+  FILTERS::InterpolationKind interpolation_kind = FILTERS::InterpolationKind::Makima;
+
+  using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
+  DataType data;
+  DataType data_buffer;
+  DataType compute_buffer;
+  DataType mode;
+  DataType inst_freq;
+  DataType inst_ampl;
+  DataType phase;
+
+  bool debug = false;
+
+  INTEGRATORS::Riman<INTEGRATORS::PolygonType::ByPoint> integrator;
+  DERIVATORS::FinniteDifference<DERIVATORS::FinniteDifferenceType::Backward>
+      derivator;
+  PHASE_COMPUTERS::ExtremumsBasedNonOpt<
+      double, PHASE_COMPUTERS::ExtremumsKind::DerArctg, decltype(derivator)>
+      phase_computer_der_atan;
+  PHASE_COMPUTERS::ExtremumsBasedNonOpt<
+      double, PHASE_COMPUTERS::ExtremumsKind::Simple, decltype(derivator)>
+      phase_computer_simple;
+
+  INST_FREQ_COMPUTERS::SOTAInstFreqComputer inst_freq_computer;
+
+  INST_AMPL_COMPUTERS::HilbertTransformBased<UTILITY_MATH::HTKind::Mull>
+      inst_ampl_computer;
+
+  FILTERS::RecursiveFilter<double,
+                           FILTERS::LocalFilteringType::InterpolationExtremums>
+      filter;
+
+  void setPhaseShiftsByCount(int count, double max_shift, bool including_max_shift){
+    if (count == 0){
+      phase_shifts = {0.0};
+    }
+    else{
+      double d_phase_shift = max_shift / (count);
+      if (including_max_shift){
+        if (count != 1){
+          d_phase_shift = max_shift / (count + 1);
+        }
+      }
+      phase_shifts.clear();
+      for (int i = 0; i < count; i++){
+        phase_shifts.push_back(i * d_phase_shift);
+      }
+    }
+  }
+
+  template <typename DataT> void compute(const DataT &data_in) {
+    inst_freq_computer.kind = inst_freq_computing_kind;
+    filter.filter.idw_layers = idw_layers;
+    filter.filter.idw_search_radius = idw_search_radius;
+    filter.filter.rbf_r_base = rbf_r_base;
+    filter.filter.rbf_n_layers = rbf_n_layers;
+    filter.filter.rbf_lambda_n_s = rbf_lambda_n_s;
+    filter.filter.rbf_search_r = rbf_search_r;
+    filter.filter.rbf_v3tol = rbf_v3tol;
+    filter.filter.rbf_lambda_v = rbf_lambda_v;
+    filter.filter.rbf_alpha = rbf_alpha;
+    filter.filter.interpolation_kind = interpolation_kind;
+
+    filter.filter.phase_shifts = phase_shifts;
+
+    auto phase_shifts_local = phase_shifts;
+    filter.max_iters = max_iter_number_for_filter;
+    filter.filter.extremums_rotation_kind_e = extremums_rotation_kind_e;
+    filter.filter.oversampling_ratio_for_ft_der = oversampling_ratio_for_ft_der;
+    filter.debug = debug;
+    filter.filter.debug = debug;
+
+    size_t iter_number = 0;
+    
+
+    auto prepare_memory_ext = [&]() {
+      if (data.size() != data_in.size()) {
+        data.base->vec->clear();
+        for (int i = 0; i < data_in.size(); i++) {
+          data.base->vec->push_back(data_in[i]);
+        }
+      }
+      else{
+        for (int i = 0; i < data_in.size(); i++) {
+          data[i] = data_in[i];
+        }
+      }
+      if (data_buffer.size() != data_in.size()) {
+        data_buffer.base->vec->clear();
+        for (int i = 0; i < data_in.size(); i++) {
+          data_buffer.base->vec->push_back(data_in[i]);
+        }
+      }
+      if (compute_buffer.size() != data_in.size()) {
+        compute_buffer.base->vec->clear();
+        for (int i = 0; i < data_in.size(); i++) {
+          compute_buffer.base->vec->push_back(0.0);
+        }
+      }
     };
 
-    struct InstFreqNormSincReqTokenizer
-    {
-        using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
-        DataType data;
-        DataType data_buffer;
-        DataType compute_buffer;
-        DataType compute_buffer2;
-        DataType mode;
-        DataType inst_freq;
-        DataType inst_ampl;
-        DataType phase;
-        std::vector<double> freq_conv;
-        std::vector<double> freq_conv_image;
+    prepare_memory_ext();
 
-        double period_muller = 1.0;
-        double locality_coeff = 5.0;
-        double max_iter_number_for_filter = 10;
-
-        bool debug = false;
-
-        std::vector<Token> tokens;
-
-        INTEGRATORS::Riman<INTEGRATORS::PolygonType::ByPoint> integrator;
-        DERIVATORS::FinniteDifference<DERIVATORS::FinniteDifferenceType::Backward> derivator;
-
-        PHASE_COMPUTERS::ExtremumsBasedNonOpt
-                <double, PHASE_COMPUTERS::ExtremumsKind::DerArctg, decltype(derivator)>
-                phase_computer_der_atan;
-
-        PHASE_COMPUTERS::ExtremumsBasedNonOpt
-                <double, PHASE_COMPUTERS::ExtremumsKind::Simple, decltype(derivator)>
-                phase_computer_simple;
-
-        INST_FREQ_COMPUTERS::ComputedOnPhase<double, decltype(integrator),
-                decltype(derivator), INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveAverage>
-                inst_freq_computer =
-                INST_FREQ_COMPUTERS::ComputedOnPhase<double, decltype(integrator),
-                        decltype(derivator), INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveAverage>
-                        (integrator, derivator);
-
-        INST_AMPL_COMPUTERS::HilbertTransformBased
-                <UTILITY_MATH::HTKind::Mull> inst_ampl_computer;
-
-        FILTERS::RecursiveFilter<double, FILTERS::LocalFilteringType::SincResampled> filter;
-
-        template<typename DataT>
-        void compute(const DataT & data_in){
-            filter.locality_coeff = locality_coeff;
-            filter.period_muller = period_muller;
-            //filter.inst_freq_computer = &inst_freq_computer;
-            //filter.phase_computer = &phase_computer_simple;
-            filter.debug = false;
-            filter.max_iters = max_iter_number_for_filter;
-
-            size_t iter_number = 0;
-
-            DataType non_resampled_data;
-
-            if(data.size() != data_in.size()){
-                data.base->vec->clear();
-                for (int i = 0; i < data_in.size(); i++){
-                    data.base->vec->push_back(data_in[i]);
-                }
-            }
-            if(data_buffer.size() != data_in.size()){
-                data_buffer.base->vec->clear();
-                for (int i = 0; i < data_in.size(); i++){
-                    data_buffer.base->vec->push_back(data_in[i]);
-                }
-            }
-            if(compute_buffer.size() != data_in.size()){
-                compute_buffer.base->vec->clear();
-                for (int i = 0; i < data_in.size(); i++){
-                    compute_buffer.base->vec->push_back(0.0);
-                }
-            }
-            if(compute_buffer2.size() != data_in.size()){
-                compute_buffer2.base->vec->clear();
-                for (int i = 0; i < data_in.size(); i++){
-                    compute_buffer2.base->vec->push_back(0.0);
-                }
-            }
-            if(freq_conv.size() != data.size()){
-                freq_conv.clear();
-                for (int i = 0; i < data.size(); i++) {
-                    freq_conv.push_back(1.0);
-                }
-            }
-            if(freq_conv_image.size() != data.size()){
-                freq_conv_image.clear();
-                for (int i = 0; i < data.size(); i++) {
-                    freq_conv_image.push_back(1.0);
-                }
-            }
-
-            if(mode.size() != data.size()){
-                mode.base->vec->clear();
-                for (int i = 0; i < data.size(); i++) {
-                    mode.base->vec->push_back(0.0);
-                }
-            }
-
-            if(inst_freq.size() != data.size()){
-                inst_freq.base->vec->clear();
-                for (int i = 0; i < data.size(); i++) {
-                    inst_freq.base->vec->push_back(0.0);
-                }
-            }
-
-            if(inst_ampl.size() != data.size()){
-                inst_ampl.base->vec->clear();
-                for (int i = 0; i < data.size(); i++) {
-                    inst_ampl.base->vec->push_back(0.0);
-                }
-            }
-
-            if(phase.size() != data.size()){
-                phase.base->vec->clear();
-                for (int i = 0; i < data.size(); i++) {
-                    phase.base->vec->push_back(0.0);
-                }
-            }
-
-            tokens.clear();
-
-            while(true){
-                phase_computer_simple.compute(data, phase, nullptr);
-
-
-                if(phase[data.size() - 1] > 6.28){
-                    filter.compute(data, data_buffer, &compute_buffer);
-
-                    for(int i = 0; i < data.size(); i++){
-                        mode[i] = data[i] - data_buffer[i];
-                        data[i] = data_buffer[i]; //data is filtered signal
-                                        //data_buffer is mode
-                    }
-
-                    phase_computer_simple.compute(mode, phase, nullptr);
-
-                    inst_freq_computer.compute(phase, inst_freq, nullptr);
-
-                    inst_ampl_computer.compute(mode, inst_ampl, nullptr);
-
-                    auto i_temp = 0;
-                    Token token_temp;
-                    token_temp.mode_num = iter_number;
-                    token_temp.inst_ampl = inst_ampl[i_temp];
-                    token_temp.inst_freq = inst_freq[i_temp];
-                    token_temp.phase = phase[i_temp];
-                    token_temp.val = mode[i_temp];
-                    token_temp.t = i_temp;
-                    tokens.push_back(token_temp);
-
-                    double current_mode = 0.0;
-                    for (size_t i = 0; i < data.size(); i++){
-                        if (phase[i] > current_mode + std::numbers::pi){
-                            Token token;
-                            token.mode_num = iter_number;
-                            token.inst_ampl = inst_ampl[i];
-                            token.inst_freq = inst_freq[i];
-                            token.phase = phase[i];
-                            token.val = mode[i];
-                            token.t = i;
-                            current_mode += std::numbers::pi;
-                            tokens.push_back(token);
-                        }
-                    }
-
-                    iter_number++;
-                }
-                else{
-                    for (auto i = 0; i < data.size(); i++){
-                        mode[i] = data[i];
-                    }
-
-                    phase_computer_simple.compute(mode, phase, nullptr);
-                    inst_freq_computer.compute(phase, inst_freq, nullptr);
-                    inst_ampl_computer.compute(mode, inst_ampl, nullptr);
-
-                    auto i_temp = 0;
-                    Token token_temp;
-                    token_temp.mode_num = iter_number;
-                    token_temp.inst_ampl = inst_ampl[i_temp];
-                    token_temp.inst_freq = inst_freq[i_temp];
-                    token_temp.phase = phase[i_temp];
-                    token_temp.val = mode[i_temp];
-                    token_temp.t = i_temp;
-                    tokens.push_back(token_temp);
-
-                    double current_phase = 0.0;
-                    for (size_t i = 0; i < data.size(); i++){
-                        if (phase[i] >= current_phase + std::numbers::pi){
-                            Token token;
-                            token.mode_num = iter_number;
-                            token.inst_ampl = inst_ampl[i];
-                            token.inst_freq = inst_freq[i];
-                            token.phase = phase[i];
-                            token.val = mode[i];
-                            token.t = i;
-                            current_phase += std::numbers::pi;
-                            tokens.push_back(token);
-                        }
-                    }
-
-                    iter_number++;
-                    return;
-                }
-            }
+    auto prepare_memory_int = [&]() {
+      if (mode.size() != data.size()) {
+        mode.base->vec->clear();
+        for (int i = 0; i < data.size(); i++) {
+          mode.base->vec->push_back(0.0);
         }
+      }
 
-        std::vector<Token> getTokens(){
-            return tokens;
+      if (inst_freq.size() != data.size()) {
+        inst_freq.base->vec->clear();
+        for (int i = 0; i < data.size(); i++) {
+          inst_freq.base->vec->push_back(0.0);
         }
+      }
+
+      if (inst_ampl.size() != data.size()) {
+        inst_ampl.base->vec->clear();
+        for (int i = 0; i < data.size(); i++) {
+          inst_ampl.base->vec->push_back(0.0);
+        }
+      }
+
+      if (phase.size() != data.size()) {
+        phase.base->vec->clear();
+        for (int i = 0; i < data.size(); i++) {
+          phase.base->vec->push_back(0.0);
+        }
+      }
     };
 
-    struct MakimaModeDecompositionBasedTokenizer
-    {
-        using DataType = GenericSignal<SimpleVecWrapper<double>, true>;
-        DataType data;
-        DataType data_buffer;
-        DataType compute_buffer;
-        DataType compute_buffer2;
-        DataType mode;
-        DataType inst_freq;
-        DataType inst_ampl;
-        DataType phase;
-        std::vector<double> freq_conv;
-        std::vector<double> freq_conv_image;
+    prepare_memory_int();
 
-        double max_iter_number_for_filter = 10;
+    tokens.clear();
 
-        std::vector<double> phase_shifts 
-            { 0.0 * std::numbers::pi, 0.1 * std::numbers::pi, 0.2 * std::numbers::pi, 
-            0.3 * std::numbers::pi, 0.4 * std::numbers::pi, 0.5 * std::numbers::pi,
-            0.6 * std::numbers::pi, 0.7 * std::numbers::pi, 0.8 * std::numbers::pi, 
-            0.9 * std::numbers::pi};
+    while (true) {
+      phase_computer_simple.compute(data, phase, nullptr);
 
-        bool debug = false;
+      if (phase[data.size() - 1] > 6.28) {
+        filter.compute(data, data_buffer, &compute_buffer);
+        for (int i = 0; i < data.size(); i++) {
+          mode[i] = data[i] - data_buffer[i];
+          data[i] = data_buffer[i]; // data is filtered signal
+                                    // data_buffer is mode
+        }
+        phase_computer_simple.compute(mode, phase,
+                                      nullptr);
+        inst_freq_computer.compute(mode,
+                                   inst_freq, nullptr);
+        inst_ampl_computer.compute(mode,
+                                   inst_ampl, nullptr);
 
-        std::vector<Token> tokens;
+        auto i_temp = 0;
+        Token token_temp;
+        token_temp.mode_num = iter_number;
+        token_temp.inst_ampl = inst_ampl[i_temp];
+        token_temp.inst_freq = inst_freq[i_temp];
+        token_temp.phase = phase[i_temp];
+        token_temp.val = mode[i_temp];
+        token_temp.t = i_temp;
+        tokens.push_back(token_temp);
 
-        INTEGRATORS::Riman<INTEGRATORS::PolygonType::ByPoint> integrator;
-        DERIVATORS::FinniteDifference<DERIVATORS::FinniteDifferenceType::Backward> derivator;
+        double current_mode = 0.0;
+        for (size_t i = 0; i < data.size(); i++) {
+          if (phase[i] > current_mode + std::numbers::pi) {
+            Token token;
+            token.mode_num = iter_number;
+            token.inst_ampl = inst_ampl[i];
+            token.inst_freq = inst_freq[i];
+            token.phase = phase[i];
+            token.val = mode[i];
+            token.t = i;
+            current_mode += std::numbers::pi;
+            tokens.push_back(token);
+          }
+        }
+        
+        iter_number++;
+      } else {
+        for (auto i = 0; i < data.size(); i++) {
+          mode[i] = data[i];
+        }
+        phase_computer_simple.compute(mode, phase,
+                                      nullptr);
+        inst_freq_computer.compute(mode,
+                                   inst_freq, nullptr);
+        inst_ampl_computer.compute(mode,
+                                   inst_ampl, nullptr);
 
-        PHASE_COMPUTERS::ExtremumsBasedNonOpt
-                <double, PHASE_COMPUTERS::ExtremumsKind::DerArctg, decltype(derivator)>
-                phase_computer_der_atan;
+        auto i_temp = 0;
+        Token token_temp;
+        token_temp.mode_num = iter_number;
+        token_temp.inst_ampl = inst_ampl[i_temp];
+        token_temp.inst_freq = inst_freq[i_temp];
+        token_temp.phase = phase[i_temp];
+        token_temp.val = mode[i_temp];
+        token_temp.t = i_temp;
+        tokens.push_back(token_temp);
 
-        PHASE_COMPUTERS::ExtremumsBasedNonOpt
-                <double, PHASE_COMPUTERS::ExtremumsKind::Simple, decltype(derivator)>
-                phase_computer_simple;
-
-        INST_FREQ_COMPUTERS::ComputedOnPhase<double, decltype(integrator),
-                decltype(derivator), INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveAverage>
-                inst_freq_computer =
-                INST_FREQ_COMPUTERS::ComputedOnPhase<double, decltype(integrator),
-                        decltype(derivator), INST_FREQ_COMPUTERS::InstFreqDerivativeBasedKind::DeriveAverage>
-                        (integrator, derivator);
-
-        INST_AMPL_COMPUTERS::HilbertTransformBased
-                <UTILITY_MATH::HTKind::Mull> inst_ampl_computer;
-
-        FILTERS::RecursiveFilter<double, FILTERS::LocalFilteringType::MakimaInterpolationExtremums> filter;
-
-        template<typename DataT>
-        void compute(const DataT & data_in){
-            filter.filter.phase_shifts = phase_shifts;
-            //filter.inst_freq_computer = &inst_freq_computer;
-            //filter.phase_computer = &phase_computer_simple;
-            filter.debug = false;
-            filter.max_iters = max_iter_number_for_filter;
-
-            size_t iter_number = 0;
-
-            DataType non_resampled_data;
-
-            if(data.size() != data_in.size()){
-                data.base->vec->clear();
-                for (int i = 0; i < data_in.size(); i++){
-                    data.base->vec->push_back(data_in[i]);
-                }
-            }
-            if(data_buffer.size() != data_in.size()){
-                data_buffer.base->vec->clear();
-                for (int i = 0; i < data_in.size(); i++){
-                    data_buffer.base->vec->push_back(data_in[i]);
-                }
-            }
-            if(compute_buffer.size() != data_in.size()){
-                compute_buffer.base->vec->clear();
-                for (int i = 0; i < data_in.size(); i++){
-                    compute_buffer.base->vec->push_back(0.0);
-                }
-            }
-            if(compute_buffer2.size() != data_in.size()){
-                compute_buffer2.base->vec->clear();
-                for (int i = 0; i < data_in.size(); i++){
-                    compute_buffer2.base->vec->push_back(0.0);
-                }
-            }
-            if(freq_conv.size() != data.size()){
-                freq_conv.clear();
-                for (int i = 0; i < data.size(); i++) {
-                    freq_conv.push_back(1.0);
-                }
-            }
-            if(freq_conv_image.size() != data.size()){
-                freq_conv_image.clear();
-                for (int i = 0; i < data.size(); i++) {
-                    freq_conv_image.push_back(1.0);
-                }
-            }
-
-            if(mode.size() != data.size()){
-                mode.base->vec->clear();
-                for (int i = 0; i < data.size(); i++) {
-                    mode.base->vec->push_back(0.0);
-                }
-            }
-
-            if(inst_freq.size() != data.size()){
-                inst_freq.base->vec->clear();
-                for (int i = 0; i < data.size(); i++) {
-                    inst_freq.base->vec->push_back(0.0);
-                }
-            }
-
-            if(inst_ampl.size() != data.size()){
-                inst_ampl.base->vec->clear();
-                for (int i = 0; i < data.size(); i++) {
-                    inst_ampl.base->vec->push_back(0.0);
-                }
-            }
-
-            if(phase.size() != data.size()){
-                phase.base->vec->clear();
-                for (int i = 0; i < data.size(); i++) {
-                    phase.base->vec->push_back(0.0);
-                }
-            }
-
-            tokens.clear();
-
-            while(true){
-                phase_computer_simple.compute(data, phase, nullptr);
-
-
-                if(phase[data.size() - 1] > 6.28){
-                    filter.compute(data, data_buffer, &compute_buffer);
-
-                    for(int i = 0; i < data.size(); i++){
-                        mode[i] = data[i] - data_buffer[i];
-                        data[i] = data_buffer[i]; //data is filtered signal
-                                        //data_buffer is mode
-                    }
-
-                    phase_computer_simple.compute(mode, phase, nullptr);
-
-                    inst_freq_computer.compute(phase, inst_freq, nullptr);
-
-                    inst_ampl_computer.compute(mode, inst_ampl, nullptr);
-
-                    auto i_temp = 0;
-                    Token token_temp;
-                    token_temp.mode_num = iter_number;
-                    token_temp.inst_ampl = inst_ampl[i_temp];
-                    token_temp.inst_freq = inst_freq[i_temp];
-                    token_temp.phase = phase[i_temp];
-                    token_temp.val = mode[i_temp];
-                    token_temp.t = i_temp;
-                    tokens.push_back(token_temp);
-
-                    double current_mode = 0.0;
-                    for (size_t i = 0; i < data.size(); i++){
-                        if (phase[i] > current_mode + std::numbers::pi){
-                            Token token;
-                            token.mode_num = iter_number;
-                            token.inst_ampl = inst_ampl[i];
-                            token.inst_freq = inst_freq[i];
-                            token.phase = phase[i];
-                            token.val = mode[i];
-                            token.t = i;
-                            current_mode += std::numbers::pi;
-                            tokens.push_back(token);
-                        }
-                    }
-
-                    iter_number++;
-                }
-                else{
-                    for (auto i = 0; i < data.size(); i++){
-                        mode[i] = data[i];
-                    }
-
-                    phase_computer_simple.compute(mode, phase, nullptr);
-                    inst_freq_computer.compute(phase, inst_freq, nullptr);
-                    inst_ampl_computer.compute(mode, inst_ampl, nullptr);
-
-                    auto i_temp = 0;
-                    Token token_temp;
-                    token_temp.mode_num = iter_number;
-                    token_temp.inst_ampl = inst_ampl[i_temp];
-                    token_temp.inst_freq = inst_freq[i_temp];
-                    token_temp.phase = phase[i_temp];
-                    token_temp.val = mode[i_temp];
-                    token_temp.t = i_temp;
-                    tokens.push_back(token_temp);
-
-                    double current_phase = 0.0;
-                    for (size_t i = 0; i < data.size(); i++){
-                        if (phase[i] >= current_phase + std::numbers::pi){
-                            Token token;
-                            token.mode_num = iter_number;
-                            token.inst_ampl = inst_ampl[i];
-                            token.inst_freq = inst_freq[i];
-                            token.phase = phase[i];
-                            token.val = mode[i];
-                            token.t = i;
-                            current_phase += std::numbers::pi;
-                            tokens.push_back(token);
-                        }
-                    }
-
-                    iter_number++;
-                    return;
-                }
-            }
+        double current_phase = 0.0;
+        for (size_t i = 0; i < data.size(); i++) {
+          if (phase[i] >= current_phase + std::numbers::pi) {
+            Token token;
+            token.mode_num = iter_number;
+            token.inst_ampl = inst_ampl[i];
+            token.inst_freq = inst_freq[i];
+            token.phase = phase[i];
+            token.val = mode[i];
+            token.t = i;
+            current_phase += std::numbers::pi;
+            tokens.push_back(token);
+          }
         }
 
-        std::vector<Token> getTokens(){
-            return tokens;
-        }
-    };
-}
+        iter_number++;
+        return;
+      }
+    }
+  }
+
+  std::vector<Token> getTokens() { return tokens; }
+};
+} // namespace NP_DSP::ONE_D::Tokenizers

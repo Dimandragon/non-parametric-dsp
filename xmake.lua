@@ -18,6 +18,15 @@ target("pocketfft")
     --add_headerfiles("pocketfft/pocketfft_hdronly.h", {public = true})
     add_includedirs("pocketfft", {public = true})
 
+target("alglib")
+    set_kind("static")
+    add_includedirs("alglib-cpp/src", {public = true})
+    add_files("alglib-cpp/src/*.cpp")
+
+target("gaussian_blur")
+    set_kind("headeronly")
+    add_includedirs("$(projectdir)/FastGaussianBlur", {public = true})
+
 
 target("non-parametric_dsp")
     set_kind("headeronly")
@@ -31,8 +40,8 @@ target("non-parametric_dsp")
 
     add_deps("pocketfft")
     add_deps("boost_interpolate")
-
-
+    add_deps("alglib")
+    add_deps("gaussian_blur")
 
 target("main_extractor_example")
     set_kind("binary")

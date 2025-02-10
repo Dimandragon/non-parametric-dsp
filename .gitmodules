@@ -5,3 +5,6 @@
 [submodule "matplotplusplus"]
 	path = matplotplusplus
 	url = https://github.com/alandefreitas/matplotplusplus/
+[submodule "FastGaussianBlur"]
+	path = FastGaussianBlur
+	url = git@github.com:bfraboni/FastGaussianBlur.git

@@ -15,13 +15,17 @@ void tokenizerTest(){
         data.base->vec->push_back(std::rand());
     }
 
-    NP_DSP::ONE_D::Tokenizers::MakimaModeDecompositionBasedTokenizer tokenizer;
-    tokenizer.phase_shifts = {};
-    for (int i = 0; i < 100; i++){
-        tokenizer.phase_shifts.push_back(0.01 * i * std::numbers::pi / 2.0);
-    }
-    tokenizer.max_iter_number_for_filter = 3;
+    NP_DSP::ONE_D::Tokenizers::SOTAEMDBasedTokenizer tokenizer;
+    tokenizer.max_iter_number_for_filter = 5;
     tokenizer.debug = false;
+    tokenizer.oversampling_ratio_for_ft_der = 10.0;
+    tokenizer.extremums_rotation_kind_e = NP_DSP::ONE_D::PHASE_SHIFTERS::RotateKind::Naive;
+    tokenizer.phase_shifts = {0};
+    for (int i = 0; i < 100; i++){
+        tokenizer.phase_shifts.push_back(0.01 * i * std::numbers::pi);
+    }
+    tokenizer.interpolation_kind = NP_DSP::ONE_D::FILTERS::InterpolationKind::RBFTPS;
+
 
 
     tokenizer.compute(data);
@@ -42,19 +46,16 @@ void extractorTest(){
         data.base->vec->push_back(std::rand());
     }
 
-    NP_DSP::ONE_D::MODES_EXTRACTORS::MakimaBasedModeDecomposition extractor;
-    extractor.max_iter_number_for_filter = 3;
-    extractor.phase_shifts = {};
+    NP_DSP::ONE_D::MODES_EXTRACTORS::SOTAEMD extractor;
+    extractor.max_iter_number_for_filter = 5;
+    extractor.debug = false;
+    extractor.oversampling_ratio_for_ft_der = 10.0;
+    extractor.extremums_rotation_kind_e = NP_DSP::ONE_D::PHASE_SHIFTERS::RotateKind::Naive;
+    extractor.phase_shifts = {0};
     for (int i = 0; i < 100; i++){
         extractor.phase_shifts.push_back(0.01 * i * std::numbers::pi);
     }
-    extractor.debug = false;
-    //extractor.non_opt_filter.period_muller = 1.0;
-    //NP_DSP::ONE_D::MODES_EXTRACTORS::ByIterStopFunc stop;
-    //data.show(NP_DSP::ONE_D::PlottingKind::Simple);
-    //extractor.load(data);
-    
-    //data.show(NP_DSP::ONE_D::PlottingKind::Simple);
+    extractor.interpolation_kind = NP_DSP::ONE_D::FILTERS::InterpolationKind::RBFTPS;
 
     extractor.compute(data);
 

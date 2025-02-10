@@ -1,6 +1,86 @@
 [
 {
-  "directory": "/home/dmitry/projects/non-parametric-dsp",
-  "arguments": ["clang++", "-c", "-Qunused-arguments", "-m64", "-g", "-O0", "-std=c++23", "-Inp_dsp", "-Ipocketfft", "-o", "build/.objs/main_extractor_example/linux/x86_64/debug/example/main.cpp.o", "example/main.cpp"],
+  "directory": "/home/dmitry/projects/np-dsp-for-linkage",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-fvisibility=hidden", "-fvisibility-inlines-hidden", "-O3", "-std=c++23", "-Inp_dsp", "-Ipocketfft", "-Iinterpolate_from_boost", "-Ialglib-cpp/src", "-I/home/dmitry/projects/np-dsp-for-linkage/FastGaussianBlur", "-DNDEBUG", "-o", "build/.objs/main_extractor_example/linux/x86_64/release/example/main.cpp.o", "example/main.cpp"],
   "file": "example/main.cpp"
+},
+{
+  "directory": "/home/dmitry/projects/np-dsp-for-linkage",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-fvisibility=hidden", "-fvisibility-inlines-hidden", "-O3", "-std=c++23", "-Ialglib-cpp/src", "-DNDEBUG", "-o", "build/.objs/alglib/linux/x86_64/release/alglib-cpp/src/kernels_fma.cpp.o", "alglib-cpp/src/kernels_fma.cpp"],
+  "file": "alglib-cpp/src/kernels_fma.cpp"
+},
+{
+  "directory": "/home/dmitry/projects/np-dsp-for-linkage",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-fvisibility=hidden", "-fvisibility-inlines-hidden", "-O3", "-std=c++23", "-Ialglib-cpp/src", "-DNDEBUG", "-o", "build/.objs/alglib/linux/x86_64/release/alglib-cpp/src/dataanalysis.cpp.o", "alglib-cpp/src/dataanalysis.cpp"],
+  "file": "alglib-cpp/src/dataanalysis.cpp"
+},
+{
+  "directory": "/home/dmitry/projects/np-dsp-for-linkage",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-fvisibility=hidden", "-fvisibility-inlines-hidden", "-O3", "-std=c++23", "-Ialglib-cpp/src", "-DNDEBUG", "-o", "build/.objs/alglib/linux/x86_64/release/alglib-cpp/src/integration.cpp.o", "alglib-cpp/src/integration.cpp"],
+  "file": "alglib-cpp/src/integration.cpp"
+},
+{
+  "directory": "/home/dmitry/projects/np-dsp-for-linkage",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-fvisibility=hidden", "-fvisibility-inlines-hidden", "-O3", "-std=c++23", "-Ialglib-cpp/src", "-DNDEBUG", "-o", "build/.objs/alglib/linux/x86_64/release/alglib-cpp/src/specialfunctions.cpp.o", "alglib-cpp/src/specialfunctions.cpp"],
+  "file": "alglib-cpp/src/specialfunctions.cpp"
+},
+{
+  "directory": "/home/dmitry/projects/np-dsp-for-linkage",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-fvisibility=hidden", "-fvisibility-inlines-hidden", "-O3", "-std=c++23", "-Ialglib-cpp/src", "-DNDEBUG", "-o", "build/.objs/alglib/linux/x86_64/release/alglib-cpp/src/alglibmisc.cpp.o", "alglib-cpp/src/alglibmisc.cpp"],
+  "file": "alglib-cpp/src/alglibmisc.cpp"
+},
+{
+  "directory": "/home/dmitry/projects/np-dsp-for-linkage",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-fvisibility=hidden", "-fvisibility-inlines-hidden", "-O3", "-std=c++23", "-Ialglib-cpp/src", "-DNDEBUG", "-o", "build/.objs/alglib/linux/x86_64/release/alglib-cpp/src/ap.cpp.o", "alglib-cpp/src/ap.cpp"],
+  "file": "alglib-cpp/src/ap.cpp"
+},
+{
+  "directory": "/home/dmitry/projects/np-dsp-for-linkage",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-fvisibility=hidden", "-fvisibility-inlines-hidden", "-O3", "-std=c++23", "-Ialglib-cpp/src", "-DNDEBUG", "-o", "build/.objs/alglib/linux/x86_64/release/alglib-cpp/src/optimization.cpp.o", "alglib-cpp/src/optimization.cpp"],
+  "file": "alglib-cpp/src/optimization.cpp"
+},
+{
+  "directory": "/home/dmitry/projects/np-dsp-for-linkage",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-fvisibility=hidden", "-fvisibility-inlines-hidden", "-O3", "-std=c++23", "-Ialglib-cpp/src", "-DNDEBUG", "-o", "build/.objs/alglib/linux/x86_64/release/alglib-cpp/src/kernels_sse2.cpp.o", "alglib-cpp/src/kernels_sse2.cpp"],
+  "file": "alglib-cpp/src/kernels_sse2.cpp"
+},
+{
+  "directory": "/home/dmitry/projects/np-dsp-for-linkage",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-fvisibility=hidden", "-fvisibility-inlines-hidden", "-O3", "-std=c++23", "-Ialglib-cpp/src", "-DNDEBUG", "-o", "build/.objs/alglib/linux/x86_64/release/alglib-cpp/src/diffequations.cpp.o", "alglib-cpp/src/diffequations.cpp"],
+  "file": "alglib-cpp/src/diffequations.cpp"
+},
+{
+  "directory": "/home/dmitry/projects/np-dsp-for-linkage",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-fvisibility=hidden", "-fvisibility-inlines-hidden", "-O3", "-std=c++23", "-Ialglib-cpp/src", "-DNDEBUG", "-o", "build/.objs/alglib/linux/x86_64/release/alglib-cpp/src/statistics.cpp.o", "alglib-cpp/src/statistics.cpp"],
+  "file": "alglib-cpp/src/statistics.cpp"
+},
+{
+  "directory": "/home/dmitry/projects/np-dsp-for-linkage",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-fvisibility=hidden", "-fvisibility-inlines-hidden", "-O3", "-std=c++23", "-Ialglib-cpp/src", "-DNDEBUG", "-o", "build/.objs/alglib/linux/x86_64/release/alglib-cpp/src/kernels_avx2.cpp.o", "alglib-cpp/src/kernels_avx2.cpp"],
+  "file": "alglib-cpp/src/kernels_avx2.cpp"
+},
+{
+  "directory": "/home/dmitry/projects/np-dsp-for-linkage",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-fvisibility=hidden", "-fvisibility-inlines-hidden", "-O3", "-std=c++23", "-Ialglib-cpp/src", "-DNDEBUG", "-o", "build/.objs/alglib/linux/x86_64/release/alglib-cpp/src/interpolation.cpp.o", "alglib-cpp/src/interpolation.cpp"],
+  "file": "alglib-cpp/src/interpolation.cpp"
+},
+{
+  "directory": "/home/dmitry/projects/np-dsp-for-linkage",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-fvisibility=hidden", "-fvisibility-inlines-hidden", "-O3", "-std=c++23", "-Ialglib-cpp/src", "-DNDEBUG", "-o", "build/.objs/alglib/linux/x86_64/release/alglib-cpp/src/solvers.cpp.o", "alglib-cpp/src/solvers.cpp"],
+  "file": "alglib-cpp/src/solvers.cpp"
+},
+{
+  "directory": "/home/dmitry/projects/np-dsp-for-linkage",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-fvisibility=hidden", "-fvisibility-inlines-hidden", "-O3", "-std=c++23", "-Ialglib-cpp/src", "-DNDEBUG", "-o", "build/.objs/alglib/linux/x86_64/release/alglib-cpp/src/alglibinternal.cpp.o", "alglib-cpp/src/alglibinternal.cpp"],
+  "file": "alglib-cpp/src/alglibinternal.cpp"
+},
+{
+  "directory": "/home/dmitry/projects/np-dsp-for-linkage",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-fvisibility=hidden", "-fvisibility-inlines-hidden", "-O3", "-std=c++23", "-Ialglib-cpp/src", "-DNDEBUG", "-o", "build/.objs/alglib/linux/x86_64/release/alglib-cpp/src/fasttransforms.cpp.o", "alglib-cpp/src/fasttransforms.cpp"],
+  "file": "alglib-cpp/src/fasttransforms.cpp"
+},
+{
+  "directory": "/home/dmitry/projects/np-dsp-for-linkage",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-fvisibility=hidden", "-fvisibility-inlines-hidden", "-O3", "-std=c++23", "-Ialglib-cpp/src", "-DNDEBUG", "-o", "build/.objs/alglib/linux/x86_64/release/alglib-cpp/src/linalg.cpp.o", "alglib-cpp/src/linalg.cpp"],
+  "file": "alglib-cpp/src/linalg.cpp"
 }]
